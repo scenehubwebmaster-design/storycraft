@@ -71,6 +71,9 @@ async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, 
         elif provider.lower() == "google":
             response_text = await LLMProvider.generate_google(prompt, model or "gemini-2.0-flash")
             metadata = {"model": model or "gemini-2.0-flash", "provider": "google"}
+        elif provider.lower() == "groq":
+            response_text = await LLMProvider.generate_groq(prompt, model or "llama-3.3-70b-versatile")
+            metadata = {"model": model or "llama-3.3-70b-versatile", "provider": "groq"}
         else:
             raise ValueError(f"Unsupported provider: {provider}")
         

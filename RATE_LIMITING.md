@@ -7,16 +7,38 @@ StoryCraft implements comprehensive rate limiting to respect LLM provider quotas
 ## Provider Limits
 
 ### Google Gemini (Free Tier)
-- **15 requests/minute**
-- **1,000,000 tokens/minute**
-- **1,500 requests/day**
+
+- **15 requests/minute** (default)
+- **1,000,000 tokens/minute** (default)
+- **1,500 requests/day** (default)
+
+**Model-Specific Overrides:**
+
+- `gemini-2.5-flash`: 10 RPM, 250K TPM, 250 RPD
+- `gemini-2.0-flash`: 15 RPM, 1M TPM, 200 RPD
+
+### Groq (Free Tier)
+
+- **30 requests/minute** (default)
+- **6,000 tokens/minute** (default)
+- **14,400 requests/day** (default)
+
+**Model-Specific Overrides:**
+
+- `llama-3.3-70b-versatile`: 30 RPM, 12K TPM, 1K RPD
+- `llama-3.1-8b-instant`: 30 RPM, 6K TPM, 14.4K RPD
+- `meta-llama/llama-4-scout-17b-16e-instruct`: 30 RPM, 30K TPM, 1K RPD
+- `groq/compound`: 30 RPM, 70K TPM, 250 RPD
+- See `backend/groq_models.py` for full list
 
 ### OpenAI (Configurable by tier)
+
 - **60 requests/minute** (default)
 - **90,000 tokens/minute** (default)
 - **10,000 requests/day** (default)
 
 ### Anthropic Claude (Configurable by tier)
+
 - **50 requests/minute** (default)
 - **100,000 tokens/minute** (default)
 - **10,000 requests/day** (default)
@@ -71,13 +93,13 @@ async def generate_content(request: LLMRequest):
     # Check rate limits BEFORE making API call
     estimated_tokens = len(request.prompt) // 4 + request.max_tokens
     rate_limit_error = rate_limiter.check_rate_limit(request.provider, estimated_tokens)
-    
+
     if rate_limit_error:
         raise HTTPException(status_code=429, detail=rate_limit_error)
-    
+
     # Make API call...
     content = await LLMProvider.generate_google(prompt, model)
-    
+
     # Record successful request AFTER generation
     actual_tokens = len(content) // 4
     rate_limiter.record_request(request.provider, actual_tokens)
@@ -86,6 +108,7 @@ async def generate_content(request: LLMRequest):
 ### 2. Generation Router (`backend/routers/generation.py`)
 
 The `call_llm()` function includes rate limiting for all AI generation endpoints:
+
 - Character generation
 - Story generation
 - World generation
@@ -161,6 +184,7 @@ GET `/api/llm/rate-limits/google` returns:
 ### Token Usage Optimization
 
 **Example Token Counts:**
+
 - Short prompt (100 words): ~133 tokens
 - Medium prompt (500 words): ~667 tokens
 - Character generation (full): ~1,500-2,500 tokens
@@ -168,6 +192,7 @@ GET `/api/llm/rate-limits/google` returns:
 - Full chapter: ~2,000-4,000 tokens
 
 **Gemini Free Tier Capacity:**
+
 - 1M tokens/min ≈ 500 full character generations/min
 - 1,500 req/day ≈ 62 sessions × 24 generations each
 - 15 req/min = tight constraint for interactive multi-step flows

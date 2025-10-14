@@ -7,9 +7,21 @@ import logging
 from typing import Dict, Optional
 from collections import deque
 from datetime import datetime, timedelta
-from gemini_models import get_model_limits
 
 logger = logging.getLogger(__name__)
+
+# Import model-specific rate limits
+try:
+    from gemini_models import get_model_limits as get_gemini_model_limits
+except ImportError:
+    logger.warning("Failed to import gemini_models, model-specific limits unavailable")
+    get_gemini_model_limits = None
+
+try:
+    from groq_models import get_model_limits as get_groq_model_limits
+except ImportError:
+    logger.warning("Failed to import groq_models, model-specific limits unavailable")
+    get_groq_model_limits = None
 
 
 class RateLimiter:
@@ -35,6 +47,11 @@ class RateLimiter:
                 "requests_per_minute": 50,  # Adjust based on your tier
                 "tokens_per_minute": 100_000,
                 "requests_per_day": 10_000,
+            },
+            "groq": {
+                "requests_per_minute": 30,  # Free tier default
+                "tokens_per_minute": 6_000,  # Conservative default
+                "requests_per_day": 14_400,  # Free tier default
             }
         }
         
@@ -92,9 +109,15 @@ class RateLimiter:
         
         limits = self.limits[provider].copy()
         
-        # Override with model-specific limits if available (for Google models)
-        if provider == "google" and model:
-            model_limits = get_model_limits(model)
+        # Override with model-specific limits if available
+        if provider == "google" and model and get_gemini_model_limits:
+            model_limits = get_gemini_model_limits(model)
+            if model_limits:
+                limits.update(model_limits)
+                logger.debug(f"Using model-specific limits for {model}: {model_limits}")
+        
+        if provider == "groq" and model and get_groq_model_limits:
+            model_limits = get_groq_model_limits(model)
             if model_limits:
                 limits.update(model_limits)
                 logger.debug(f"Using model-specific limits for {model}: {model_limits}")

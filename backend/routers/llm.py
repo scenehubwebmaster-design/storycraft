@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import logging
 from rate_limiter import rate_limiter
 from gemini_models import fetch_available_models
+from groq_models import fetch_available_models as fetch_groq_models
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -31,9 +32,15 @@ try:
 except ImportError:
     GOOGLE_AVAILABLE = False
 
+try:
+    from groq import Groq
+    GROQ_AVAILABLE = True
+except ImportError:
+    GROQ_AVAILABLE = False
+
 
 class LLMRequest(BaseModel):
-    provider: Literal["openai", "anthropic", "google"]
+    provider: Literal["openai", "anthropic", "google", "groq"]
     prompt: str
     model: str | None = None
     max_tokens: int = 1000
@@ -110,6 +117,28 @@ class LLMProvider:
         )
         
         return response.text
+    
+    @staticmethod
+    async def generate_groq(prompt: str, model: str = "llama-3.3-70b-versatile", max_tokens: int = 1000, temperature: float = 0.7):
+        if not GROQ_AVAILABLE:
+            raise HTTPException(status_code=500, detail="Groq client not installed")
+        
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Groq API key not configured")
+        
+        client = Groq(api_key=api_key)
+        
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        
+        return response.choices[0].message.content
 
 
 @router.post("/generate", response_model=LLMResponse)
@@ -117,7 +146,7 @@ async def generate_content(request: LLMRequest):
     """
     Generate content using the specified LLM provider.
     
-    Supports OpenAI, Anthropic (Claude), and Google (Gemini).
+    Supports OpenAI, Anthropic (Claude), Google (Gemini), and Groq.
     Includes rate limiting to respect provider quotas.
     """
     try:
@@ -131,6 +160,8 @@ async def generate_content(request: LLMRequest):
             model = request.model or "claude-3-5-sonnet-20241022"
         elif request.provider == "google":
             model = request.model or "gemini-2.5-flash"
+        elif request.provider == "groq":
+            model = request.model or "llama-3.3-70b-versatile"
         else:
             model = None
         
@@ -153,6 +184,10 @@ async def generate_content(request: LLMRequest):
             )
         elif request.provider == "google":
             content = await LLMProvider.generate_google(
+                request.prompt, model, request.max_tokens, request.temperature
+            )
+        elif request.provider == "groq":
+            content = await LLMProvider.generate_groq(
                 request.prompt, model, request.max_tokens, request.temperature
             )
         else:
@@ -187,6 +222,16 @@ async def get_available_providers():
             logger.warning(f"Failed to fetch Gemini models dynamically: {e}")
             gemini_models = ["gemini-2.5-flash", "gemini-2.0-flash"]
     
+    # Fetch Groq models dynamically
+    groq_models = []
+    if GROQ_AVAILABLE and bool(os.getenv("GROQ_API_KEY")):
+        try:
+            models_data = await fetch_groq_models()
+            groq_models = [m["id"] for m in models_data]
+        except Exception as e:
+            logger.warning(f"Failed to fetch Groq models dynamically: {e}")
+            groq_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "meta-llama/llama-4-scout-17b-16e-instruct"]
+    
     providers = {
         "openai": {
             "available": OPENAI_AVAILABLE and bool(os.getenv("OPENAI_API_KEY")),
@@ -199,6 +244,10 @@ async def get_available_providers():
         "google": {
             "available": GOOGLE_AVAILABLE and bool(os.getenv("GOOGLE_API_KEY")),
             "models": gemini_models
+        },
+        "groq": {
+            "available": GROQ_AVAILABLE and bool(os.getenv("GROQ_API_KEY")),
+            "models": groq_models
         }
     }
     return providers
@@ -217,6 +266,7 @@ async def get_all_rate_limits():
         "google": rate_limiter.get_usage_stats("google"),
         "openai": rate_limiter.get_usage_stats("openai"),
         "anthropic": rate_limiter.get_usage_stats("anthropic"),
+        "groq": rate_limiter.get_usage_stats("groq"),
     }
 
 
@@ -234,4 +284,21 @@ async def get_gemini_models():
         }
     except Exception as e:
         logger.error(f"Failed to fetch Gemini models: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
+
+
+@router.get("/groq/models")
+async def get_groq_models():
+    """
+    Get list of available Groq models with their rate limits.
+    Fetches from Groq API or falls back to hardcoded list.
+    """
+    try:
+        models = await fetch_groq_models()
+        return {
+            "models": models,
+            "count": len(models)
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch Groq models: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
