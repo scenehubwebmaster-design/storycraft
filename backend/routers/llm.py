@@ -107,23 +107,25 @@ class LLMProvider:
         
         genai.configure(api_key=api_key)
         
-        # Configure safety settings to be less restrictive for creative content
+        # Configure safety settings to be minimally restrictive for creative content
+        # BLOCK_NONE: Show content regardless of probability (recommended for creative storytelling)
+        # Note: For gemini-2.0-flash and newer models, BLOCK_NONE is the default for most categories
         safety_settings = [
             {
                 "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_ONLY_HIGH"
+                "threshold": "BLOCK_NONE"  # Was: BLOCK_ONLY_HIGH
             },
             {
                 "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_ONLY_HIGH"
+                "threshold": "BLOCK_NONE"  # Was: BLOCK_ONLY_HIGH
             },
             {
                 "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_ONLY_HIGH"
+                "threshold": "BLOCK_NONE"  # Was: BLOCK_ONLY_HIGH
             },
             {
                 "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_ONLY_HIGH"
+                "threshold": "BLOCK_NONE"  # Was: BLOCK_ONLY_HIGH
             },
         ]
         
@@ -140,11 +142,40 @@ class LLMProvider:
             }
         )
         
-        # Check if response was blocked by safety filters
+        # Check if prompt was blocked before generation (prompt_feedback)
+        if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
+            if hasattr(response.prompt_feedback, 'block_reason'):
+                block_reason = response.prompt_feedback.block_reason
+                if block_reason and block_reason != 0:  # 0 = BLOCK_REASON_UNSPECIFIED
+                    # Extract safety ratings from prompt feedback
+                    safety_details = []
+                    if hasattr(response.prompt_feedback, 'safety_ratings'):
+                        for rating in response.prompt_feedback.safety_ratings:
+                            if rating.probability in ['HIGH', 'MEDIUM', 'LOW']:
+                                category_name = str(rating.category).replace('HARM_CATEGORY_', '').replace('_', ' ').title()
+                                safety_details.append(f"{category_name}: {rating.probability}")
+                    
+                    block_reason_map = {
+                        1: "SAFETY - Prompt content flagged",
+                        2: "OTHER - Unknown issue",
+                        3: "BLOCKLIST - Contains blocked terms",
+                        4: "PROHIBITED_CONTENT - Violates content policy"
+                    }
+                    reason_name = block_reason_map.get(block_reason, f"Unknown reason (code {block_reason})")
+                    
+                    detail_msg = f"Your prompt was blocked by Google before generation: {reason_name}."
+                    if safety_details:
+                        detail_msg += f" Safety ratings: {', '.join(safety_details)}."
+                    detail_msg += " This is often too strict for creative fiction. Please use Groq or Anthropic instead, which are better suited for storytelling."
+                    
+                    logger.warning(f"Google prompt blocked - Reason: {block_reason}, Details: {safety_details}")
+                    raise HTTPException(status_code=400, detail=detail_msg)
+        
+        # Check if response was blocked during generation (no candidates returned)
         if not response.candidates:
             raise HTTPException(
                 status_code=400,
-                detail="Content generation was blocked by safety filters. Try rephrasing your prompt or use a different provider."
+                detail="Content generation was blocked by safety filters after prompt was accepted. Try rephrasing your prompt or use a different provider (Groq/Anthropic recommended)."
             )
         
         candidate = response.candidates[0]
