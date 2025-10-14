@@ -106,7 +106,31 @@ class LLMProvider:
             raise HTTPException(status_code=500, detail="Google API key not configured")
         
         genai.configure(api_key=api_key)
-        model_instance = genai.GenerativeModel(model)
+        
+        # Configure safety settings to be less restrictive for creative content
+        safety_settings = [
+            {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_ONLY_HIGH"
+            },
+            {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_ONLY_HIGH"
+            },
+            {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_ONLY_HIGH"
+            },
+            {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_ONLY_HIGH"
+            },
+        ]
+        
+        model_instance = genai.GenerativeModel(
+            model,
+            safety_settings=safety_settings
+        )
         
         response = model_instance.generate_content(
             prompt,
@@ -116,7 +140,57 @@ class LLMProvider:
             }
         )
         
-        return response.text
+        # Check if response was blocked by safety filters
+        if not response.candidates:
+            raise HTTPException(
+                status_code=400,
+                detail="Content generation was blocked by safety filters. Try rephrasing your prompt or use a different provider."
+            )
+        
+        candidate = response.candidates[0]
+        
+        # Map finish_reason codes to readable messages
+        finish_reason_map = {
+            0: "FINISH_REASON_UNSPECIFIED",
+            1: "STOP (natural completion)",
+            2: "SAFETY (blocked by safety filters)",
+            3: "RECITATION (blocked for recitation)",
+            4: "OTHER",
+            5: "MAX_TOKENS"
+        }
+        
+        # Check finish reason
+        if candidate.finish_reason == 2:  # SAFETY
+            safety_info = []
+            if hasattr(candidate, 'safety_ratings') and candidate.safety_ratings:
+                for rating in candidate.safety_ratings:
+                    if rating.probability in ['HIGH', 'MEDIUM']:
+                        category_name = str(rating.category).replace('HARM_CATEGORY_', '').replace('_', ' ').title()
+                        safety_info.append(f"{category_name}: {rating.probability}")
+            
+            detail_msg = "Content was blocked by Google's safety filters."
+            if safety_info:
+                detail_msg += f" Triggered categories: {', '.join(safety_info)}."
+            detail_msg += " Try rephrasing your prompt or use a different provider (Groq or Anthropic)."
+            
+            raise HTTPException(status_code=400, detail=detail_msg)
+        
+        elif candidate.finish_reason == 3:  # RECITATION
+            raise HTTPException(
+                status_code=400,
+                detail="Content was blocked for recitation (too similar to copyrighted material). Try rephrasing or use a different provider."
+            )
+        
+        # Try to get text, with fallback error handling
+        try:
+            return response.text
+        except ValueError:
+            # If response.text fails, provide detailed error
+            finish_reason_name = finish_reason_map.get(candidate.finish_reason, f"Code {candidate.finish_reason}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to generate content. Finish reason: {finish_reason_name}. Try using a different provider."
+            )
     
     @staticmethod
     async def generate_groq(prompt: str, model: str = "llama-3.3-70b-versatile", max_tokens: int = 1000, temperature: float = 0.7):
