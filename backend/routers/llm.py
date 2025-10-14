@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from rate_limiter import rate_limiter
+from gemini_models import fetch_available_models
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -123,27 +124,34 @@ async def generate_content(request: LLMRequest):
         # Estimate tokens (rough estimate: 1 token ≈ 0.75 words ≈ 4 chars)
         estimated_tokens = len(request.prompt) // 4 + request.max_tokens
         
-        # Check rate limits before making request
-        rate_limit_error = rate_limiter.check_rate_limit(request.provider, estimated_tokens)
+        # Determine model first to use model-specific rate limits
+        if request.provider == "openai":
+            model = request.model or "gpt-4"
+        elif request.provider == "anthropic":
+            model = request.model or "claude-3-5-sonnet-20241022"
+        elif request.provider == "google":
+            model = request.model or "gemini-2.5-flash"
+        else:
+            model = None
+        
+        # Check rate limits before making request (with model-specific limits if available)
+        rate_limit_error = rate_limiter.check_rate_limit(request.provider, estimated_tokens, model)
         if rate_limit_error:
-            logger.warning(f"Rate limit exceeded for {request.provider}: {rate_limit_error}")
+            logger.warning(f"Rate limit exceeded for {request.provider}/{model}: {rate_limit_error}")
             raise HTTPException(
                 status_code=429,
                 detail=rate_limit_error
             )
         
         if request.provider == "openai":
-            model = request.model or "gpt-4"
             content = await LLMProvider.generate_openai(
                 request.prompt, model, request.max_tokens, request.temperature
             )
         elif request.provider == "anthropic":
-            model = request.model or "claude-3-5-sonnet-20241022"
             content = await LLMProvider.generate_anthropic(
                 request.prompt, model, request.max_tokens, request.temperature
             )
         elif request.provider == "google":
-            model = request.model or "gemini-2.0-flash"
             content = await LLMProvider.generate_google(
                 request.prompt, model, request.max_tokens, request.temperature
             )
@@ -169,6 +177,16 @@ async def generate_content(request: LLMRequest):
 @router.get("/providers")
 async def get_available_providers():
     """Get list of available LLM providers based on installed clients and API keys"""
+    # Fetch Gemini models dynamically
+    gemini_models = []
+    if GOOGLE_AVAILABLE and bool(os.getenv("GOOGLE_API_KEY")):
+        try:
+            models_data = await fetch_available_models()
+            gemini_models = [m["id"] for m in models_data]
+        except Exception as e:
+            logger.warning(f"Failed to fetch Gemini models dynamically: {e}")
+            gemini_models = ["gemini-2.5-flash", "gemini-2.0-flash"]
+    
     providers = {
         "openai": {
             "available": OPENAI_AVAILABLE and bool(os.getenv("OPENAI_API_KEY")),
@@ -180,7 +198,7 @@ async def get_available_providers():
         },
         "google": {
             "available": GOOGLE_AVAILABLE and bool(os.getenv("GOOGLE_API_KEY")),
-            "models": ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"]
+            "models": gemini_models
         }
     }
     return providers
@@ -200,3 +218,20 @@ async def get_all_rate_limits():
         "openai": rate_limiter.get_usage_stats("openai"),
         "anthropic": rate_limiter.get_usage_stats("anthropic"),
     }
+
+
+@router.get("/google/models")
+async def get_gemini_models():
+    """
+    Get list of available Gemini models with their rate limits.
+    Fetches from Gemini API or falls back to hardcoded list.
+    """
+    try:
+        models = await fetch_available_models()
+        return {
+            "models": models,
+            "count": len(models)
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch Gemini models: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")

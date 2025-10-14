@@ -1,11 +1,13 @@
 """
 Rate limiter for LLM API calls to respect provider limits.
 Supports per-provider rate limiting with token-based and request-based quotas.
+Supports per-model rate limiting for providers that have model-specific quotas.
 """
 import logging
 from typing import Dict, Optional
 from collections import deque
 from datetime import datetime, timedelta
+from gemini_models import get_model_limits
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +70,14 @@ class RateLimiter:
         while self.daily_requests[provider] and self.daily_requests[provider][0] < day_ago:
             self.daily_requests[provider].popleft()
     
-    def check_rate_limit(self, provider: str, estimated_tokens: int = 2000) -> Optional[dict]:
+    def check_rate_limit(self, provider: str, estimated_tokens: int = 2000, model: str = None) -> Optional[dict]:
         """
         Check if request can proceed without exceeding rate limits.
         
         Args:
             provider: LLM provider name (google, openai, anthropic)
             estimated_tokens: Estimated token count for this request
+            model: Optional model name for model-specific rate limits (e.g., "gemini-2.5-flash")
             
         Returns:
             None if request can proceed, or dict with error info if limit exceeded
@@ -87,7 +90,14 @@ class RateLimiter:
         
         self._cleanup_old_entries(provider)
         
-        limits = self.limits[provider]
+        limits = self.limits[provider].copy()
+        
+        # Override with model-specific limits if available (for Google models)
+        if provider == "google" and model:
+            model_limits = get_model_limits(model)
+            if model_limits:
+                limits.update(model_limits)
+                logger.debug(f"Using model-specific limits for {model}: {model_limits}")
         
         # Check requests per minute
         requests_last_minute = len(self.request_history[provider])
