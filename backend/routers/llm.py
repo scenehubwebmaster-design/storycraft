@@ -3,8 +3,11 @@ from pydantic import BaseModel
 from typing import Literal
 import os
 from dotenv import load_dotenv
+import logging
+from rate_limiter import rate_limiter
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -114,8 +117,21 @@ async def generate_content(request: LLMRequest):
     Generate content using the specified LLM provider.
     
     Supports OpenAI, Anthropic (Claude), and Google (Gemini).
+    Includes rate limiting to respect provider quotas.
     """
     try:
+        # Estimate tokens (rough estimate: 1 token ≈ 0.75 words ≈ 4 chars)
+        estimated_tokens = len(request.prompt) // 4 + request.max_tokens
+        
+        # Check rate limits before making request
+        rate_limit_error = rate_limiter.check_rate_limit(request.provider, estimated_tokens)
+        if rate_limit_error:
+            logger.warning(f"Rate limit exceeded for {request.provider}: {rate_limit_error}")
+            raise HTTPException(
+                status_code=429,
+                detail=rate_limit_error
+            )
+        
         if request.provider == "openai":
             model = request.model or "gpt-4"
             content = await LLMProvider.generate_openai(
@@ -134,12 +150,18 @@ async def generate_content(request: LLMRequest):
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported provider: {request.provider}")
         
+        # Record successful request
+        actual_tokens = len(content) // 4  # Rough estimate
+        rate_limiter.record_request(request.provider, actual_tokens)
+        
         return LLMResponse(
             content=content,
             provider=request.provider,
             model=model
         )
     
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -162,3 +184,19 @@ async def get_available_providers():
         }
     }
     return providers
+
+
+@router.get("/rate-limits/{provider}")
+async def get_rate_limit_status(provider: str):
+    """Get current rate limit usage for a specific provider."""
+    return rate_limiter.get_usage_stats(provider)
+
+
+@router.get("/rate-limits")
+async def get_all_rate_limits():
+    """Get rate limit usage for all providers."""
+    return {
+        "google": rate_limiter.get_usage_stats("google"),
+        "openai": rate_limiter.get_usage_stats("openai"),
+        "anthropic": rate_limiter.get_usage_stats("anthropic"),
+    }

@@ -35,6 +35,7 @@ from prompts import (
     CONFLICT_TYPES
 )
 from routers.llm import LLMProvider
+from rate_limiter import rate_limiter
 import logging
 
 logger = logging.getLogger(__name__)
@@ -46,8 +47,21 @@ async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, 
     """
     Call the specified LLM provider and return the response.
     Returns (response_text, metadata)
+    Includes rate limiting.
     """
     try:
+        # Estimate tokens
+        estimated_tokens = len(prompt) // 4 + 2000  # Assume max 2000 tokens output
+        
+        # Check rate limits
+        rate_limit_error = rate_limiter.check_rate_limit(provider, estimated_tokens)
+        if rate_limit_error:
+            logger.warning(f"Rate limit exceeded for {provider}: {rate_limit_error}")
+            raise HTTPException(
+                status_code=429,
+                detail=rate_limit_error
+            )
+        
         if provider.lower() == "openai":
             response_text = await LLMProvider.generate_openai(prompt, model or "gpt-4")
             metadata = {"model": model or "gpt-4", "provider": "openai"}
@@ -60,7 +74,13 @@ async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, 
         else:
             raise ValueError(f"Unsupported provider: {provider}")
         
+        # Record successful request
+        actual_tokens = len(response_text) // 4
+        rate_limiter.record_request(provider, actual_tokens)
+        
         return response_text, metadata
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"LLM generation failed: {str(e)}")
 
