@@ -29,7 +29,8 @@ export const Route = createFileRoute("/create/world")({
   component: CreateWorldComponent,
 });
 
-const steps = ["World Elements", "Generate", "Review & Save"];
+const API_URL = "http://localhost:8000";
+const steps = ["Select Parameters", "Generate", "Review & Save"];
 
 function CreateWorldComponent() {
   const [options, setOptions] = useState(null);
@@ -56,7 +57,7 @@ function CreateWorldComponent() {
 
   const loadOptions = async () => {
     try {
-      const response = await axios.get(`/api/generate/options`);
+      const response = await axios.get(`${API_URL}/api/generate/options`);
       setOptions(response.data);
     } catch (err) {
       setError("Failed to load options");
@@ -68,7 +69,7 @@ function CreateWorldComponent() {
     setError(null);
 
     try {
-      const response = await axios.post(`/api/generate/world`, {
+      const response = await axios.post(`${API_URL}/api/generate/world`, {
         themes: selectedThemes.length > 0 ? selectedThemes : null,
         setting: selectedSettings.length > 0 ? selectedSettings : null,
         elements: selectedElements.length > 0 ? selectedElements : null,
@@ -91,7 +92,7 @@ function CreateWorldComponent() {
     setError(null);
 
     try {
-      const response = await axios.post(`/api/generate/world`, {
+      const response = await axios.post(`${API_URL}/api/generate/world`, {
         base_content: generatedContent,
         refinement_instructions: refinementInstructions,
         provider,
@@ -116,7 +117,7 @@ function CreateWorldComponent() {
     setError(null);
 
     try {
-      await axios.post(`/api/generate/world/save`, null, {
+      await axios.post(`${API_URL}/api/generate/world/save`, null, {
         params: {
           name: worldName,
           content: finalContent || generatedContent,
@@ -251,6 +252,7 @@ function CreateWorldComponent() {
                   <MenuItem value="openai">OpenAI (GPT)</MenuItem>
                   <MenuItem value="anthropic">Anthropic (Claude)</MenuItem>
                   <MenuItem value="google">Google (Gemini)</MenuItem>
+                  <MenuItem value="groq">Groq (Llama)</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

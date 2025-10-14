@@ -319,6 +319,7 @@ function CreateLocationComponent() {
                   <MenuItem value="openai">OpenAI (GPT)</MenuItem>
                   <MenuItem value="anthropic">Anthropic (Claude)</MenuItem>
                   <MenuItem value="google">Google (Gemini)</MenuItem>
+                  <MenuItem value="groq">Groq (Llama)</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

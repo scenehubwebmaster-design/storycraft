@@ -29,7 +29,8 @@ export const Route = createFileRoute("/create/story")({
   component: CreateStoryComponent,
 });
 
-const steps = ["Story Details", "Generate", "Review & Save"];
+const API_URL = "http://localhost:8000";
+const steps = ["Select Parameters", "Generate", "Review & Save"];
 
 function CreateStoryComponent() {
   const [options, setOptions] = useState(null);
@@ -58,7 +59,7 @@ function CreateStoryComponent() {
 
   const loadOptions = async () => {
     try {
-      const response = await axios.get(`/api/generate/options`);
+      const response = await axios.get(`${API_URL}/api/generate/options`);
       setOptions(response.data);
     } catch (err) {
       setError("Failed to load options");
@@ -70,7 +71,7 @@ function CreateStoryComponent() {
     setError(null);
 
     try {
-      const response = await axios.post(`/api/generate/story`, {
+      const response = await axios.post(`${API_URL}/api/generate/story`, {
         themes: selectedThemes.length > 0 ? selectedThemes : null,
         tone: selectedTones.length > 0 ? selectedTones : null,
         length: storyLength || null,
@@ -95,7 +96,7 @@ function CreateStoryComponent() {
     setError(null);
 
     try {
-      const response = await axios.post(`/api/generate/story`, {
+      const response = await axios.post(`${API_URL}/api/generate/story`, {
         base_content: generatedContent,
         refinement_instructions: refinementInstructions,
         provider,
@@ -120,7 +121,7 @@ function CreateStoryComponent() {
     setError(null);
 
     try {
-      await axios.post(`/api/generate/story/save`, null, {
+      await axios.post(`${API_URL}/api/generate/story/save`, null, {
         params: {
           title: storyTitle,
           content: finalContent || generatedContent,
@@ -302,6 +303,7 @@ function CreateStoryComponent() {
                   <MenuItem value="openai">OpenAI (GPT)</MenuItem>
                   <MenuItem value="anthropic">Anthropic (Claude)</MenuItem>
                   <MenuItem value="google">Google (Gemini)</MenuItem>
+                  <MenuItem value="groq">Groq (Llama)</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
