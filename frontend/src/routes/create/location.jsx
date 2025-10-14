@@ -24,6 +24,7 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import PromptSelector from "../../components/PromptSelector";
 import GenerationResult from "../../components/GenerationResult";
+import ModelSelector from "../../components/ModelSelector";
 
 export const Route = createFileRoute("/create/location")({
   component: CreateLocationComponent,
@@ -66,7 +67,8 @@ function CreateLocationComponent() {
   const [selectedSettings, setSelectedSettings] = useState([]);
   const [significance, setSignificance] = useState("");
   const [customDetails, setCustomDetails] = useState("");
-  const [provider, setProvider] = useState("openai");
+  const [provider, setProvider] = useState("groq");
+  const [model, setModel] = useState("");
 
   // Results
   const [generatedContent, setGeneratedContent] = useState(null);
@@ -102,6 +104,7 @@ function CreateLocationComponent() {
         significance: significance || null,
         custom_details: customDetails || null,
         provider,
+        model: model || null,
       });
 
       setGeneratedContent(response.data.content);
@@ -123,6 +126,7 @@ function CreateLocationComponent() {
         base_content: generatedContent,
         refinement_instructions: refinementInstructions,
         provider,
+        model: model || null,
       });
 
       setGeneratedContent(response.data.content);
@@ -309,19 +313,13 @@ function CreateLocationComponent() {
             </Grid>
 
             <Grid size={{ xs: 12 }}>
-              <FormControl fullWidth>
-                <InputLabel>AI Provider</InputLabel>
-                <Select
-                  value={provider}
-                  onChange={(e) => setProvider(e.target.value)}
-                  label="AI Provider"
-                >
-                  <MenuItem value="openai">OpenAI (GPT)</MenuItem>
-                  <MenuItem value="anthropic">Anthropic (Claude)</MenuItem>
-                  <MenuItem value="google">Google (Gemini)</MenuItem>
-                  <MenuItem value="groq">Groq (Llama)</MenuItem>
-                </Select>
-              </FormControl>
+              <ModelSelector
+                provider={provider}
+                model={model}
+                onProviderChange={setProvider}
+                onModelChange={setModel}
+                contentType="location"
+              />
             </Grid>
           </Grid>
         </Paper>
