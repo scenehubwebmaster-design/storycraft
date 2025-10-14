@@ -18,14 +18,17 @@ class APIKeysModel(BaseModel):
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
     google_api_key: Optional[str] = None
+    groq_api_key: Optional[str] = None
 
 class APIKeysResponse(BaseModel):
     openai_configured: bool
     anthropic_configured: bool
     google_configured: bool
+    groq_configured: bool
     openai_api_key_preview: Optional[str] = None
     anthropic_api_key_preview: Optional[str] = None
     google_api_key_preview: Optional[str] = None
+    groq_api_key_preview: Optional[str] = None
 
 
 def mask_api_key(key: str) -> str:
@@ -41,14 +44,17 @@ async def get_api_keys():
     openai_key = os.getenv("OPENAI_API_KEY")
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     google_key = os.getenv("GOOGLE_API_KEY")
+    groq_key = os.getenv("GROQ_API_KEY")
     
     return APIKeysResponse(
         openai_configured=bool(openai_key),
         anthropic_configured=bool(anthropic_key),
         google_configured=bool(google_key),
+        groq_configured=bool(groq_key),
         openai_api_key_preview=mask_api_key(openai_key) if openai_key else None,
         anthropic_api_key_preview=mask_api_key(anthropic_key) if anthropic_key else None,
-        google_api_key_preview=mask_api_key(google_key) if google_key else None
+        google_api_key_preview=mask_api_key(google_key) if google_key else None,
+        groq_api_key_preview=mask_api_key(groq_key) if groq_key else None
     )
 
 
@@ -83,6 +89,11 @@ async def update_api_keys(keys: APIKeysModel):
             os.environ["GOOGLE_API_KEY"] = keys.google_api_key
             updated_keys.append("Google")
         
+        if keys.groq_api_key:
+            set_key(env_path, "GROQ_API_KEY", keys.groq_api_key)
+            os.environ["GROQ_API_KEY"] = keys.groq_api_key
+            updated_keys.append("Groq")
+        
         if not updated_keys:
             raise HTTPException(status_code=400, detail="No API keys provided")
         
@@ -99,7 +110,7 @@ async def update_api_keys(keys: APIKeysModel):
 async def delete_api_key(provider: str):
     """Remove an API key from .env file"""
     provider = provider.lower()
-    valid_providers = ["openai", "anthropic", "google"]
+    valid_providers = ["openai", "anthropic", "google", "groq"]
     
     if provider not in valid_providers:
         raise HTTPException(status_code=400, detail=f"Invalid provider. Must be one of: {', '.join(valid_providers)}")
@@ -130,6 +141,7 @@ async def get_provider_status():
     openai_installed = find_spec("openai") is not None
     anthropic_installed = find_spec("anthropic") is not None
     google_installed = find_spec("google.generativeai") is not None
+    groq_installed = find_spec("groq") is not None
     
     return {
         "openai": {
@@ -146,5 +158,10 @@ async def get_provider_status():
             "installed": google_installed,
             "configured": bool(os.getenv("GOOGLE_API_KEY")),
             "available": google_installed and bool(os.getenv("GOOGLE_API_KEY"))
+        },
+        "groq": {
+            "installed": groq_installed,
+            "configured": bool(os.getenv("GROQ_API_KEY")),
+            "available": groq_installed and bool(os.getenv("GROQ_API_KEY"))
         }
     }

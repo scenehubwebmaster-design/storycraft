@@ -1,6 +1,6 @@
-# StoryCraftThis is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# StoryCraft
 
-An AI-powered story creation platform that helps writers craft thoughtful and robust stories. Whether you're drafting a novel or planning a Dungeons and Dragons campaign, StoryCraft leverages multiple LLM providers (Google, Claude, OpenAI) to help you generate beautiful and rich characters, plots, scenes, chapters, lore, and worlds.## Getting Started
+An AI-powered story creation platform that helps writers craft thoughtful and robust stories. Whether you're drafting a novel or planning a Dungeons and Dragons campaign, StoryCraft leverages multiple LLM providers (Google Gemini, Claude, OpenAI, Groq) to help you generate beautiful and rich characters, plots, scenes, chapters, lore, and worlds.
 
 ## 🏗️ Monorepo StructureFirst, run the development server:
 
@@ -80,6 +80,7 @@ This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-appl
   - OpenAI API key
   - Anthropic (Claude) API key
   - Google AI API key
+  - Groq API key (recommended for fast, free inference)
 
 ## 🛠️ Installation
 
@@ -120,6 +121,7 @@ Edit `.env` and add your API keys:
 OPENAI_API_KEY=your_openai_key_here
 ANTHROPIC_API_KEY=your_anthropic_key_here
 GOOGLE_API_KEY=your_google_key_here
+GROQ_API_KEY=your_groq_key_here
 ```
 
 ## 🏃 Running the Application

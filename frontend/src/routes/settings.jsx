@@ -36,10 +36,12 @@ function SettingsComponent() {
   const [openaiKey, setOpenaiKey] = useState("");
   const [anthropicKey, setAnthropicKey] = useState("");
   const [googleKey, setGoogleKey] = useState("");
+  const [groqKey, setGroqKey] = useState("");
 
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [showGoogleKey, setShowGoogleKey] = useState(false);
+  const [showGroqKey, setShowGroqKey] = useState(false);
 
   const [keyStatus, setKeyStatus] = useState(null);
   const [providerStatus, setProviderStatus] = useState(null);
@@ -79,6 +81,7 @@ function SettingsComponent() {
     if (anthropicKey.trim())
       keysToUpdate.anthropic_api_key = anthropicKey.trim();
     if (googleKey.trim()) keysToUpdate.google_api_key = googleKey.trim();
+    if (groqKey.trim()) keysToUpdate.groq_api_key = groqKey.trim();
 
     if (Object.keys(keysToUpdate).length === 0) {
       setError("Please enter at least one API key");
@@ -97,6 +100,7 @@ function SettingsComponent() {
       setOpenaiKey("");
       setAnthropicKey("");
       setGoogleKey("");
+      setGroqKey("");
 
       // Reload status
       await loadStatus();
@@ -317,6 +321,42 @@ function SettingsComponent() {
             </CardContent>
           </Card>
         </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card>
+            <CardContent>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 1,
+                }}
+              >
+                <Typography variant="h6">Groq</Typography>
+                {providerStatus && getProviderChip("groq", providerStatus.groq)}
+              </Box>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Llama 3.3, Llama 4, Compound
+              </Typography>
+              {keyStatus?.groq_configured && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Current Key: {keyStatus.groq_api_key_preview}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDelete("groq")}
+                    sx={{ ml: 1 }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
       <Divider sx={{ my: 4 }} />
@@ -404,6 +444,30 @@ function SettingsComponent() {
                       ) : (
                         <VisibilityIcon />
                       )}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              fullWidth
+              label="Groq API Key"
+              type={showGroqKey ? "text" : "password"}
+              value={groqKey}
+              onChange={(e) => setGroqKey(e.target.value)}
+              placeholder="gsk_..."
+              helperText="Get your API key from console.groq.com (free tier: 30 req/min)"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowGroqKey(!showGroqKey)}
+                      edge="end"
+                    >
+                      {showGroqKey ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </InputAdornment>
                 ),
