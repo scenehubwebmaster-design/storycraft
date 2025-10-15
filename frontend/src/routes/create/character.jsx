@@ -190,19 +190,23 @@ function CreateCharacterComponent() {
 
     try {
       // Extract appearance from generated content
-      const response = await axios.post(`${API_URL}/api/generate/character/generate-portrait`, {
-        character_name: characterName,
-        appearance_text: generatedContent,
-        model: "imagen-4.0-fast-generate-001",
-        aspect_ratio: "3:4",
-        custom_prompt: null,
-      });
+      const response = await axios.post(
+        `${API_URL}/api/generate/character/generate-portrait`,
+        {
+          character_name: characterName,
+          appearance_text: generatedContent,
+          model: "imagen-4.0-fast-generate-001",
+          aspect_ratio: "3:4",
+          custom_prompt: null,
+        }
+      );
 
       setPortraitImage(response.data.image_base64);
       setSuccess("Portrait generated successfully!");
     } catch (err) {
       setPortraitError(
-        err.response?.data?.detail || "Failed to generate portrait. Make sure Google API key is configured."
+        err.response?.data?.detail ||
+          "Failed to generate portrait. Make sure Google API key is configured."
       );
       console.error(err);
     } finally {
@@ -428,7 +432,14 @@ function CreateCharacterComponent() {
 
           {/* Portrait Generation Section */}
           <Paper sx={{ p: 3, mb: 3, backgroundColor: "background.default" }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 2,
+              }}
+            >
               <Box>
                 <Typography variant="h6" gutterBottom>
                   Character Portrait
@@ -439,16 +450,45 @@ function CreateCharacterComponent() {
               </Box>
               <Button
                 variant="outlined"
-                startIcon={generatingPortrait ? <CircularProgress size={20} /> : <PhotoCameraIcon />}
+                startIcon={
+                  generatingPortrait ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <PhotoCameraIcon />
+                  )
+                }
                 onClick={handleGeneratePortrait}
-                disabled={generatingPortrait || !characterName.trim()}
+                disabled={
+                  generatingPortrait ||
+                  !characterName.trim() ||
+                  !generatedContent
+                }
+                title={
+                  !characterName.trim()
+                    ? "Enter a character name first"
+                    : !generatedContent
+                      ? "Generate character content first"
+                      : "Generate AI portrait"
+                }
               >
                 {generatingPortrait ? "Generating..." : "Generate Portrait"}
               </Button>
             </Box>
 
+            {(!characterName.trim() || !generatedContent) && !generatingPortrait && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                {!characterName.trim() 
+                  ? "Enter a character name above to enable portrait generation"
+                  : "Character content is required for portrait generation"}
+              </Alert>
+            )}
+
             {portraitError && (
-              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setPortraitError(null)}>
+              <Alert
+                severity="error"
+                sx={{ mb: 2 }}
+                onClose={() => setPortraitError(null)}
+              >
                 {portraitError}
               </Alert>
             )}
@@ -465,7 +505,12 @@ function CreateCharacterComponent() {
                     boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
                   }}
                 />
-                <Typography variant="caption" display="block" sx={{ mt: 1 }} color="text.secondary">
+                <Typography
+                  variant="caption"
+                  display="block"
+                  sx={{ mt: 1 }}
+                  color="text.secondary"
+                >
                   Generated with Google Imagen
                 </Typography>
               </Box>
