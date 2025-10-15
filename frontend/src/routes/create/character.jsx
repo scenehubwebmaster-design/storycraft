@@ -23,6 +23,9 @@ import {
   Step,
   StepLabel,
   Divider,
+  Switch,
+  FormControlLabel,
+  Chip,
 } from "@mui/material";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -31,6 +34,7 @@ import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PromptSelector from "../../components/PromptSelector";
 import GenerationResult from "../../components/GenerationResult";
 import ModelSelector from "../../components/ModelSelector";
+import StructuredCharacterDisplay from "../../components/StructuredCharacterDisplay";
 
 export const Route = createFileRoute("/create/character")({
   component: CreateCharacterComponent,
@@ -66,6 +70,9 @@ function CreateCharacterComponent() {
   const [customDetails, setCustomDetails] = useState("");
   const [provider, setProvider] = useState("groq");
   const [model, setModel] = useState("");
+
+  // Structured generation toggle
+  const [useStructured, setUseStructured] = useState(true);
 
   // Generation results
   const [generatedContent, setGeneratedContent] = useState(null);
@@ -143,7 +150,11 @@ function CreateCharacterComponent() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/generate/character`, {
+      const endpoint = useStructured
+        ? `${API_URL}/api/generate/character/structured`
+        : `${API_URL}/api/generate/character`;
+
+      const response = await axios.post(endpoint, {
         themes: selectedThemes.length > 0 ? selectedThemes : null,
         personality_traits:
           selectedPersonalityTraits.length > 0
@@ -159,9 +170,13 @@ function CreateCharacterComponent() {
         model: model || null,
       });
 
-      setGeneratedContent(response.data.content);
+      setGeneratedContent(
+        useStructured ? response.data : response.data.content
+      );
       setActiveStep(2);
-      setSuccess("Character generated successfully!");
+      setSuccess(
+        `Character generated successfully using ${useStructured ? "structured" : "free-form"} generation!`
+      );
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to generate character");
       console.error(err);
@@ -175,14 +190,44 @@ function CreateCharacterComponent() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/generate/character`, {
-        base_content: generatedContent,
-        refinement_instructions: refinementInstructions,
-        provider,
-        model: model || null,
-      });
+      // For structured generation, we'll regenerate with refinement instructions
+      // For free-form, use the existing refinement endpoint
+      const endpoint = useStructured
+        ? `${API_URL}/api/generate/character/structured`
+        : `${API_URL}/api/generate/character`;
 
-      setGeneratedContent(response.data.content);
+      const requestData = useStructured
+        ? {
+            themes: selectedThemes.length > 0 ? selectedThemes : null,
+            personality_traits:
+              selectedPersonalityTraits.length > 0
+                ? selectedPersonalityTraits
+                : null,
+            physical_traits:
+              selectedPhysicalTraits.length > 0
+                ? selectedPhysicalTraits
+                : null,
+            emotional_traits:
+              selectedEmotionalTraits.length > 0
+                ? selectedEmotionalTraits
+                : null,
+            archetype: selectedArchetype || null,
+            custom_details: `${customDetails}\n\nRefinement: ${refinementInstructions}`,
+            provider,
+            model: model || null,
+          }
+        : {
+            base_content: generatedContent,
+            refinement_instructions: refinementInstructions,
+            provider,
+            model: model || null,
+          };
+
+      const response = await axios.post(endpoint, requestData);
+
+      setGeneratedContent(
+        useStructured ? response.data : response.data.content
+      );
       setSuccess("Character refined successfully!");
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to refine character");
@@ -206,7 +251,9 @@ function CreateCharacterComponent() {
         // Update existing character
         await axios.put(`${API_URL}/api/characters/${editId}`, {
           name: characterName,
-          description: finalContent || generatedContent,
+          description: useStructured
+            ? JSON.stringify(finalContent || generatedContent)
+            : finalContent || generatedContent,
           portrait_image: portraitImage,
         });
         setSuccess("Character updated successfully!");
@@ -217,14 +264,27 @@ function CreateCharacterComponent() {
         }, 1500);
       } else {
         // Create new character
-        await axios.post(`${API_URL}/api/generate/character/save`, null, {
-          params: {
-            name: characterName,
-            content: finalContent || generatedContent,
-            portrait_image: portraitImage || null,
-            image_prompt: imagePrompt || null,
-          },
-        });
+        if (useStructured) {
+          // Use structured save endpoint
+          await axios.post(
+            `${API_URL}/api/generate/character/structured/save`,
+            {
+              character_profile: finalContent || generatedContent,
+              portrait_image: portraitImage || null,
+              image_prompt: imagePrompt || null,
+            }
+          );
+        } else {
+          // Use legacy save endpoint
+          await axios.post(`${API_URL}/api/generate/character/save`, null, {
+            params: {
+              name: characterName,
+              content: finalContent || generatedContent,
+              portrait_image: portraitImage || null,
+              image_prompt: imagePrompt || null,
+            },
+          });
+        }
         setSuccess("Character saved successfully!");
 
         // Reset form after 2 seconds
@@ -259,11 +319,17 @@ function CreateCharacterComponent() {
 
     try {
       // Extract appearance from generated content
+      // For structured content, extract physical description
+      const appearanceText = useStructured
+        ? generatedContent.physical_description ||
+          `${generatedContent.height}, ${generatedContent.build} build, ${generatedContent.hair} hair, ${generatedContent.eyes} eyes`
+        : generatedContent;
+
       const response = await axios.post(
         `${API_URL}/api/generate/character/generate-portrait`,
         {
           character_name: characterName,
-          appearance_text: generatedContent,
+          appearance_text: appearanceText,
           provider: imageProvider,
           model: imageModel || null,
           aspect_ratio: "3:4",
@@ -351,6 +417,55 @@ function CreateCharacterComponent() {
       {/* Step 0: Select Traits */}
       {activeStep === 0 && (
         <Paper sx={{ p: 4 }}>
+          {/* Generation Mode Toggle */}
+          <Box
+            sx={{
+              mb: 4,
+              p: 2,
+              bgcolor: "background.default",
+              borderRadius: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Generation Mode
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {useStructured
+                  ? "Structured generation creates comprehensive profiles with organized sections, guaranteed completeness, and rich details."
+                  : "Free-form generation creates narrative-style character descriptions with more creative flexibility."}
+              </Typography>
+            </Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useStructured}
+                  onChange={(e) => setUseStructured(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography variant="body2" fontWeight="bold">
+                    Structured
+                  </Typography>
+                  {useStructured && (
+                    <Chip
+                      label="Recommended"
+                      size="small"
+                      color="primary"
+                      sx={{ fontSize: "0.7rem" }}
+                    />
+                  )}
+                </Box>
+              }
+              labelPlacement="start"
+            />
+          </Box>
+
           <Grid container spacing={3}>
             <Grid size={{ xs: 12 }}>
               <PromptSelector
@@ -723,14 +838,49 @@ function CreateCharacterComponent() {
             )}
           </Paper>
 
-          <GenerationResult
-            content={generatedContent}
-            onSave={handleSave}
-            onRefine={handleRefine}
-            saving={saving || generating}
-            entity="Character"
-            isEditMode={isEditMode}
-          />
+          {/* Display Component - Conditional based on generation mode */}
+          {useStructured ? (
+            <Box sx={{ mb: 3 }}>
+              <StructuredCharacterDisplay characterProfile={generatedContent} />
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 2,
+                  mt: 3,
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={() =>
+                    handleRefine(
+                      "Please regenerate with different details while keeping the same structure"
+                    )
+                  }
+                  disabled={saving || generating}
+                >
+                  Regenerate
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => handleSave(generatedContent)}
+                  disabled={saving || generating || !characterName.trim()}
+                  startIcon={saving ? <CircularProgress size={20} /> : null}
+                >
+                  {saving ? "Saving..." : isEditMode ? "Update" : "Save Character"}
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <GenerationResult
+              content={generatedContent}
+              onSave={handleSave}
+              onRefine={handleRefine}
+              saving={saving || generating}
+              entity="Character"
+              isEditMode={isEditMode}
+            />
+          )}
         </Box>
       )}
 
