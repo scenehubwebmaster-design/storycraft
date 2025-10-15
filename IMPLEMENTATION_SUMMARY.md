@@ -3,6 +3,7 @@
 ## ✅ What We Built
 
 A complete character portrait generation system that combines:
+
 - **Groq (Llama)** for fast, unrestricted character text generation
 - **Google Imagen 4.0** for high-quality AI portrait generation
 - **Base64 storage** in SQLite for simple image management
@@ -118,20 +119,20 @@ A complete character portrait generation system that combines:
 ```
 1. User fills character creation form
    └→ Selects traits, themes, archetypes
-   
+
 2. Click "Generate with AI"
    └→ Groq generates text (1-2s)
    └→ Character description displayed
-   
+
 3. Enter character name
    └→ Required for portrait generation
-   
+
 4. Click "Generate Portrait"
    └→ Backend extracts appearance from text
    └→ Builds optimized Imagen prompt
    └→ Imagen generates 3:4 portrait (3-5s)
    └→ Image displayed as Base64 PNG
-   
+
 5. Click "Save Character"
    └→ Saves to database with portrait
    └→ Both text and image stored
@@ -163,11 +164,11 @@ GOOGLE_API_KEY=your_api_key_here  # Required for Imagen
 ### Monthly Estimates
 
 | Characters | Cost (Fast) | Cost (Standard) | Cost (Ultra) |
-|-----------|-------------|-----------------|--------------|
-| 10 | $0.20 | $0.50 | $1.00 |
-| 50 | $1.00 | $2.50 | $5.00 |
-| 100 | $2.00 | $5.00 | $10.00 |
-| 500 | $10.00 | $25.00 | $50.00 |
+| ---------- | ----------- | --------------- | ------------ |
+| 10         | $0.20       | $0.50           | $1.00        |
+| 50         | $1.00       | $2.50           | $5.00        |
+| 100        | $2.00       | $5.00           | $10.00       |
+| 500        | $10.00      | $25.00          | $50.00       |
 
 **Optimization**: Only generate portraits when user clicks button (not automatic)
 
@@ -357,6 +358,7 @@ We successfully implemented a complete character portrait generation system that
 8. **Has extensive documentation** (easy to use)
 
 The system is **production-ready** and can be tested immediately after:
+
 1. Installing `google-genai` package
 2. Adding `GOOGLE_API_KEY` to .env
 3. Running database migration

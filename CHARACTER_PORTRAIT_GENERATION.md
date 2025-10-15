@@ -33,17 +33,20 @@ This feature allows users to generate AI-powered character portraits using Googl
 ### Backend Components
 
 #### `backend/imagen_client.py`
+
 - **`extract_character_appearance(content)`**: Extracts appearance section from text
 - **`build_character_image_prompt(name, appearance)`**: Builds optimized Imagen prompt
 - **`generate_character_portrait(name, appearance_text, model, aspect_ratio, custom_prompt)`**: Main generation function
 
 #### `backend/routers/generation.py`
+
 - **`POST /api/generate/character/generate-portrait`**: Generate portrait endpoint
   - Request: `ImageGenerationRequest` (character_name, appearance_text, model, aspect_ratio)
   - Response: `{ image_base64, prompt, model, aspect_ratio, message }`
 - **`POST /api/generate/character/save-portrait`**: Save portrait to character (future)
 
 #### `backend/models.py`
+
 - **Character Model** additions:
   - `portrait_image` (Text): Base64 encoded PNG image data
   - `image_prompt` (Text): Prompt used to generate the image
@@ -51,6 +54,7 @@ This feature allows users to generate AI-powered character portraits using Googl
 ### Frontend Components
 
 #### `frontend/src/routes/create/character.jsx`
+
 - **Portrait Generation UI**:
   - "Generate Portrait" button in Step 2 (Review & Save)
   - Portrait preview with Base64 image display
@@ -101,13 +105,15 @@ A professional [style] of [appearance description],
 ### Example Prompts
 
 **Input Appearance**:
+
 > A tall, muscular warrior in his early 30s with short black hair, a prominent scar across his left cheek, wearing battle-worn leather armor with silver studs.
 
 **Generated Prompt**:
+
 ```
-A professional portrait photograph of a tall, muscular warrior in his early 30s 
-with short black hair, a prominent scar across his left cheek, wearing battle-worn 
-leather armor with silver studs, 35mm portrait, depth of field, 4K HDR, 
+A professional portrait photograph of a tall, muscular warrior in his early 30s
+with short black hair, a prominent scar across his left cheek, wearing battle-worn
+leather armor with silver studs, 35mm portrait, depth of field, 4K HDR,
 cinematic quality, professional photography
 ```
 
@@ -125,6 +131,7 @@ cinematic quality, professional photography
 **Endpoint**: `POST /api/generate/character/generate-portrait`
 
 **Request Body**:
+
 ```json
 {
   "character_name": "Ragnar Blackwood",
@@ -136,6 +143,7 @@ cinematic quality, professional photography
 ```
 
 **Response**:
+
 ```json
 {
   "image_base64": "iVBORw0KGgoAAAANSUhEUgAA...",
@@ -147,6 +155,7 @@ cinematic quality, professional photography
 ```
 
 **Error Responses**:
+
 - `500`: Image generation unavailable (missing packages)
 - `500`: GOOGLE_API_KEY not configured
 - `500`: Imagen API error (safety filters, quota, etc.)
@@ -171,6 +180,7 @@ cinematic quality, professional photography
 ### Google's Content Policies
 
 Imagen enforces content policies:
+
 - No explicit content
 - No violence/gore
 - No hate speech
@@ -222,13 +232,14 @@ Unlike Gemini text generation, Imagen safety filters are less aggressive for cha
 ### Manual Testing Steps
 
 1. **Setup**:
+
    ```bash
    # Backend
    cd backend
    pip install google-genai pillow
    export GOOGLE_API_KEY=your_key
    python main.py
-   
+
    # Frontend
    cd frontend
    npm run dev
@@ -274,6 +285,7 @@ Unlike Gemini text generation, Imagen safety filters are less aggressive for cha
 ## Future Enhancements
 
 ### Phase 1: Complete (Current)
+
 - ✅ Basic portrait generation
 - ✅ Base64 storage in database
 - ✅ Frontend UI integration
@@ -281,6 +293,7 @@ Unlike Gemini text generation, Imagen safety filters are less aggressive for cha
 - ✅ Imagen prompt optimization
 
 ### Phase 2: Advanced Features
+
 - [ ] Multiple portrait variations (generate 4 images)
 - [ ] Image selection gallery
 - [ ] Style presets (realistic, anime, comic, painting)
@@ -289,12 +302,14 @@ Unlike Gemini text generation, Imagen safety filters are less aggressive for cha
 - [ ] Custom prompt override in UI
 
 ### Phase 3: File Storage
+
 - [ ] Save images as files (storage/images/characters/)
 - [ ] Serve images via /api/images/characters/<filename>
 - [ ] Thumbnail generation
 - [ ] CDN integration
 
 ### Phase 4: Batch Generation
+
 - [ ] Generate portraits for all characters
 - [ ] Background job processing
 - [ ] Progress tracking
@@ -305,22 +320,27 @@ Unlike Gemini text generation, Imagen safety filters are less aggressive for cha
 ### Common Issues
 
 **Issue**: "Image generation unavailable"
+
 - **Cause**: Missing Python packages
 - **Solution**: `pip install google-genai pillow`
 
 **Issue**: "GOOGLE_API_KEY not configured"
+
 - **Cause**: Missing API key in .env
 - **Solution**: Add `GOOGLE_API_KEY=your_key` to backend/.env
 
 **Issue**: "Failed to generate portrait"
+
 - **Cause**: Imagen safety filters blocked prompt
 - **Solution**: Character saved without portrait, try rephrasing appearance
 
 **Issue**: Portrait not displaying
+
 - **Cause**: Base64 encoding issue
 - **Solution**: Check browser console for errors, verify API response
 
 **Issue**: Slow generation
+
 - **Cause**: Using Ultra model or network latency
 - **Solution**: Switch to Fast model (default)
 
@@ -329,17 +349,20 @@ Unlike Gemini text generation, Imagen safety filters are less aggressive for cha
 ### Base64 Image Storage
 
 **Pros**:
+
 - Simple implementation
 - No file system management
 - Easy to display in React
 - Works with any database
 
 **Cons**:
+
 - Increases database size (~33% overhead)
 - Not efficient for large images
 - No caching benefits
 
 **When to Switch to File Storage**:
+
 - More than 1000 characters with portraits
 - Performance issues with large payloads
 - Need CDN/caching

@@ -12,6 +12,7 @@ pip install google-genai pillow
 ### 2. Configure Google API Key
 
 Add to `backend/.env`:
+
 ```bash
 GOOGLE_API_KEY=your_google_api_key_here
 ```
@@ -26,6 +27,7 @@ python migrate_add_portrait.py
 ```
 
 Expected output:
+
 ```
 Starting database migration...
 Adding portrait image support to characters table
@@ -96,9 +98,9 @@ Adding portrait image support to characters table
 ```
 **Name**: Ragnar Blackwood
 
-**Appearance**: A towering man in his early 30s with broad shoulders 
-and a muscular build. Short, dark hair with streaks of silver at the 
-temples. A prominent scar runs across his left cheek, a reminder of 
+**Appearance**: A towering man in his early 30s with broad shoulders
+and a muscular build. Short, dark hair with streaks of silver at the
+temples. A prominent scar runs across his left cheek, a reminder of
 past battles. Wears battle-worn leather armor with silver studs.
 
 **Personality**: Stoic and honorable, speaks little but acts decisively...
@@ -107,11 +109,12 @@ past battles. Wears battle-worn leather armor with silver studs.
 ### Generated Portrait (by Imagen)
 
 **Prompt Used**:
+
 ```
-A professional portrait photograph of a towering man in his early 30s 
-with broad shoulders and a muscular build, short dark hair with streaks 
-of silver at the temples, a prominent scar runs across his left cheek, 
-wearing battle-worn leather armor with silver studs, 35mm portrait, 
+A professional portrait photograph of a towering man in his early 30s
+with broad shoulders and a muscular build, short dark hair with streaks
+of silver at the temples, a prominent scar runs across his left cheek,
+wearing battle-worn leather armor with silver studs, 35mm portrait,
 depth of field, 4K HDR, cinematic quality, professional photography
 ```
 
@@ -130,6 +133,7 @@ depth of field, 4K HDR, cinematic quality, professional photography
 **Cause**: Missing or invalid GOOGLE_API_KEY
 
 **Solution**:
+
 1. Check `backend/.env` has correct API key
 2. Verify key is valid at https://aistudio.google.com/apikey
 3. Restart backend server
@@ -139,6 +143,7 @@ depth of field, 4K HDR, cinematic quality, professional photography
 **Cause**: Using Ultra model or slow network
 
 **Solution**:
+
 - Fast model (default): 2-3 seconds
 - Standard model: 5-7 seconds
 - Ultra model: 10-15 seconds
@@ -149,6 +154,7 @@ depth of field, 4K HDR, cinematic quality, professional photography
 **Cause**: Appearance description unclear or too short
 
 **Solution**:
+
 1. Refine character description to be more specific
 2. Regenerate character with better physical trait selection
 3. Try generating portrait again
@@ -158,6 +164,7 @@ depth of field, 4K HDR, cinematic quality, professional photography
 **Cause**: Base64 encoding issue or API error
 
 **Solution**:
+
 1. Check browser console for errors
 2. Verify backend logs for Imagen errors
 3. Try regenerating portrait
@@ -185,6 +192,7 @@ depth of field, 4K HDR, cinematic quality, professional photography
 ### 4. Use Custom Details Field
 
 Add specific details in the custom field:
+
 ```
 Include:
 - Prominent facial scar
@@ -211,13 +219,13 @@ Include:
 
 ## Feature Comparison
 
-| Feature | Groq (Text) | Google Imagen (Portrait) |
-|---------|-------------|-------------------------|
-| Speed | ⚡ Very Fast (1-2s) | 🐢 Moderate (3-5s) |
-| Cost | ✅ Free | 💰 ~$0.02/image |
-| Restrictions | ✅ None | ⚠️ Content policy |
-| Quality | ✅ Excellent text | ✅ High-quality images |
-| Best For | Character descriptions | Character portraits |
+| Feature      | Groq (Text)            | Google Imagen (Portrait) |
+| ------------ | ---------------------- | ------------------------ |
+| Speed        | ⚡ Very Fast (1-2s)    | 🐢 Moderate (3-5s)       |
+| Cost         | ✅ Free                | 💰 ~$0.02/image          |
+| Restrictions | ✅ None                | ⚠️ Content policy        |
+| Quality      | ✅ Excellent text      | ✅ High-quality images   |
+| Best For     | Character descriptions | Character portraits      |
 
 ## Next Steps
 

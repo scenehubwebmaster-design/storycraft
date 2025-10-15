@@ -9,12 +9,12 @@ The "Generate Portrait" button will be disabled (greyed out) if any of these con
 1. **Character content must be generated**
    - Status: You must be on Step 2 (Review & Save)
    - The character description must be visible
-   - If you see this message: *"Character content is required for portrait generation"*
+   - If you see this message: _"Character content is required for portrait generation"_
    - **Solution**: Go back to Step 1, select traits, and click "Generate with AI"
 
 2. **Character name must be entered**
    - Status: The "Character Name" text field must have a value
-   - If you see this message: *"Enter a character name above to enable portrait generation"*
+   - If you see this message: _"Enter a character name above to enable portrait generation"_
    - **Solution**: Type a name in the "Character Name" field above the portrait section
 
 3. **Not currently generating**
@@ -30,6 +30,7 @@ The "Generate Portrait" button will be disabled (greyed out) if any of these con
    - Blue info alert will tell you exactly what's missing
 
 2. **Character Name Missing?**
+
    ```
    ┌─────────────────────────────────┐
    │ Character Name: [___________] ← Type name here!
@@ -38,7 +39,7 @@ The "Generate Portrait" button will be disabled (greyed out) if any of these con
 
 3. **Character Content Missing?**
    - You're on Step 2 but no character was generated
-   - **Solution**: 
+   - **Solution**:
      - Click "Back" button
      - Return to Step 0 or 1
      - Click "Generate with AI" to create character
@@ -145,13 +146,23 @@ Open browser console (F12) and run:
 
 ```javascript
 // Check if character name is set
-console.log("Character Name:", document.querySelector('input[placeholder="Enter a name for this character"]')?.value);
+console.log(
+  "Character Name:",
+  document.querySelector('input[placeholder="Enter a name for this character"]')
+    ?.value
+);
 
 // Check if you're on Step 2
-console.log("Current Step:", document.querySelector('.MuiStepLabel-label.Mui-active')?.textContent);
+console.log(
+  "Current Step:",
+  document.querySelector(".MuiStepLabel-label.Mui-active")?.textContent
+);
 
 // Check if generated content exists
-console.log("Has Content:", !!document.querySelector('[class*="ReactMarkdown"]'));
+console.log(
+  "Has Content:",
+  !!document.querySelector('[class*="ReactMarkdown"]')
+);
 ```
 
 ## Backend Checks
@@ -214,13 +225,14 @@ curl -X POST http://localhost:8000/api/generate/character/generate-portrait \
    - Look for failed requests
 
 4. **Restart Everything**
+
    ```bash
    # Stop backend (Ctrl+C)
    # Stop frontend (Ctrl+C)
-   
+
    # Start backend
    cd backend && python main.py
-   
+
    # Start frontend (new terminal)
    cd frontend && npm run dev
    ```
@@ -232,13 +244,13 @@ curl -X POST http://localhost:8000/api/generate/character/generate-portrait \
 
 ## Error Messages Reference
 
-| Error Message | Meaning | Solution |
-|---------------|---------|----------|
-| "Enter a character name above..." | Name field is empty | Type a name |
-| "Character content is required..." | No generated content | Generate character first |
-| "Please enter a character name first" | Tried to generate without name | Enter name in field |
-| "Failed to generate portrait..." | Backend/API error | Check backend logs |
-| "Make sure Google API key is configured" | Missing/invalid API key | Check .env file |
+| Error Message                            | Meaning                        | Solution                 |
+| ---------------------------------------- | ------------------------------ | ------------------------ |
+| "Enter a character name above..."        | Name field is empty            | Type a name              |
+| "Character content is required..."       | No generated content           | Generate character first |
+| "Please enter a character name first"    | Tried to generate without name | Enter name in field      |
+| "Failed to generate portrait..."         | Backend/API error              | Check backend logs       |
+| "Make sure Google API key is configured" | Missing/invalid API key        | Check .env file          |
 
 ## Tips for Success
 
