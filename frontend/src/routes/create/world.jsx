@@ -22,6 +22,9 @@ import {
   Stepper,
   Step,
   StepLabel,
+  Switch,
+  FormControlLabel,
+  Chip,
 } from "@mui/material";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -29,6 +32,7 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import PromptSelector from "../../components/PromptSelector";
 import GenerationResult from "../../components/GenerationResult";
 import ModelSelector from "../../components/ModelSelector";
+import StructuredWorldDisplay from "../../components/StructuredWorldDisplay";
 
 export const Route = createFileRoute("/create/world")({
   component: CreateWorldComponent,
@@ -53,6 +57,9 @@ function CreateWorldComponent() {
   const [customDetails, setCustomDetails] = useState("");
   const [provider, setProvider] = useState("groq");
   const [model, setModel] = useState("");
+
+  // Structured generation toggle
+  const [useStructured, setUseStructured] = useState(true);
 
   // Results
   const [generatedContent, setGeneratedContent] = useState(null);
@@ -100,7 +107,11 @@ function CreateWorldComponent() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/generate/world`, {
+      const endpoint = useStructured
+        ? `${API_URL}/api/generate/world/structured`
+        : `${API_URL}/api/generate/world`;
+
+      const response = await axios.post(endpoint, {
         themes: selectedThemes.length > 0 ? selectedThemes : null,
         setting: selectedSettings.length > 0 ? selectedSettings : null,
         elements: selectedElements.length > 0 ? selectedElements : null,
@@ -109,9 +120,13 @@ function CreateWorldComponent() {
         model: model || null,
       });
 
-      setGeneratedContent(response.data.content);
+      setGeneratedContent(
+        useStructured ? response.data : response.data.content
+      );
       setActiveStep(2);
-      setSuccess("World generated successfully!");
+      setSuccess(
+        `World generated successfully using ${useStructured ? "structured" : "free-form"} generation!`
+      );
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to generate world");
     } finally {
@@ -124,14 +139,31 @@ function CreateWorldComponent() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/generate/world`, {
-        base_content: generatedContent,
-        refinement_instructions: refinementInstructions,
-        provider,
-        model: model || null,
-      });
+      const endpoint = useStructured
+        ? `${API_URL}/api/generate/world/structured`
+        : `${API_URL}/api/generate/world`;
 
-      setGeneratedContent(response.data.content);
+      const requestData = useStructured
+        ? {
+            themes: selectedThemes.length > 0 ? selectedThemes : null,
+            setting: selectedSettings.length > 0 ? selectedSettings : null,
+            elements: selectedElements.length > 0 ? selectedElements : null,
+            custom_details: `${customDetails}\n\nRefinement: ${refinementInstructions}`,
+            provider,
+            model: model || null,
+          }
+        : {
+            base_content: generatedContent,
+            refinement_instructions: refinementInstructions,
+            provider,
+            model: model || null,
+          };
+
+      const response = await axios.post(endpoint, requestData);
+
+      setGeneratedContent(
+        useStructured ? response.data : response.data.content
+      );
       setSuccess("World refined successfully!");
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to refine world");
@@ -154,7 +186,9 @@ function CreateWorldComponent() {
         // Update existing world
         await axios.put(`${API_URL}/api/worlds/${editId}`, {
           name: worldName,
-          description: finalContent || generatedContent,
+          description: useStructured
+            ? JSON.stringify(finalContent || generatedContent)
+            : finalContent || generatedContent,
           history: finalContent || generatedContent,
           geography: finalContent || generatedContent,
           culture: finalContent || generatedContent,
@@ -167,12 +201,20 @@ function CreateWorldComponent() {
         }, 1500);
       } else {
         // Create new world
-        await axios.post(`${API_URL}/api/generate/world/save`, null, {
-          params: {
-            name: worldName,
-            content: finalContent || generatedContent,
-          },
-        });
+        if (useStructured) {
+          // Use structured save endpoint
+          await axios.post(`${API_URL}/api/generate/world/structured/save`, {
+            world_profile: finalContent || generatedContent,
+          });
+        } else {
+          // Use legacy save endpoint
+          await axios.post(`${API_URL}/api/generate/world/save`, null, {
+            params: {
+              name: worldName,
+              content: finalContent || generatedContent,
+            },
+          });
+        }
 
         setSuccess("World saved successfully!");
         setTimeout(() => {
@@ -253,6 +295,55 @@ function CreateWorldComponent() {
 
       {activeStep === 0 && (
         <Paper sx={{ p: 4 }}>
+          {/* Generation Mode Toggle */}
+          <Box
+            sx={{
+              mb: 4,
+              p: 2,
+              bgcolor: "background.default",
+              borderRadius: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Generation Mode
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {useStructured
+                  ? "Structured generation creates comprehensive world profiles with organized sections, detailed history, geography, culture, and more."
+                  : "Free-form generation creates narrative-style world descriptions with more creative flexibility."}
+              </Typography>
+            </Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useStructured}
+                  onChange={(e) => setUseStructured(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography variant="body2" fontWeight="bold">
+                    Structured
+                  </Typography>
+                  {useStructured && (
+                    <Chip
+                      label="Recommended"
+                      size="small"
+                      color="primary"
+                      sx={{ fontSize: "0.7rem" }}
+                    />
+                  )}
+                </Box>
+              }
+              labelPlacement="start"
+            />
+          </Box>
+
           <Grid container spacing={3}>
             <Grid size={{ xs: 12 }}>
               <PromptSelector
@@ -332,14 +423,50 @@ function CreateWorldComponent() {
             sx={{ mb: 3 }}
             required
           />
-          <GenerationResult
-            content={generatedContent}
-            onSave={handleSave}
-            onRefine={handleRefine}
-            saving={saving || generating}
-            entity="World"
-            isEditMode={isEditMode}
-          />
+
+          {/* Display Component - Conditional based on generation mode */}
+          {useStructured ? (
+            <Box sx={{ mb: 3 }}>
+              <StructuredWorldDisplay worldProfile={generatedContent} />
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 2,
+                  mt: 3,
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={() =>
+                    handleRefine(
+                      "Please regenerate with different details while keeping the same structure"
+                    )
+                  }
+                  disabled={saving || generating}
+                >
+                  Regenerate
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => handleSave(generatedContent)}
+                  disabled={saving || generating || !worldName.trim()}
+                  startIcon={saving ? <CircularProgress size={20} /> : null}
+                >
+                  {saving ? "Saving..." : isEditMode ? "Update" : "Save World"}
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <GenerationResult
+              content={generatedContent}
+              onSave={handleSave}
+              onRefine={handleRefine}
+              saving={saving || generating}
+              entity="World"
+              isEditMode={isEditMode}
+            />
+          )}
         </Box>
       )}
 
