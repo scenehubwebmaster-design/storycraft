@@ -57,7 +57,13 @@ class LLMProvider:
     """Base class for LLM providers"""
     
     @staticmethod
-    async def generate_openai(prompt: str, model: str = "gpt-4", max_tokens: int = 1000, temperature: float = 0.7):
+    async def generate_openai(
+        prompt: str,
+        model: str = "gpt-4",
+        max_tokens: int = 1000,
+        temperature: float = 0.7,
+        response_format: dict = None  # NEW: For structured outputs
+    ):
         if not OPENAI_AVAILABLE:
             raise HTTPException(status_code=500, detail="OpenAI client not installed")
         
@@ -67,12 +73,18 @@ class LLMProvider:
         
         client = openai.OpenAI(api_key=api_key)
         
-        response = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=max_tokens,
-            temperature=temperature
-        )
+        request_params = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "temperature": temperature
+        }
+        
+        # Add structured output format if provided
+        if response_format:
+            request_params["response_format"] = response_format
+        
+        response = client.chat.completions.create(**request_params)
         
         return response.choices[0].message.content
     
@@ -97,7 +109,13 @@ class LLMProvider:
         return message.content[0].text
     
     @staticmethod
-    async def generate_google(prompt: str, model: str = "gemini-2.0-flash", max_tokens: int = 1000, temperature: float = 0.7):
+    async def generate_google(
+        prompt: str,
+        model: str = "gemini-2.0-flash",
+        max_tokens: int = 1000,
+        temperature: float = 0.7,
+        response_schema: dict = None  # NEW: For structured outputs
+    ):
         if not GOOGLE_AVAILABLE:
             raise HTTPException(status_code=500, detail="Google AI client not installed")
         
@@ -134,12 +152,20 @@ class LLMProvider:
             safety_settings=safety_settings
         )
         
+        # Build generation config
+        generation_config = {
+            "max_output_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        
+        # Add structured output if provided
+        if response_schema:
+            generation_config["response_mime_type"] = "application/json"
+            generation_config["response_schema"] = response_schema
+        
         response = model_instance.generate_content(
             prompt,
-            generation_config={
-                "max_output_tokens": max_tokens,
-                "temperature": temperature,
-            }
+            generation_config=generation_config
         )
         
         # Check if prompt was blocked before generation (prompt_feedback)
@@ -224,7 +250,13 @@ class LLMProvider:
             )
     
     @staticmethod
-    async def generate_groq(prompt: str, model: str = "llama-3.3-70b-versatile", max_tokens: int = 1000, temperature: float = 0.7):
+    async def generate_groq(
+        prompt: str,
+        model: str = "llama-3.3-70b-versatile",
+        max_tokens: int = 1000,
+        temperature: float = 0.7,
+        response_format: dict = None  # NEW: For structured outputs
+    ):
         if not GROQ_AVAILABLE:
             raise HTTPException(status_code=500, detail="Groq client not installed")
         
@@ -234,14 +266,18 @@ class LLMProvider:
         
         client = Groq(api_key=api_key)
         
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+        request_params = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        
+        # Add structured output format if provided
+        if response_format:
+            request_params["response_format"] = response_format
+        
+        response = client.chat.completions.create(**request_params)
         
         return response.choices[0].message.content
 

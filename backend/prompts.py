@@ -493,3 +493,177 @@ Please provide a comprehensive campaign outline including:
 Format as a complete campaign guide ready for a DM to run.
 """
         return base
+    
+    @staticmethod
+    def character_structured_prompt(themes=None, personality_traits=None, physical_traits=None,
+                                    archetype=None, custom_details=None):
+        """Generate a character creation prompt optimized for structured CharacterProfile output.
+        
+        This prompt is designed to work with structured output schemas to guarantee all fields
+        are populated with concrete, specific details. It emphasizes completeness and avoids
+        vague descriptions.
+        """
+        base = "Create a COMPLETE, highly detailed character with specific, concrete details for EVERY field.\n\n"
+        base += "CRITICAL INSTRUCTIONS:\n"
+        base += "- Fill ALL fields completely - no omissions or vague placeholders\n"
+        base += "- Use SPECIFIC details: exact measurements, precise descriptions, concrete examples\n"
+        base += "- Example: '6 feet 5 inches' NOT 'tall'; 'jagged scar across left cheek' NOT 'scarred'\n"
+        base += "- For lists, provide 3-5 specific items minimum\n"
+        base += "- For descriptions, write 2-3 complete, detailed sentences minimum\n\n"
+        
+        if themes:
+            base += f"Genre/Theme: {', '.join(themes)}\n"
+        if archetype:
+            base += f"Archetype: {archetype}\n"
+        if personality_traits:
+            base += f"Desired Personality Traits: {', '.join(personality_traits)}\n"
+        if physical_traits:
+            base += f"Desired Physical Traits: {', '.join(physical_traits)}\n"
+        if custom_details:
+            base += f"\nAdditional Specific Requirements: {custom_details}\n"
+        
+        base += """
+
+REQUIRED FIELDS TO COMPLETE (all must be filled with specific details):
+
+**BASIC IDENTITY:**
+- Name: Full name with meaning/origin
+- Age: Exact age (not a range)
+
+**PHYSICAL APPEARANCE:**
+- Height: Precise measurement (e.g., "5'9\"", "178 cm")
+- Build: Specific body type with details (e.g., "lean and wiry with defined muscles", "stocky with broad shoulders")
+- Hair: Complete description (color, length, style, texture, any distinctive features)
+- Eyes: Specific color and notable characteristics (e.g., "piercing green with gold flecks", "deep brown with laugh lines")
+- Distinctive Features: List 3-5 unique physical traits (scars, tattoos, birthmarks, mannerisms)
+- Physical Description: 2-3 sentences synthesizing overall appearance and impression
+
+**PERSONALITY:**
+- Personality Traits: List 4-6 core traits with brief explanations
+- Demeanor: How they present themselves to the world (2-3 sentences)
+- Sense of Humor: Specific type and examples (dark, dry, slapstick, etc.)
+- Personality Description: 3-4 sentences on psychological depth
+
+**BACKGROUND:**
+- Birthplace: Specific location with context
+- Upbringing: 2-3 sentences on childhood and family situation
+- Formative Events: List 2-4 key life events that shaped them
+- Backstory: 3-5 sentences on their full life story
+
+**MOTIVATIONS:**
+- Primary Motivation: What drives them above all else (1-2 sentences)
+- Goals: List 3-5 specific short and long-term goals
+- Values: List 3-5 core values they hold dear
+
+**FEARS AND WEAKNESSES:**
+- Greatest Fear: Specific deep-seated fear with explanation
+- Emotional Weaknesses: List 2-4 psychological vulnerabilities
+- Physical Weaknesses: List 2-4 physical limitations or vulnerabilities
+
+**STRENGTHS AND ABILITIES:**
+- Skills: List 4-6 specific skills with proficiency levels
+- Special Abilities: Any unique talents, powers, or expertise (or "None" if ordinary human)
+- Combat Style: How they handle conflict (physical, verbal, or otherwise)
+- Strengths Description: 2-3 sentences on what makes them formidable
+
+**RELATIONSHIPS:**
+- Key Relationships: List 3-5 important people with relationship descriptions
+  Each relationship should include: name, relationship type, and 1-2 sentence description
+
+**CHARACTER DEVELOPMENT:**
+- Character Arc Potential: 2-4 sentences on how they might grow, change, or be challenged
+
+**UNIQUE QUALITIES:**
+- Unique Qualities: 2-3 sentences on what makes them truly distinct and memorable
+- Quirks and Habits: List 3-5 specific behavioral quirks, habits, or mannerisms
+
+REMEMBER: Every field must be completed with concrete, specific details. No vague descriptions, no placeholders, no omissions.
+"""
+        return base
+    
+    @staticmethod
+    def world_structured_prompt(themes=None, setting=None, elements=None, custom_details=None):
+        """Generate a world-building prompt optimized for structured WorldProfile output.
+        
+        This prompt is designed to work with structured output schemas to guarantee all fields
+        are populated with rich, immersive details. It emphasizes comprehensive worldbuilding.
+        """
+        base = "Create a COMPLETE, richly detailed world with specific, immersive details for EVERY field.\n\n"
+        base += "CRITICAL INSTRUCTIONS:\n"
+        base += "- Fill ALL fields completely - no omissions or generic placeholders\n"
+        base += "- Use VIVID, specific details that bring the world to life\n"
+        base += "- For lists, provide 3-6 specific items minimum with descriptions\n"
+        base += "- For summaries, write 3-5 complete, engaging sentences minimum\n"
+        base += "- Make the world feel alive, consistent, and immersive\n\n"
+        
+        if themes:
+            base += f"Genre/Theme: {', '.join(themes)}\n"
+        if setting:
+            base += f"Setting Type: {', '.join(setting)}\n"
+        if elements:
+            base += f"Focus Elements: {', '.join(elements)}\n"
+        if custom_details:
+            base += f"\nAdditional Specific Requirements: {custom_details}\n"
+        
+        base += """
+
+REQUIRED FIELDS TO COMPLETE (all must be filled with specific details):
+
+**WORLD OVERVIEW:**
+- Name: Evocative world name with meaning
+- World Type: Classification (fantasy, sci-fi, post-apocalyptic, etc.)
+- Tagline: Compelling one-sentence hook that captures the essence
+- Overview: 3-4 sentences on what makes this world unique and interesting
+
+**HISTORY:**
+- Age: How old is this world/civilization? (e.g., "ancient - over 10,000 years", "young colony - 200 years")
+- Origin Story: 2-3 sentences on how this world/civilization came to be
+- Major Historical Events: List 4-6 pivotal events with dates/eras and descriptions
+  Each event: {"event": "name", "era": "when", "description": "what happened"}
+- Current Era: Name and description of the present time period
+- History Summary: 3-4 sentences synthesizing the historical arc
+
+**GEOGRAPHY:**
+- Size and Scale: Specific dimensions or scope (continent, planet, galaxy, pocket dimension, etc.)
+- Climate Zones: List 3-5 distinct climate regions with characteristics
+- Major Regions: List 4-6 key regions/territories with brief descriptions
+  Each region: {"name": "region name", "description": "key features"}
+- Natural Wonders: List 3-5 spectacular natural landmarks or phenomena
+- Geography Summary: 3-4 sentences on the physical world and how it shapes life
+
+**CULTURE AND SOCIETY:**
+- Dominant Species: What intelligent beings inhabit this world?
+- Population Estimate: Rough population size and distribution
+- Major Civilizations: List 3-5 distinct cultures/nations with descriptions
+  Each civilization: {"name": "culture name", "description": "key characteristics"}
+- Languages: List 3-4 major languages with characteristics
+- Religions and Beliefs: List 2-4 faiths/philosophies with core tenets
+- Cultural Norms: List 4-6 social customs, traditions, or taboos
+- Culture Summary: 4-5 sentences on social life and cultural diversity
+
+**MAGIC/TECHNOLOGY SYSTEM:**
+- Power System: What drives this world? (magic, technology, psionics, divine power, etc.)
+- Power Level: How prevalent/powerful? (rare and weak, common and moderate, omnipresent and godlike)
+- Limitations: What are the rules, costs, or restrictions?
+- Notable Artifacts: List 3-5 legendary items, inventions, or relics
+
+**CONFLICTS AND THEMES:**
+- Major Conflicts: List 3-4 current wars, tensions, or struggles
+- Central Themes: What are the core ideas this world explores?
+- Current Threats: What dangers loom over this world?
+
+**LORE AND MYSTERIES:**
+- Legends and Myths: 2-3 famous stories passed down through generations
+- Unsolved Mysteries: 2-3 enigmas that intrigue inhabitants
+- Prophecies: Any foretold destinies or predictions (or "None known")
+- Lore Summary: 3-4 sentences on the mystique and deeper lore
+
+**STORY POTENTIAL:**
+- Adventure Hooks: List 4-6 compelling story ideas or quest possibilities
+- Notable Locations: List 5-8 specific places of interest with descriptions
+  Each location: {"name": "place name", "type": "location type", "description": "what makes it notable"}
+- Unique Aspects: 3-4 sentences on what makes this world perfect for storytelling
+
+REMEMBER: Every field must be completed with rich, immersive details. Make the world feel real, consistent, and captivating.
+"""
+        return base

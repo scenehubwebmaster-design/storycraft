@@ -4,8 +4,9 @@ AI Generation Router - Endpoints for intelligent story element creation.
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Type
 import json
+from pydantic import BaseModel
 
 from database import get_db
 from models import Character, Story, World, Scene, Chapter, Location
@@ -19,7 +20,9 @@ from schemas import (
     CampaignGenerationRequest,
     GenerationResponse,
     PromptOptionsResponse,
-    ImageGenerationRequest
+    ImageGenerationRequest,
+    CharacterProfile,
+    WorldProfile,
 )
 from prompts import (
     PromptTemplates,
@@ -37,6 +40,12 @@ from prompts import (
 )
 from routers.llm import LLMProvider
 from rate_limiter import rate_limiter
+from structured_output_utils import (
+    get_schema_for_provider,
+    parse_structured_response,
+    supports_structured_outputs,
+    get_structured_output_prompt,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -144,20 +153,28 @@ async def generate_character(request: CharacterGenerationRequest):
 async def save_character(
     name: str,
     content: str,
+    portrait_image: str = None,
+    image_prompt: str = None,
     story_id: int = None,
     db: Session = Depends(get_db)
 ):
     """Save a generated character to the database"""
     try:
+        logger.info(f"Saving character: {name}, content length: {len(content)}, story_id: {story_id}, has_portrait: {portrait_image is not None}")
+        
         # Parse content to extract fields (basic implementation)
         character = Character(
             name=name,
             description=content,
-            story_id=story_id,
+            portrait_image=portrait_image,
+            image_prompt=image_prompt,
+            # Note: story_id is not a direct field in Character model
+            # Characters are linked to stories via many-to-many relationship
             generation_log=json.dumps([{
                 "timestamp": datetime.now().isoformat(),
                 "action": "created",
-                "content_length": len(content)
+                "content_length": len(content),
+                "has_portrait": portrait_image is not None
             }])
         )
         
@@ -165,36 +182,61 @@ async def save_character(
         db.commit()
         db.refresh(character)
         
+        # If story_id is provided, link the character to the story
+        # This would require additional logic to add to story_characters table
+        
+        logger.info(f"Character saved successfully with ID: {character.id}")
         return {"id": character.id, "message": "Character saved successfully"}
     except Exception as e:
+        logger.error(f"Failed to save character: {str(e)}", exc_info=True)
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to save character: {str(e)}")
 
 
 @router.post("/character/generate-portrait")
-async def generate_character_portrait(request: ImageGenerationRequest):
+async def generate_character_portrait_endpoint(request: ImageGenerationRequest):
     """
-    Generate a character portrait using Google Imagen.
+    Generate a character portrait using OpenAI (GPT Image/DALL-E) or Google Imagen.
     
     This endpoint generates a portrait image based on the character's appearance
-    description using Google's Imagen model.
+    description using the specified provider.
+    
+    Providers:
+    - "openai": GPT Image (gpt-4.1-mini) or DALL-E (dall-e-2, dall-e-3)
+    - "google": Google Imagen (imagen-4.0-fast/standard/ultra)
+    
+    Style Presets:
+    - realistic: Professional portrait photograph
+    - fantasy_art: Fantasy digital painting
+    - anime: Anime/manga style
+    - watercolor: Watercolor painting
+    - oil_painting: Classical oil painting
+    - digital_art: Modern digital illustration
+    - comic_book: Comic book style
+    - noir: Film noir black and white
     """
     try:
-        from imagen_client import generate_character_portrait
+        from openai_image_client import generate_portrait_with_provider
         
-        result = await generate_character_portrait(
+        result = await generate_portrait_with_provider(
             character_name=request.character_name,
             appearance_text=request.appearance_text,
+            provider=request.provider,
             model=request.model,
             aspect_ratio=request.aspect_ratio,
-            custom_prompt=request.custom_prompt
+            custom_prompt=request.custom_prompt,
+            style_preset=request.style_preset,
+            quality=request.quality
         )
         
         return {
             "image_base64": result["image_base64"],
             "prompt": result["prompt"],
-            "model": request.model,
+            "model": result["model"],
+            "provider": request.provider,
             "aspect_ratio": request.aspect_ratio,
+            "style_preset": request.style_preset,
+            "quality": request.quality,
             "message": "Portrait generated successfully"
         }
         
@@ -552,3 +594,199 @@ async def generate_campaign(request: CampaignGenerationRequest):
         tokens_used=metadata.get("tokens", None),
         generation_metadata=metadata
     )
+
+
+async def call_llm_structured(
+    prompt: str,
+    provider: str,
+    schema_model: Type[BaseModel],
+    model: str = None,
+    max_tokens: int = 3000
+) -> tuple[BaseModel, Dict[str, Any]]:
+    """
+    Call the specified LLM provider with structured output support.
+    Returns (parsed_model_instance, metadata)
+    
+    Args:
+        prompt: The generation prompt
+        provider: LLM provider name (openai, google, groq, anthropic)
+        schema_model: Pydantic model class for structured output (CharacterProfile or WorldProfile)
+        model: Optional specific model name
+        max_tokens: Maximum tokens for response (default 3000 for structured outputs)
+    
+    Returns:
+        Tuple of (validated Pydantic model instance, metadata dict)
+    
+    Raises:
+        HTTPException: If rate limit exceeded, validation fails, or generation fails
+    """
+    try:
+        # Estimate tokens (higher for structured outputs)
+        estimated_tokens = len(prompt) // 4 + max_tokens
+        
+        # Check rate limits
+        rate_limit_error = rate_limiter.check_rate_limit(provider, estimated_tokens)
+        if rate_limit_error:
+            logger.warning(f"Rate limit exceeded for {provider}: {rate_limit_error}")
+            raise HTTPException(
+                status_code=429,
+                detail=rate_limit_error
+            )
+        
+        # Check if provider supports structured outputs
+        if supports_structured_outputs(provider):
+            # Get provider-specific schema format
+            schema = get_schema_for_provider(schema_model, provider)
+            
+            # Call provider with structured output
+            if provider.lower() == "openai":
+                response_text = await LLMProvider.generate_openai(
+                    prompt, 
+                    model or "gpt-4", 
+                    max_tokens=max_tokens,
+                    temperature=0.7,
+                    response_format=schema
+                )
+                metadata = {"model": model or "gpt-4", "provider": "openai", "structured": True}
+            elif provider.lower() == "google" or provider.lower() == "gemini":
+                response_text = await LLMProvider.generate_google(
+                    prompt,
+                    model or "gemini-2.0-flash",
+                    max_tokens=max_tokens,
+                    temperature=0.7,
+                    response_schema=schema
+                )
+                metadata = {"model": model or "gemini-2.0-flash", "provider": "google", "structured": True}
+            elif provider.lower() == "groq":
+                response_text = await LLMProvider.generate_groq(
+                    prompt,
+                    model or "llama-3.3-70b-versatile",
+                    max_tokens=max_tokens,
+                    temperature=0.7,
+                    response_format=schema
+                )
+                metadata = {"model": model or "llama-3.3-70b-versatile", "provider": "groq", "structured": True}
+            else:
+                raise ValueError(f"Unsupported provider: {provider}")
+        else:
+            # Fallback for providers without native structured output support (e.g., Anthropic)
+            logger.info(f"Provider {provider} doesn't support structured outputs, using prompt-based approach")
+            enhanced_prompt = get_structured_output_prompt(schema_model) + "\n\n" + prompt
+            
+            if provider.lower() == "anthropic":
+                response_text = await LLMProvider.generate_anthropic(
+                    enhanced_prompt,
+                    model or "claude-3-5-sonnet-20241022",
+                    max_tokens=max_tokens,
+                    temperature=0.7
+                )
+                metadata = {"model": model or "claude-3-5-sonnet-20241022", "provider": "anthropic", "structured": False}
+            else:
+                raise ValueError(f"Unsupported provider: {provider}")
+        
+        # Parse and validate the response
+        try:
+            parsed_model = parse_structured_response(response_text, schema_model)
+        except Exception as validation_error:
+            logger.error(f"Structured output validation failed: {str(validation_error)}")
+            logger.error(f"Response content: {response_text[:500]}...")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to parse structured output: {str(validation_error)}"
+            )
+        
+        # Record successful request
+        actual_tokens = len(response_text) // 4
+        rate_limiter.record_request(provider, actual_tokens)
+        
+        return parsed_model, metadata
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Structured LLM generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Structured LLM generation failed: {str(e)}")
+
+
+@router.post("/character/structured", response_model=CharacterProfile)
+async def generate_character_structured(request: CharacterGenerationRequest):
+    """
+    Generate a character using AI with structured output.
+    
+    This endpoint uses structured output schemas to guarantee that ALL fields
+    in the CharacterProfile are populated with complete, specific details.
+    This prevents issues like incomplete generation or missing sections.
+    
+    Supported providers:
+    - OpenAI (gpt-4, gpt-4-turbo, gpt-3.5-turbo) - Native structured output
+    - Google/Gemini (gemini-2.0-flash, gemini-2.5-pro) - Native structured output
+    - Groq (openai/gpt-oss-20b, openai/gpt-oss-120b, kimi/kimi-8-02, llama-4-maverick, llama-4-scout) - Native structured output
+    - Anthropic (claude-3-5-sonnet) - Prompt-based structured output
+    
+    Returns a fully validated CharacterProfile with all required fields populated.
+    """
+    # Build prompt using structured output optimized template
+    prompt = PromptTemplates.character_structured_prompt(
+        themes=request.themes,
+        personality_traits=request.personality_traits,
+        physical_traits=request.physical_traits,
+        archetype=request.archetype,
+        custom_details=request.custom_details
+    )
+    
+    # Generate with structured output
+    character_profile, metadata = await call_llm_structured(
+        prompt=prompt,
+        provider=request.provider,
+        schema_model=CharacterProfile,
+        model=request.model,
+        max_tokens=3500  # Higher token limit for comprehensive character profiles
+    )
+    
+    logger.info(f"Generated structured character profile using {metadata.get('provider')} - {metadata.get('model')}")
+    
+    # Return the validated CharacterProfile directly
+    # The FastAPI response_model will serialize it to JSON
+    return character_profile
+
+
+@router.post("/world/structured", response_model=WorldProfile)
+async def generate_world_structured(request: WorldGenerationRequest):
+    """
+    Generate a world using AI with structured output.
+    
+    This endpoint uses structured output schemas to guarantee that ALL fields
+    in the WorldProfile are populated with rich, immersive details.
+    This ensures comprehensive worldbuilding with no missing sections.
+    
+    Supported providers:
+    - OpenAI (gpt-4, gpt-4-turbo, gpt-3.5-turbo) - Native structured output
+    - Google/Gemini (gemini-2.0-flash, gemini-2.5-pro) - Native structured output
+    - Groq (openai/gpt-oss-20b, openai/gpt-oss-120b, kimi/kimi-8-02, llama-4-maverick, llama-4-scout) - Native structured output
+    - Anthropic (claude-3-5-sonnet) - Prompt-based structured output
+    
+    Returns a fully validated WorldProfile with all required fields populated.
+    """
+    # Build prompt using structured output optimized template
+    prompt = PromptTemplates.world_structured_prompt(
+        themes=request.themes,
+        setting=request.setting,
+        elements=request.elements,
+        custom_details=request.custom_details
+    )
+    
+    # Generate with structured output
+    world_profile, metadata = await call_llm_structured(
+        prompt=prompt,
+        provider=request.provider,
+        schema_model=WorldProfile,
+        model=request.model,
+        max_tokens=4000  # Higher token limit for comprehensive world profiles
+    )
+    
+    logger.info(f"Generated structured world profile using {metadata.get('provider')} - {metadata.get('model')}")
+    
+    # Return the validated WorldProfile directly
+    # The FastAPI response_model will serialize it to JSON
+    return world_profile
+
