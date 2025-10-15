@@ -30,18 +30,21 @@ All 5 creator pages (Character, Story, World, Scene, Location) now feature an en
 ## Features
 
 ### 1. Dynamic Model Selection ✅
+
 - Real-time fetching of available models from provider APIs
 - Fallback to hardcoded lists if API calls fail
 - Automatic model list updates when providers add new models
 - Provider-specific model filtering
 
 ### 2. Rate Limit Display ✅
+
 - Per-model rate limits shown in dropdown
 - Human-readable format: "30 req/min • 12K tok/min • 1K req/day"
 - Helps users understand usage constraints
 - Pulled from backend configuration
 
 ### 3. Model Recommendations ✅
+
 - Task-based complexity assessment:
   - **Simple**: Location generation → `llama-3.1-8b-instant`
   - **Medium**: Character, Scene → `llama-3.3-70b-versatile`
@@ -51,6 +54,7 @@ All 5 creator pages (Character, Story, World, Scene, Location) now feature an en
 - Recommendations based on content type
 
 ### 4. Real-time Availability ✅
+
 - Provider status badges: ✓ Available / ✗ Not Configured
 - Color-coded indicators (green/red)
 - Provider-specific badges:
@@ -61,31 +65,35 @@ All 5 creator pages (Character, Story, World, Scene, Location) now feature an en
 
 ## Task Complexity Matrix
 
-| Content Type | Complexity | Recommended Model | Provider | Reason |
-|--------------|-----------|-------------------|----------|--------|
-| Character | Medium | llama-3.3-70b-versatile | Groq | Balanced detail/speed |
-| Story | Complex | llama-4-scout-17b-16e | Groq | Long-form coherence |
-| World | Complex | llama-4-scout-17b-16e | Groq | Rich worldbuilding |
-| Scene | Medium | llama-3.3-70b-versatile | Groq | Detailed narratives |
-| Location | Simple | llama-3.1-8b-instant | Groq | Quick descriptions |
+| Content Type | Complexity | Recommended Model       | Provider | Reason                |
+| ------------ | ---------- | ----------------------- | -------- | --------------------- |
+| Character    | Medium     | llama-3.3-70b-versatile | Groq     | Balanced detail/speed |
+| Story        | Complex    | llama-4-scout-17b-16e   | Groq     | Long-form coherence   |
+| World        | Complex    | llama-4-scout-17b-16e   | Groq     | Rich worldbuilding    |
+| Scene        | Medium     | llama-3.3-70b-versatile | Groq     | Detailed narratives   |
+| Location     | Simple     | llama-3.1-8b-instant    | Groq     | Quick descriptions    |
 
 ## Provider Rate Limits
 
 ### Groq (Default) - Free Tier
+
 - **Default**: 30 req/min, 6K tok/min, 14.4K req/day
 - **llama-3.3-70b-versatile**: 30 RPM, 12K TPM, 1K RPD
 - **llama-4-scout**: 30 RPM, 70K TPM, 250 RPD
 - **llama-3.1-8b-instant**: 30 RPM, 6K TPM, 14.4K RPD
 
 ### Google Gemini - Free Tier
+
 - **Default**: 15 req/min, unlimited tokens, unlimited daily
 - **gemini-2.0-flash-exp**: 10 RPM, 4M TPM, 1.5K RPD
 - **gemini-1.5-pro**: 2 RPM, 32K TPM, 50 RPD
 
 ### OpenAI - Paid Tier
+
 - 500 req/min, 2M tok/min, 10K req/day
 
 ### Anthropic - Paid Tier
+
 - 50 req/min, 40K tok/min, 1K req/day
 
 ## Component Usage
@@ -118,7 +126,7 @@ import { useProviders } from "../hooks/useProviders";
 
 function MyComponent() {
   const { providers, loading, error } = useProviders();
-  
+
   // providers = [
   //   { id: "groq", name: "Groq", available: true, models: [...] },
   //   { id: "google", name: "Google", available: true, models: [...] }
@@ -133,7 +141,7 @@ import { useProviderModels } from "../hooks/useProviders";
 
 function MyComponent() {
   const { models, loading, error } = useProviderModels("groq");
-  
+
   // models = [
   //   {
   //     id: "llama-3.3-70b-versatile",
@@ -147,6 +155,7 @@ function MyComponent() {
 ## API Endpoints
 
 ### Provider Information
+
 ```
 GET /api/llm/providers
 Response: {
@@ -162,6 +171,7 @@ Response: {
 ```
 
 ### Detailed Model Information
+
 ```
 GET /api/llm/google/models
 GET /api/llm/groq/models
@@ -181,6 +191,7 @@ Response: {
 ```
 
 ### Content Generation
+
 ```
 POST /api/generate/{type}
 Body: {
@@ -219,17 +230,19 @@ Body: {
 ### Adding a New Provider
 
 1. **Backend**: Create `backend/{provider}_models.py`
+
    ```python
    MODEL_RATE_LIMITS = {
        "model-id": {"rpm": 30, "tpm": 12000, "rpd": 1000}
    }
-   
+
    async def fetch_available_models():
        # Fetch from provider API
        pass
    ```
 
 2. **Backend**: Update `backend/routers/llm.py`
+
    ```python
    @router.get("/api/llm/{provider}/models")
    async def get_models():
@@ -237,6 +250,7 @@ Body: {
    ```
 
 3. **Backend**: Update `backend/rate_limiter.py`
+
    ```python
    PROVIDER_RATE_LIMITS["{provider}"] = {
        "rpm": 30, "tpm": 12000, "rpd": 1000
@@ -246,11 +260,11 @@ Body: {
 4. **Frontend**: Update `useProviders.js`
    ```javascript
    const PROVIDER_INFO = {
-       "{provider}": {
-           name: "Provider Name",
-           badge: "Fast",
-           icon: SpeedIcon
-       }
+     "{provider}": {
+       name: "Provider Name",
+       badge: "Fast",
+       icon: SpeedIcon,
+     },
    };
    ```
 
@@ -261,14 +275,14 @@ Edit `frontend/src/hooks/useProviders.js`:
 ```javascript
 function getTaskComplexity(contentType) {
   const complexityMap = {
-    'character': 'medium',
-    'story': 'complex',
-    'world': 'complex',
-    'scene': 'medium',
-    'location': 'simple',
-    'custom': 'medium' // Add your content type here
+    character: "medium",
+    story: "complex",
+    world: "complex",
+    scene: "medium",
+    location: "simple",
+    custom: "medium", // Add your content type here
   };
-  return complexityMap[contentType] || 'medium';
+  return complexityMap[contentType] || "medium";
 }
 ```
 
@@ -326,18 +340,21 @@ function getTaskComplexity(contentType) {
 ## Troubleshooting
 
 ### No models appearing in dropdown
+
 1. Check if provider API key is configured in Settings
 2. Verify backend API endpoint is reachable
 3. Check browser console for fetch errors
 4. Fallback models should appear even if API fails
 
 ### Rate limit exceeded errors
+
 1. Check `RATE_LIMITING.md` for current limits
 2. Verify model-specific overrides in `{provider}_models.py`
 3. Consider switching to a different provider
 4. Wait for rate limit window to reset
 
 ### Recommended model not showing
+
 1. Verify `contentType` prop is correct
 2. Check `getTaskComplexity()` mapping in `useProviders.js`
 3. Ensure provider has models at that complexity level

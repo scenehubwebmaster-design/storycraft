@@ -11,6 +11,7 @@ This means Google Gemini refused to generate content, even though we set safety 
 Google blocks content at **2 different levels**:
 
 ### 1. Prompt-Level Blocking (Most Common) 🚫
+
 - **When**: Before generation even starts
 - **What**: Google analyzes YOUR input prompt
 - **Why**: Detects "unsafe" keywords, themes, or patterns
@@ -18,6 +19,7 @@ Google blocks content at **2 different levels**:
 - **Triggers**: Character conflicts, violence, weapons, dark themes, moral ambiguity
 
 ### 2. Response-Level Blocking
+
 - **When**: During or after generation
 - **What**: Google blocks its own generated content
 - **Why**: Generated text violates safety policies
@@ -28,6 +30,7 @@ Google blocks content at **2 different levels**:
 Common storytelling elements that get blocked:
 
 ### ❌ Frequently Blocked
+
 - **Combat/Battles**: "warrior with sword", "fighting skills"
 - **Weapons**: "gun", "blade", "explosive", "poison"
 - **Conflict**: "revenge", "betrayal", "assassination"
@@ -37,6 +40,7 @@ Common storytelling elements that get blocked:
 - **Violence**: "blood", "injury", "torture", "suffering"
 
 ### ✅ Usually Allowed
+
 - Peaceful characters
 - Slice-of-life stories
 - Lighthearted adventures
@@ -46,25 +50,30 @@ Common storytelling elements that get blocked:
 ## Error Messages Explained
 
 ### "Your prompt was blocked by Google before generation: SAFETY"
+
 - **Meaning**: Your input contained flagged content
 - **What to do**: Rephrase or switch providers
 - **Note**: May show safety ratings like "Dangerous Content: MEDIUM"
 
 ### "Your prompt was blocked: BLOCKLIST"
+
 - **Meaning**: Contains specific blocked words/phrases
 - **What to do**: Use different terminology or switch providers
 
 ### "Your prompt was blocked: PROHIBITED_CONTENT"
+
 - **Meaning**: Violates Google's content policies
 - **What to do**: Switch providers (rewriting won't help)
 
 ### "Content generation was blocked after prompt was accepted"
+
 - **Meaning**: Prompt was OK, but generated content violated policies
 - **What to do**: Try again (might get different generation) or switch providers
 
 ## Solutions
 
 ### ✅ Solution 1: Use Groq (Recommended)
+
 **Best for**: All creative fiction, fantasy, sci-fi, action
 
 - ✅ Free tier available
@@ -76,6 +85,7 @@ Common storytelling elements that get blocked:
 **How**: Already the default provider in the app!
 
 ### ✅ Solution 2: Use Anthropic Claude
+
 **Best for**: Complex narratives, character psychology, literary fiction
 
 - ✅ Excellent quality
@@ -84,6 +94,7 @@ Common storytelling elements that get blocked:
 - 💰 Requires paid API key
 
 ### ⚠️ Solution 3: Rephrase for Google (Not Recommended)
+
 Only if you must use Google:
 
 **Before**: "A battle-hardened warrior with a dark past"
@@ -99,17 +110,18 @@ Only if you must use Google:
 
 ## Why We Don't Recommend Google for Fiction
 
-| Issue | Impact | Solution |
-|-------|--------|----------|
-| **Unpredictable Blocking** | Same prompt works one day, fails the next | Use Groq/Anthropic |
-| **Creative Limitation** | Can't write action, conflict, dark themes | Use Groq/Anthropic |
-| **Two-Level Filtering** | Blocks prompts AND responses | Use Groq/Anthropic |
-| **No True Bypass** | `BLOCK_NONE` doesn't fully disable filters | Use Groq/Anthropic |
-| **Poor User Experience** | Frustrating trial-and-error | Use Groq/Anthropic |
+| Issue                      | Impact                                     | Solution           |
+| -------------------------- | ------------------------------------------ | ------------------ |
+| **Unpredictable Blocking** | Same prompt works one day, fails the next  | Use Groq/Anthropic |
+| **Creative Limitation**    | Can't write action, conflict, dark themes  | Use Groq/Anthropic |
+| **Two-Level Filtering**    | Blocks prompts AND responses               | Use Groq/Anthropic |
+| **No True Bypass**         | `BLOCK_NONE` doesn't fully disable filters | Use Groq/Anthropic |
+| **Poor User Experience**   | Frustrating trial-and-error                | Use Groq/Anthropic |
 
 ## Technical Details
 
 ### Our Safety Configuration
+
 ```python
 # backend/routers/llm.py
 safety_settings = [
@@ -123,6 +135,7 @@ safety_settings = [
 **This is the MOST permissive setting possible** (short of `OFF` which violates TOS).
 
 ### Block Reason Codes
+
 - `0`: No block (OK)
 - `1`: SAFETY - Content safety violation
 - `2`: OTHER - Unknown issue
@@ -130,6 +143,7 @@ safety_settings = [
 - `4`: PROHIBITED_CONTENT - Policy violation
 
 ### Safety Rating Levels
+
 - `NEGLIGIBLE`: Almost certainly safe
 - `LOW`: Unlikely to be harmful
 - `MEDIUM`: Possibly harmful → **Often triggers blocks**
@@ -138,22 +152,26 @@ safety_settings = [
 ## What We've Done to Help
 
 ### 1. Enhanced Error Messages ✅
+
 - Show exact block reason (SAFETY, BLOCKLIST, etc.)
 - Display which safety categories triggered
 - Show probability levels (LOW, MEDIUM, HIGH)
 - Recommend switching to Groq/Anthropic
 
 ### 2. Set Permissive Defaults ✅
+
 - All safety thresholds set to `BLOCK_NONE`
 - Allow MEDIUM and LOW probability content
 - Most permissive configuration possible
 
 ### 3. Changed Default Provider ✅
+
 - Frontend now defaults to **Groq** instead of Google
 - Users can still choose Google if they want
 - Clear warnings in UI about Google limitations
 
 ### 4. Detection & Logging ✅
+
 - Detect prompt-level blocks (before generation)
 - Detect response-level blocks (during generation)
 - Log safety ratings for debugging
@@ -162,6 +180,7 @@ safety_settings = [
 ## For Developers
 
 ### Checking Block Details
+
 ```python
 # Check prompt feedback
 if response.prompt_feedback.block_reason:
@@ -175,6 +194,7 @@ if not response.candidates:
 ```
 
 ### Testing Different Providers
+
 ```python
 # Test same prompt across providers
 providers = ["groq", "anthropic", "google"]
@@ -188,7 +208,7 @@ for provider in providers:
 
 ## Summary
 
-**Bottom Line**: Google Gemini's safety filters are **too aggressive for creative fiction**, even at the most permissive settings. 
+**Bottom Line**: Google Gemini's safety filters are **too aggressive for creative fiction**, even at the most permissive settings.
 
 **Recommendation**: Use **Groq** (free, fast, no restrictions) or **Anthropic** (paid, excellent quality) for all storytelling.
 

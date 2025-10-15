@@ -20,6 +20,14 @@ class CharacterGenerationRequest(BaseModel):
     refinement_instructions: Optional[str] = None
 
 
+class ImageGenerationRequest(BaseModel):
+    character_name: str = Field(..., description="Name of the character")
+    appearance_text: str = Field(..., description="Physical appearance description")
+    model: str = Field(default="imagen-4.0-fast-generate-001", description="Imagen model")
+    aspect_ratio: str = Field(default="3:4", description="Image aspect ratio")
+    custom_prompt: Optional[str] = Field(None, description="Optional custom prompt override")
+
+
 class StoryGenerationRequest(BaseModel):
     themes: Optional[List[str]] = None
     tone: Optional[List[str]] = None

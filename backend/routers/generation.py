@@ -18,7 +18,8 @@ from schemas import (
     LocationGenerationRequest,
     CampaignGenerationRequest,
     GenerationResponse,
-    PromptOptionsResponse
+    PromptOptionsResponse,
+    ImageGenerationRequest
 )
 from prompts import (
     PromptTemplates,
@@ -168,6 +169,70 @@ async def save_character(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to save character: {str(e)}")
+
+
+@router.post("/character/generate-portrait")
+async def generate_character_portrait(request: ImageGenerationRequest):
+    """
+    Generate a character portrait using Google Imagen.
+    
+    This endpoint generates a portrait image based on the character's appearance
+    description using Google's Imagen model.
+    """
+    try:
+        from imagen_client import generate_character_portrait
+        
+        result = await generate_character_portrait(
+            character_name=request.character_name,
+            appearance_text=request.appearance_text,
+            model=request.model,
+            aspect_ratio=request.aspect_ratio,
+            custom_prompt=request.custom_prompt
+        )
+        
+        return {
+            "image_base64": result["image_base64"],
+            "prompt": result["prompt"],
+            "model": request.model,
+            "aspect_ratio": request.aspect_ratio,
+            "message": "Portrait generated successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Portrait generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate portrait: {str(e)}"
+        )
+
+
+@router.post("/character/save-portrait")
+async def save_character_portrait(
+    character_id: int,
+    image_base64: str,
+    image_prompt: str,
+    db: Session = Depends(get_db)
+):
+    """Save generated portrait to existing character"""
+    try:
+        character = db.query(Character).filter(Character.id == character_id).first()
+        
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found")
+        
+        # Update character with portrait
+        character.portrait_image = image_base64
+        character.image_prompt = image_prompt
+        character.updated_at = datetime.now()
+        
+        db.commit()
+        db.refresh(character)
+        
+        return {"message": "Portrait saved successfully", "character_id": character_id}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save portrait: {str(e)}")
 
 
 @router.post("/story", response_model=GenerationResponse)

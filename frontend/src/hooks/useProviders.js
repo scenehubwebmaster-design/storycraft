@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-const API_URL = 'http://localhost:8000';
+const API_URL = "http://localhost:8000";
 
 /**
  * Custom hook to fetch and manage LLM providers and their available models
@@ -21,7 +21,7 @@ export const useProviders = () => {
         setError(null);
       } catch (err) {
         setError(err.message);
-        console.error('Failed to fetch providers:', err);
+        console.error("Failed to fetch providers:", err);
       } finally {
         setLoading(false);
       }
@@ -44,14 +44,16 @@ export const useProviderModels = (provider) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!provider || (provider !== 'google' && provider !== 'groq')) {
+    if (!provider || (provider !== "google" && provider !== "groq")) {
       return;
     }
 
     const fetchModels = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/api/llm/${provider}/models`);
+        const response = await axios.get(
+          `${API_URL}/api/llm/${provider}/models`
+        );
         setModels(response.data.models || []);
         setError(null);
       } catch (err) {
@@ -75,16 +77,16 @@ export const useProviderModels = (provider) => {
  * @returns {string} Provider name
  */
 export const getFirstAvailableProvider = (providers) => {
-  if (!providers) return 'openai';
-  
-  const providerOrder = ['groq', 'google', 'anthropic', 'openai'];
+  if (!providers) return "openai";
+
+  const providerOrder = ["groq", "google", "anthropic", "openai"];
   for (const provider of providerOrder) {
     if (providers[provider]?.available) {
       return provider;
     }
   }
-  
-  return 'openai'; // Default fallback
+
+  return "openai"; // Default fallback
 };
 
 /**
@@ -93,27 +95,27 @@ export const getFirstAvailableProvider = (providers) => {
  * @param {string} complexity - 'simple', 'medium', 'complex'
  * @returns {string|null} Recommended model ID
  */
-export const getRecommendedModel = (provider, complexity = 'medium') => {
+export const getRecommendedModel = (provider, complexity = "medium") => {
   const recommendations = {
     openai: {
-      simple: 'gpt-3.5-turbo',
-      medium: 'gpt-4',
-      complex: 'gpt-4-turbo',
+      simple: "gpt-3.5-turbo",
+      medium: "gpt-4",
+      complex: "gpt-4-turbo",
     },
     anthropic: {
-      simple: 'claude-3-sonnet-20240229',
-      medium: 'claude-3-5-sonnet-20241022',
-      complex: 'claude-3-opus-20240229',
+      simple: "claude-3-sonnet-20240229",
+      medium: "claude-3-5-sonnet-20241022",
+      complex: "claude-3-opus-20240229",
     },
     google: {
-      simple: 'gemini-2.0-flash',
-      medium: 'gemini-2.5-flash',
-      complex: 'gemini-2.5-flash',
+      simple: "gemini-2.0-flash",
+      medium: "gemini-2.5-flash",
+      complex: "gemini-2.5-flash",
     },
     groq: {
-      simple: 'llama-3.1-8b-instant',
-      medium: 'llama-3.3-70b-versatile',
-      complex: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      simple: "llama-3.1-8b-instant",
+      medium: "llama-3.3-70b-versatile",
+      complex: "meta-llama/llama-4-scout-17b-16e-instruct",
     },
   };
 
@@ -127,14 +129,14 @@ export const getRecommendedModel = (provider, complexity = 'medium') => {
  */
 export const getTaskComplexity = (contentType) => {
   const complexityMap = {
-    character: 'medium',
-    story: 'complex',
-    world: 'complex',
-    scene: 'medium',
-    location: 'simple',
+    character: "medium",
+    story: "complex",
+    world: "complex",
+    scene: "medium",
+    location: "simple",
   };
 
-  return complexityMap[contentType] || 'medium';
+  return complexityMap[contentType] || "medium";
 };
 
 /**
@@ -143,27 +145,29 @@ export const getTaskComplexity = (contentType) => {
  * @returns {string} Formatted string
  */
 export const formatRateLimits = (rateLimits) => {
-  if (!rateLimits) return 'N/A';
+  if (!rateLimits) return "N/A";
 
   const parts = [];
-  
+
   if (rateLimits.requests_per_minute) {
     parts.push(`${rateLimits.requests_per_minute} req/min`);
   }
-  
+
   if (rateLimits.tokens_per_minute) {
-    const tpm = rateLimits.tokens_per_minute >= 1000 
-      ? `${(rateLimits.tokens_per_minute / 1000).toFixed(0)}K`
-      : rateLimits.tokens_per_minute;
+    const tpm =
+      rateLimits.tokens_per_minute >= 1000
+        ? `${(rateLimits.tokens_per_minute / 1000).toFixed(0)}K`
+        : rateLimits.tokens_per_minute;
     parts.push(`${tpm} tok/min`);
   }
-  
+
   if (rateLimits.requests_per_day) {
-    const rpd = rateLimits.requests_per_day >= 1000
-      ? `${(rateLimits.requests_per_day / 1000).toFixed(1)}K`
-      : rateLimits.requests_per_day;
+    const rpd =
+      rateLimits.requests_per_day >= 1000
+        ? `${(rateLimits.requests_per_day / 1000).toFixed(1)}K`
+        : rateLimits.requests_per_day;
     parts.push(`${rpd} req/day`);
   }
 
-  return parts.join(' • ') || 'N/A';
+  return parts.join(" • ") || "N/A";
 };

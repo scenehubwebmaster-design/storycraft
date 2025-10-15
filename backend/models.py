@@ -68,6 +68,8 @@ class Character(Base):
     appearance = Column(Text)
     motivations = Column(Text)
     relationships = Column(JSON)  # Store as JSON for flexibility
+    portrait_image = Column(Text)  # Base64 encoded image data
+    image_prompt = Column(Text)  # Store the prompt used to generate the image
     generation_log = Column(JSON)  # Track AI generation history
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

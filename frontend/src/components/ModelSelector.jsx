@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   FormControl,
   InputLabel,
@@ -10,17 +10,17 @@ import {
   Tooltip,
   CircularProgress,
   Alert,
-} from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import SpeedIcon from '@mui/icons-material/Speed';
-import MoneyOffIcon from '@mui/icons-material/MoneyOff';
+} from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import SpeedIcon from "@mui/icons-material/Speed";
+import MoneyOffIcon from "@mui/icons-material/MoneyOff";
 import {
   useProviders,
   useProviderModels,
   getRecommendedModel,
   formatRateLimits,
-} from '../hooks/useProviders';
+} from "../hooks/useProviders";
 
 /**
  * Enhanced Model Selector Component
@@ -31,21 +31,26 @@ export default function ModelSelector({
   model,
   onProviderChange,
   onModelChange,
-  contentType = 'character',
+  contentType = "character",
 }) {
-  const { providers, loading: providersLoading, error: providersError } = useProviders();
-  const { models: detailedModels, loading: modelsLoading } = useProviderModels(provider);
-  
+  const {
+    providers,
+    loading: providersLoading,
+    error: providersError,
+  } = useProviders();
+  const { models: detailedModels, loading: modelsLoading } =
+    useProviderModels(provider);
+
   const [availableModels, setAvailableModels] = useState([]);
   const [recommendedModel, setRecommendedModel] = useState(null);
 
   // Get provider display name
   const getProviderName = (providerKey) => {
     const names = {
-      openai: 'OpenAI',
-      anthropic: 'Anthropic',
-      google: 'Google',
-      groq: 'Groq',
+      openai: "OpenAI",
+      anthropic: "Anthropic",
+      google: "Google",
+      groq: "Groq",
     };
     return names[providerKey] || providerKey;
   };
@@ -53,10 +58,18 @@ export default function ModelSelector({
   // Get provider icon/badge
   const getProviderBadge = (providerKey) => {
     const badges = {
-      groq: { label: 'Fast', icon: <SpeedIcon fontSize="small" />, color: 'success' },
-      google: { label: 'Free Tier', icon: <MoneyOffIcon fontSize="small" />, color: 'primary' },
-      openai: { label: 'Premium', icon: null, color: 'default' },
-      anthropic: { label: 'Premium', icon: null, color: 'default' },
+      groq: {
+        label: "Fast",
+        icon: <SpeedIcon fontSize="small" />,
+        color: "success",
+      },
+      google: {
+        label: "Free Tier",
+        icon: <MoneyOffIcon fontSize="small" />,
+        color: "primary",
+      },
+      openai: { label: "Premium", icon: null, color: "default" },
+      anthropic: { label: "Premium", icon: null, color: "default" },
     };
     return badges[providerKey];
   };
@@ -82,7 +95,11 @@ export default function ModelSelector({
 
   // Auto-select recommended model if no model is selected
   useEffect(() => {
-    if (!model && recommendedModel && availableModels.includes(recommendedModel)) {
+    if (
+      !model &&
+      recommendedModel &&
+      availableModels.includes(recommendedModel)
+    ) {
       onModelChange(recommendedModel);
     }
   }, [recommendedModel, availableModels, model, onModelChange]);
@@ -95,18 +112,18 @@ export default function ModelSelector({
   // Get task complexity
   const getTaskComplexity = (type) => {
     const complexityMap = {
-      character: 'medium',
-      story: 'complex',
-      world: 'complex',
-      scene: 'medium',
-      location: 'simple',
+      character: "medium",
+      story: "complex",
+      world: "complex",
+      scene: "medium",
+      location: "simple",
     };
-    return complexityMap[type] || 'medium';
+    return complexityMap[type] || "medium";
   };
 
   if (providersLoading) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         <CircularProgress size={20} />
         <Typography variant="body2" color="text.secondary">
           Loading providers...
@@ -124,7 +141,7 @@ export default function ModelSelector({
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* Provider Selector */}
       <FormControl fullWidth>
         <InputLabel>AI Provider</InputLabel>
@@ -135,12 +152,15 @@ export default function ModelSelector({
         >
           {providers &&
             Object.entries(providers).map(([key, data]) => (
-              <MenuItem 
-                key={key} 
-                value={key}
-                disabled={!data.available}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+              <MenuItem key={key} value={key} disabled={!data.available}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    width: "100%",
+                  }}
+                >
                   <Typography sx={{ flexGrow: 1 }}>
                     {getProviderName(key)}
                   </Typography>
@@ -158,7 +178,12 @@ export default function ModelSelector({
                       <CheckCircleIcon fontSize="small" color="success" />
                     </>
                   ) : (
-                    <Chip label="Not Configured" size="small" color="error" sx={{ height: 20 }} />
+                    <Chip
+                      label="Not Configured"
+                      size="small"
+                      color="error"
+                      sx={{ height: 20 }}
+                    />
                   )}
                 </Box>
               </MenuItem>
@@ -170,7 +195,7 @@ export default function ModelSelector({
       <FormControl fullWidth>
         <InputLabel>Model</InputLabel>
         <Select
-          value={model || ''}
+          value={model || ""}
           onChange={(e) => onModelChange(e.target.value)}
           label="Model"
           disabled={modelsLoading || availableModels.length === 0}
@@ -187,8 +212,14 @@ export default function ModelSelector({
 
               return (
                 <MenuItem key={modelId} value={modelId}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      width: "100%",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Typography sx={{ flexGrow: 1 }}>
                         {details?.name || modelId}
                       </Typography>
@@ -219,13 +250,13 @@ export default function ModelSelector({
         <Box
           sx={{
             p: 2,
-            bgcolor: 'background.paper',
+            bgcolor: "background.paper",
             borderRadius: 1,
-            border: '1px solid',
-            borderColor: 'divider',
+            border: "1px solid",
+            borderColor: "divider",
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
             <InfoIcon fontSize="small" color="primary" sx={{ mt: 0.5 }} />
             <Box sx={{ flexGrow: 1 }}>
               <Typography variant="body2" gutterBottom>

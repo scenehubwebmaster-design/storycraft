@@ -23,6 +23,7 @@ import {
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PromptSelector from "../../components/PromptSelector";
 import GenerationResult from "../../components/GenerationResult";
 import ModelSelector from "../../components/ModelSelector";
@@ -64,6 +65,11 @@ function CreateCharacterComponent() {
 
   // Character name for saving
   const [characterName, setCharacterName] = useState("");
+
+  // Portrait generation state
+  const [portraitImage, setPortraitImage] = useState(null);
+  const [generatingPortrait, setGeneratingPortrait] = useState(false);
+  const [portraitError, setPortraitError] = useState(null);
 
   // Load prompt options on mount
   useEffect(() => {
@@ -162,6 +168,7 @@ function CreateCharacterComponent() {
         setActiveStep(0);
         setGeneratedContent(null);
         setCharacterName("");
+        setPortraitImage(null);
         setSuccess(null);
       }, 2000);
     } catch (err) {
@@ -169,6 +176,37 @@ function CreateCharacterComponent() {
       console.error(err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGeneratePortrait = async () => {
+    if (!characterName.trim()) {
+      setPortraitError("Please enter a character name first");
+      return;
+    }
+
+    setGeneratingPortrait(true);
+    setPortraitError(null);
+
+    try {
+      // Extract appearance from generated content
+      const response = await axios.post(`${API_URL}/api/generate/character/generate-portrait`, {
+        character_name: characterName,
+        appearance_text: generatedContent,
+        model: "imagen-4.0-fast-generate-001",
+        aspect_ratio: "3:4",
+        custom_prompt: null,
+      });
+
+      setPortraitImage(response.data.image_base64);
+      setSuccess("Portrait generated successfully!");
+    } catch (err) {
+      setPortraitError(
+        err.response?.data?.detail || "Failed to generate portrait. Make sure Google API key is configured."
+      );
+      console.error(err);
+    } finally {
+      setGeneratingPortrait(false);
     }
   };
 
@@ -387,6 +425,53 @@ function CreateCharacterComponent() {
             sx={{ mb: 3 }}
             required
           />
+
+          {/* Portrait Generation Section */}
+          <Paper sx={{ p: 3, mb: 3, backgroundColor: "background.default" }}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Character Portrait
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Generate an AI portrait based on the character's appearance
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                startIcon={generatingPortrait ? <CircularProgress size={20} /> : <PhotoCameraIcon />}
+                onClick={handleGeneratePortrait}
+                disabled={generatingPortrait || !characterName.trim()}
+              >
+                {generatingPortrait ? "Generating..." : "Generate Portrait"}
+              </Button>
+            </Box>
+
+            {portraitError && (
+              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setPortraitError(null)}>
+                {portraitError}
+              </Alert>
+            )}
+
+            {portraitImage && (
+              <Box sx={{ mt: 2, textAlign: "center" }}>
+                <img
+                  src={`data:image/png;base64,${portraitImage}`}
+                  alt={`${characterName} portrait`}
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "500px",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+                  }}
+                />
+                <Typography variant="caption" display="block" sx={{ mt: 1 }} color="text.secondary">
+                  Generated with Google Imagen
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+
           <GenerationResult
             content={generatedContent}
             onSave={handleSave}

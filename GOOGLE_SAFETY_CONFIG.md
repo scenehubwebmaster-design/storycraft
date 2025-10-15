@@ -16,12 +16,12 @@ Even with safety settings set to `BLOCK_NONE` (most permissive), Google Gemini *
 
 ### ✅ Recommended Providers for Fiction
 
-| Provider | Cost | Speed | Creative Freedom | Best For |
-|----------|------|-------|------------------|----------|
-| **Groq (Llama)** | ✅ Free | ⚡ Fastest | 🎯 Excellent | Fantasy, Sci-Fi, Action |
-| **Anthropic (Claude)** | 💰 Paid | 🐇 Fast | 🎯 Excellent | Complex narratives, Character depth |
-| **OpenAI (GPT)** | 💰 Paid | 🐇 Fast | ⚠️ Moderate | General fiction |
-| **Google (Gemini)** | ✅ Free | 🐢 Medium | ❌ Poor | ❌ Not recommended for fiction |
+| Provider               | Cost    | Speed      | Creative Freedom | Best For                            |
+| ---------------------- | ------- | ---------- | ---------------- | ----------------------------------- |
+| **Groq (Llama)**       | ✅ Free | ⚡ Fastest | 🎯 Excellent     | Fantasy, Sci-Fi, Action             |
+| **Anthropic (Claude)** | 💰 Paid | 🐇 Fast    | 🎯 Excellent     | Complex narratives, Character depth |
+| **OpenAI (GPT)**       | 💰 Paid | 🐇 Fast    | ⚠️ Moderate      | General fiction                     |
+| **Google (Gemini)**    | ✅ Free | 🐢 Medium  | ❌ Poor          | ❌ Not recommended for fiction      |
 
 ---
 
