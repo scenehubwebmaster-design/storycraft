@@ -790,3 +790,160 @@ async def generate_world_structured(request: WorldGenerationRequest):
     # The FastAPI response_model will serialize it to JSON
     return world_profile
 
+
+@router.post("/character/structured/save")
+async def save_structured_character(
+    character_profile: CharacterProfile,
+    portrait_image: str = None,
+    image_prompt: str = None,
+    story_id: int = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Save a structured character profile to the database.
+    
+    This endpoint accepts a full CharacterProfile object and stores it in the database
+    with both legacy fields (for backward compatibility) and the full structured_data JSON.
+    
+    Args:
+        character_profile: Validated CharacterProfile from structured generation
+        portrait_image: Optional base64 encoded portrait image
+        image_prompt: Optional prompt used to generate the portrait
+        story_id: Optional story ID to link the character to
+        db: Database session
+    
+    Returns:
+        Dictionary with character ID and success message
+    """
+    try:
+        logger.info(f"Saving structured character: {character_profile.name}")
+        
+        # Convert CharacterProfile to dict for JSON storage
+        structured_dict = character_profile.model_dump()
+        
+        # Create character with both legacy fields and structured data
+        character = Character(
+            name=character_profile.name,
+            # Legacy fields for backward compatibility
+            description=character_profile.physical_description + "\n\n" + character_profile.personality_description,
+            background=character_profile.backstory,
+            personality=character_profile.personality_description,
+            appearance=character_profile.physical_description,
+            motivations=character_profile.primary_motivation,
+            relationships=character_profile.key_relationships,  # Already a list of dicts
+            # New structured data field
+            structured_data=structured_dict,
+            # Portrait data
+            portrait_image=portrait_image,
+            image_prompt=image_prompt,
+            generation_log=[{
+                "timestamp": datetime.now().isoformat(),
+                "action": "created_structured",
+                "provider": "structured_generation",
+                "has_portrait": portrait_image is not None
+            }]
+        )
+        
+        db.add(character)
+        db.commit()
+        db.refresh(character)
+        
+        # Link to story if provided
+        if story_id:
+            from models import Story
+            story = db.query(Story).filter(Story.id == story_id).first()
+            if story:
+                story.characters.append(character)
+                db.commit()
+                logger.info(f"Linked character {character.id} to story {story_id}")
+        
+        logger.info(f"Structured character saved successfully with ID: {character.id}")
+        return {
+            "id": character.id,
+            "message": "Structured character saved successfully",
+            "structured": True
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to save structured character: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save structured character: {str(e)}"
+        )
+
+
+@router.post("/world/structured/save")
+async def save_structured_world(
+    world_profile: WorldProfile,
+    story_id: int = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Save a structured world profile to the database.
+    
+    This endpoint accepts a full WorldProfile object and stores it in the database
+    with both legacy fields (for backward compatibility) and the full structured_data JSON.
+    
+    Args:
+        world_profile: Validated WorldProfile from structured generation
+        story_id: Optional story ID to link the world to
+        db: Database session
+    
+    Returns:
+        Dictionary with world ID and success message
+    """
+    try:
+        logger.info(f"Saving structured world: {world_profile.name}")
+        
+        # Convert WorldProfile to dict for JSON storage
+        structured_dict = world_profile.model_dump()
+        
+        # Create world with both legacy fields and structured data
+        world = World(
+            name=world_profile.name,
+            # Legacy fields for backward compatibility
+            description=world_profile.overview,
+            lore=world_profile.lore_summary,
+            history=world_profile.history_summary,
+            geography=world_profile.geography_summary,
+            culture=world_profile.culture_summary,
+            magic_system=world_profile.power_system + " (" + world_profile.power_level + ")",
+            technology_level=world_profile.world_type,
+            # New structured data field
+            structured_data=structured_dict,
+            generation_log=[{
+                "timestamp": datetime.now().isoformat(),
+                "action": "created_structured",
+                "provider": "structured_generation"
+            }]
+        )
+        
+        db.add(world)
+        db.commit()
+        db.refresh(world)
+        
+        # Link to story if provided
+        if story_id:
+            from models import Story
+            story = db.query(Story).filter(Story.id == story_id).first()
+            if story:
+                story.worlds.append(world)
+                db.commit()
+                logger.info(f"Linked world {world.id} to story {story_id}")
+        
+        logger.info(f"Structured world saved successfully with ID: {world.id}")
+        return {
+            "id": world.id,
+            "message": "Structured world saved successfully",
+            "structured": True
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to save structured world: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save structured world: {str(e)}"
+        )
+

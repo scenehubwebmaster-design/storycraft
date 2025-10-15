@@ -71,6 +71,7 @@ class Character(Base):
     portrait_image = Column(Text)  # Base64 encoded image data
     image_prompt = Column(Text)  # Store the prompt used to generate the image
     generation_log = Column(JSON)  # Track AI generation history
+    structured_data = Column(JSON)  # Store full CharacterProfile from structured generation
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -91,6 +92,7 @@ class World(Base):
     magic_system = Column(Text)
     technology_level = Column(String(100))
     generation_log = Column(JSON)  # Track AI generation history
+    structured_data = Column(JSON)  # Store full WorldProfile from structured generation
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
