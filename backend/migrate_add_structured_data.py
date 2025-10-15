@@ -73,7 +73,7 @@ def migrate():
 
 def rollback():
     """Remove structured_data columns (rollback migration)"""
-    print(f"⚠️  Rolling back migration...")
+    print("⚠️  Rolling back migration...")
     print(f"🔄 Connecting to database: {DB_PATH}")
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()

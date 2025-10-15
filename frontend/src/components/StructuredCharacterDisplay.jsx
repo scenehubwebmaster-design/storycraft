@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Typography,
@@ -11,21 +11,21 @@ import {
   ListItemText,
   Card,
   CardContent,
-} from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import PsychologyIcon from '@mui/icons-material/Psychology';
-import HistoryIcon from '@mui/icons-material/History';
-import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
-import WarningIcon from '@mui/icons-material/Warning';
-import FlashOnIcon from '@mui/icons-material/FlashOn';
-import PeopleIcon from '@mui/icons-material/People';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import StarsIcon from '@mui/icons-material/Stars';
+} from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import HistoryIcon from "@mui/icons-material/History";
+import EmojiObjectsIcon from "@mui/icons-material/EmojiObjects";
+import WarningIcon from "@mui/icons-material/Warning";
+import FlashOnIcon from "@mui/icons-material/FlashOn";
+import PeopleIcon from "@mui/icons-material/People";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import StarsIcon from "@mui/icons-material/Stars";
 
 /**
  * StructuredCharacterDisplay Component
- * 
+ *
  * Displays a CharacterProfile object with organized sections and visual hierarchy.
  * Optimized for readability and comprehensive character information display.
  */
@@ -37,7 +37,10 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
   return (
     <Box sx={{ py: 2 }}>
       {/* Header: Name and Age */}
-      <Paper elevation={3} sx={{ p: 3, mb: 3, bgcolor: 'primary.main', color: 'white' }}>
+      <Paper
+        elevation={3}
+        sx={{ p: 3, mb: 3, bgcolor: "primary.main", color: "white" }}
+      >
         <Typography variant="h3" gutterBottom>
           {characterProfile.name}
         </Typography>
@@ -50,28 +53,44 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <PersonIcon sx={{ mr: 1, color: "primary.main" }} />
             <Typography variant="h5" color="primary">
               Physical Appearance
             </Typography>
           </Box>
-          
+
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary">Height</Typography>
-              <Typography variant="body1" gutterBottom>{characterProfile.height}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                Height
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                {characterProfile.height}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary">Build</Typography>
-              <Typography variant="body1" gutterBottom>{characterProfile.build}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                Build
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                {characterProfile.build}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary">Hair</Typography>
-              <Typography variant="body1" gutterBottom>{characterProfile.hair}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                Hair
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                {characterProfile.hair}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary">Eyes</Typography>
-              <Typography variant="body1" gutterBottom>{characterProfile.eyes}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                Eyes
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                {characterProfile.eyes}
+              </Typography>
             </Grid>
           </Grid>
 
@@ -101,7 +120,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <PsychologyIcon sx={{ mr: 1, color: 'secondary.main' }} />
+            <PsychologyIcon sx={{ mr: 1, color: "secondary.main" }} />
             <Typography variant="h5" color="secondary">
               Personality
             </Typography>
@@ -113,26 +132,43 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
             </Typography>
             <Box display="flex" flexWrap="wrap" gap={1}>
               {characterProfile.personality_traits?.map((trait, index) => (
-                <Chip key={index} label={trait} color="secondary" size="small" />
+                <Chip
+                  key={index}
+                  label={trait}
+                  color="secondary"
+                  size="small"
+                />
               ))}
             </Box>
           </Box>
 
           <Box mb={2}>
-            <Typography variant="subtitle2" color="text.secondary">Demeanor</Typography>
-            <Typography variant="body1" paragraph>{characterProfile.demeanor}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Demeanor
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {characterProfile.demeanor}
+            </Typography>
           </Box>
 
           {characterProfile.sense_of_humor && (
             <Box mb={2}>
-              <Typography variant="subtitle2" color="text.secondary">Sense of Humor</Typography>
-              <Typography variant="body1" paragraph>{characterProfile.sense_of_humor}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                Sense of Humor
+              </Typography>
+              <Typography variant="body1" paragraph>
+                {characterProfile.sense_of_humor}
+              </Typography>
             </Box>
           )}
 
           <Box>
-            <Typography variant="subtitle2" color="text.secondary">Personality Overview</Typography>
-            <Typography variant="body1" paragraph>{characterProfile.personality_description}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Personality Overview
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {characterProfile.personality_description}
+            </Typography>
           </Box>
         </CardContent>
       </Card>
@@ -141,7 +177,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <HistoryIcon sx={{ mr: 1, color: 'info.main' }} />
+            <HistoryIcon sx={{ mr: 1, color: "info.main" }} />
             <Typography variant="h5" color="info.main">
               Background
             </Typography>
@@ -149,12 +185,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary">Birthplace</Typography>
-              <Typography variant="body1" gutterBottom>{characterProfile.birthplace}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                Birthplace
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                {characterProfile.birthplace}
+              </Typography>
             </Grid>
             <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary">Upbringing</Typography>
-              <Typography variant="body1" paragraph>{characterProfile.upbringing}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                Upbringing
+              </Typography>
+              <Typography variant="body1" paragraph>
+                {characterProfile.upbringing}
+              </Typography>
             </Grid>
           </Grid>
 
@@ -172,8 +216,12 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
           </Box>
 
           <Box>
-            <Typography variant="subtitle2" color="text.secondary">Full Backstory</Typography>
-            <Typography variant="body1" paragraph>{characterProfile.backstory}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Full Backstory
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {characterProfile.backstory}
+            </Typography>
           </Box>
         </CardContent>
       </Card>
@@ -182,15 +230,19 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <FavoriteIcon sx={{ mr: 1, color: 'error.main' }} />
+            <FavoriteIcon sx={{ mr: 1, color: "error.main" }} />
             <Typography variant="h5" color="error.main">
               Motivations & Values
             </Typography>
           </Box>
 
           <Box mb={2}>
-            <Typography variant="subtitle2" color="text.secondary">Primary Motivation</Typography>
-            <Typography variant="body1" paragraph>{characterProfile.primary_motivation}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Primary Motivation
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {characterProfile.primary_motivation}
+            </Typography>
           </Box>
 
           <Box mb={2}>
@@ -212,7 +264,13 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
             </Typography>
             <Box display="flex" flexWrap="wrap" gap={1}>
               {characterProfile.values?.map((value, index) => (
-                <Chip key={index} label={value} color="error" variant="outlined" size="small" />
+                <Chip
+                  key={index}
+                  label={value}
+                  color="error"
+                  variant="outlined"
+                  size="small"
+                />
               ))}
             </Box>
           </Box>
@@ -223,40 +281,56 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <WarningIcon sx={{ mr: 1, color: 'warning.main' }} />
+            <WarningIcon sx={{ mr: 1, color: "warning.main" }} />
             <Typography variant="h5" color="warning.main">
               Fears & Weaknesses
             </Typography>
           </Box>
 
           <Box mb={2}>
-            <Typography variant="subtitle2" color="text.secondary">Greatest Fear</Typography>
-            <Typography variant="body1" paragraph>{characterProfile.greatest_fear}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Greatest Fear
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {characterProfile.greatest_fear}
+            </Typography>
           </Box>
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
                 Emotional Weaknesses
               </Typography>
               <List dense>
-                {characterProfile.emotional_weaknesses?.map((weakness, index) => (
-                  <ListItem key={index}>
-                    <ListItemText primary={`• ${weakness}`} />
-                  </ListItem>
-                ))}
+                {characterProfile.emotional_weaknesses?.map(
+                  (weakness, index) => (
+                    <ListItem key={index}>
+                      <ListItemText primary={`• ${weakness}`} />
+                    </ListItem>
+                  )
+                )}
               </List>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
                 Physical Weaknesses
               </Typography>
               <List dense>
-                {characterProfile.physical_weaknesses?.map((weakness, index) => (
-                  <ListItem key={index}>
-                    <ListItemText primary={`• ${weakness}`} />
-                  </ListItem>
-                ))}
+                {characterProfile.physical_weaknesses?.map(
+                  (weakness, index) => (
+                    <ListItem key={index}>
+                      <ListItemText primary={`• ${weakness}`} />
+                    </ListItem>
+                  )
+                )}
               </List>
             </Grid>
           </Grid>
@@ -267,7 +341,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <FlashOnIcon sx={{ mr: 1, color: 'success.main' }} />
+            <FlashOnIcon sx={{ mr: 1, color: "success.main" }} />
             <Typography variant="h5" color="success.main">
               Strengths & Abilities
             </Typography>
@@ -285,18 +359,30 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
           </Box>
 
           <Box mb={2}>
-            <Typography variant="subtitle2" color="text.secondary">Special Abilities</Typography>
-            <Typography variant="body1" paragraph>{characterProfile.special_abilities}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Special Abilities
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {characterProfile.special_abilities}
+            </Typography>
           </Box>
 
           <Box mb={2}>
-            <Typography variant="subtitle2" color="text.secondary">Combat Style</Typography>
-            <Typography variant="body1" paragraph>{characterProfile.combat_style}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Combat Style
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {characterProfile.combat_style}
+            </Typography>
           </Box>
 
           <Box>
-            <Typography variant="subtitle2" color="text.secondary">Strengths Overview</Typography>
-            <Typography variant="body1" paragraph>{characterProfile.strengths_description}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Strengths Overview
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {characterProfile.strengths_description}
+            </Typography>
           </Box>
         </CardContent>
       </Card>
@@ -305,7 +391,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <PeopleIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <PeopleIcon sx={{ mr: 1, color: "primary.main" }} />
             <Typography variant="h5" color="primary">
               Key Relationships
             </Typography>
@@ -318,7 +404,12 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
                   <Typography variant="subtitle1" fontWeight="bold">
                     {relationship.name}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    gutterBottom
+                  >
                     {relationship.relationship}
                   </Typography>
                   <Typography variant="body2">
@@ -335,7 +426,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <TrendingUpIcon sx={{ mr: 1, color: 'secondary.main' }} />
+            <TrendingUpIcon sx={{ mr: 1, color: "secondary.main" }} />
             <Typography variant="h5" color="secondary">
               Character Arc Potential
             </Typography>
@@ -350,15 +441,19 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <StarsIcon sx={{ mr: 1, color: 'info.main' }} />
+            <StarsIcon sx={{ mr: 1, color: "info.main" }} />
             <Typography variant="h5" color="info.main">
               What Makes Them Unique
             </Typography>
           </Box>
 
           <Box mb={2}>
-            <Typography variant="subtitle2" color="text.secondary">Distinctive Qualities</Typography>
-            <Typography variant="body1" paragraph>{characterProfile.unique_qualities}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              Distinctive Qualities
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {characterProfile.unique_qualities}
+            </Typography>
           </Box>
 
           <Box>
