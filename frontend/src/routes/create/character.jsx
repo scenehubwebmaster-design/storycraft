@@ -1,4 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useSearch,
+} from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -39,6 +43,11 @@ const steps = ["Select Traits", "Generate", "Review & Save"];
 function CreateCharacterComponent() {
   console.log("CreateCharacterComponent mounted!");
 
+  const navigate = useNavigate();
+  const searchParams = useSearch({ from: "/create/character" });
+  const editId = searchParams?.edit;
+  const isEditMode = !!editId;
+
   // State for prompt options
   const [options, setOptions] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -68,14 +77,24 @@ function CreateCharacterComponent() {
 
   // Portrait generation state
   const [portraitImage, setPortraitImage] = useState(null);
+  const [imagePrompt, setImagePrompt] = useState(null);
   const [generatingPortrait, setGeneratingPortrait] = useState(false);
   const [portraitError, setPortraitError] = useState(null);
+  const [imageProvider, setImageProvider] = useState("openai"); // Default to OpenAI
+  const [imageModel, setImageModel] = useState("dall-e-3"); // Default DALL-E 3 (more widely available)
+  const [imageStyle, setImageStyle] = useState("realistic"); // Style preset
+  const [imageQuality, setImageQuality] = useState("standard"); // Quality setting
 
   // Load prompt options on mount
   useEffect(() => {
     console.log("useEffect running - loading options");
     loadOptions();
-  }, []);
+
+    // Load existing character data if in edit mode
+    if (isEditMode && editId) {
+      loadCharacterData(editId);
+    }
+  }, [editId, isEditMode]);
 
   const loadOptions = async () => {
     console.log(
@@ -88,6 +107,34 @@ function CreateCharacterComponent() {
     } catch (err) {
       setError("Failed to load prompt options");
       console.error(err);
+    }
+  };
+
+  const loadCharacterData = async (characterId) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/characters/${characterId}`
+      );
+      const character = response.data;
+
+      // Pre-populate form with existing data
+      setCharacterName(character.name || "");
+      setGeneratedContent(character.description || "");
+      setPortraitImage(character.portrait_image || null);
+      setImagePrompt(character.image_prompt || null);
+
+      // Skip to review step if we have generated content
+      if (character.description) {
+        setActiveStep(2);
+      }
+
+      setSuccess("Character data loaded for editing");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to load character");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -155,24 +202,46 @@ function CreateCharacterComponent() {
     setError(null);
 
     try {
-      await axios.post(`${API_URL}/api/generate/character/save`, null, {
-        params: {
+      if (isEditMode && editId) {
+        // Update existing character
+        await axios.put(`${API_URL}/api/characters/${editId}`, {
           name: characterName,
-          content: finalContent || generatedContent,
-        },
-      });
+          description: finalContent || generatedContent,
+          portrait_image: portraitImage,
+        });
+        setSuccess("Character updated successfully!");
 
-      setSuccess("Character saved successfully!");
-      // Reset form after 2 seconds
-      setTimeout(() => {
-        setActiveStep(0);
-        setGeneratedContent(null);
-        setCharacterName("");
-        setPortraitImage(null);
-        setSuccess(null);
-      }, 2000);
+        // Navigate back to detail view after 1.5 seconds
+        setTimeout(() => {
+          navigate({ to: `/characters/${editId}` });
+        }, 1500);
+      } else {
+        // Create new character
+        await axios.post(`${API_URL}/api/generate/character/save`, null, {
+          params: {
+            name: characterName,
+            content: finalContent || generatedContent,
+            portrait_image: portraitImage || null,
+            image_prompt: imagePrompt || null,
+          },
+        });
+        setSuccess("Character saved successfully!");
+
+        // Reset form after 2 seconds
+        setTimeout(() => {
+          setActiveStep(0);
+          setGeneratedContent(null);
+          setCharacterName("");
+          setPortraitImage(null);
+          setImagePrompt(null);
+          setSuccess(null);
+        }, 2000);
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save character");
+      setError(
+        err.response?.data?.detail ||
+          `Failed to ${isEditMode ? "update" : "save"} character`
+      );
       console.error(err);
     } finally {
       setSaving(false);
@@ -195,18 +264,24 @@ function CreateCharacterComponent() {
         {
           character_name: characterName,
           appearance_text: generatedContent,
-          model: "imagen-4.0-fast-generate-001",
+          provider: imageProvider,
+          model: imageModel || null,
           aspect_ratio: "3:4",
           custom_prompt: null,
+          style_preset: imageStyle,
+          quality: imageQuality,
         }
       );
 
       setPortraitImage(response.data.image_base64);
-      setSuccess("Portrait generated successfully!");
+      setImagePrompt(response.data.prompt_used || null);
+      setSuccess(
+        `Portrait generated successfully with ${response.data.provider}!`
+      );
     } catch (err) {
       setPortraitError(
         err.response?.data?.detail ||
-          "Failed to generate portrait. Make sure Google API key is configured."
+          "Failed to generate portrait. Make sure API key is configured."
       );
       console.error(err);
     } finally {
@@ -240,10 +315,12 @@ function CreateCharacterComponent() {
     <Container maxWidth="lg">
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" gutterBottom sx={{ fontWeight: 700 }}>
-          Create a Character
+          {isEditMode ? "Edit Character" : "Create a Character"}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Use AI to generate detailed, compelling characters for your stories
+          {isEditMode
+            ? "Update your character's details and portrait"
+            : "Use AI to generate detailed, compelling characters for your stories"}
         </Typography>
       </Box>
 
@@ -448,6 +525,134 @@ function CreateCharacterComponent() {
                   Generate an AI portrait based on the character's appearance
                 </Typography>
               </Box>
+            </Box>
+
+            {/* Provider and Model Selection */}
+            <Box sx={{ mb: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
+              <FormControl sx={{ minWidth: 180 }}>
+                <InputLabel id="provider-select-label">
+                  Image Provider
+                </InputLabel>
+                <Select
+                  labelId="provider-select-label"
+                  value={imageProvider}
+                  onChange={(e) => {
+                    const newProvider = e.target.value;
+                    setImageProvider(newProvider);
+                    // Set default model for each provider
+                    if (newProvider === "google") {
+                      setImageModel("imagen-4.0-fast-generate-001");
+                    } else if (newProvider === "openai") {
+                      setImageModel("dall-e-3"); // DALL-E 3 as default (more widely available)
+                    }
+                  }}
+                  label="Image Provider"
+                >
+                  <MenuItem value="google">Google Imagen</MenuItem>
+                  <MenuItem value="openai">OpenAI</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl sx={{ minWidth: 220 }}>
+                <InputLabel id="model-select-label">Model</InputLabel>
+                <Select
+                  labelId="model-select-label"
+                  value={imageModel}
+                  onChange={(e) => {
+                    console.log("Model changed to:", e.target.value);
+                    setImageModel(e.target.value);
+                  }}
+                  label="Model"
+                >
+                  {/* Google Imagen Models */}
+                  <MenuItem
+                    value="imagen-4.0-fast-generate-001"
+                    sx={{
+                      display: imageProvider === "google" ? "block" : "none",
+                    }}
+                  >
+                    Imagen Fast (Recommended)
+                  </MenuItem>
+                  <MenuItem
+                    value="imagen-4.0-generate-001"
+                    sx={{
+                      display: imageProvider === "google" ? "block" : "none",
+                    }}
+                  >
+                    Imagen Standard
+                  </MenuItem>
+                  <MenuItem
+                    value="imagen-4.0-ultra-generate-001"
+                    sx={{
+                      display: imageProvider === "google" ? "block" : "none",
+                    }}
+                  >
+                    Imagen Ultra (Best Quality)
+                  </MenuItem>
+
+                  {/* OpenAI Models */}
+                  <MenuItem
+                    value="dall-e-3"
+                    sx={{
+                      display: imageProvider === "openai" ? "block" : "none",
+                    }}
+                  >
+                    DALL-E 3 (Recommended)
+                  </MenuItem>
+                  <MenuItem
+                    value="dall-e-2"
+                    sx={{
+                      display: imageProvider === "openai" ? "block" : "none",
+                    }}
+                  >
+                    DALL-E 2
+                  </MenuItem>
+                  <MenuItem
+                    value="gpt-4.1-mini"
+                    sx={{
+                      display: imageProvider === "openai" ? "block" : "none",
+                    }}
+                  >
+                    GPT Image (Requires Verification)
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl sx={{ minWidth: 200 }}>
+                <InputLabel>Art Style</InputLabel>
+                <Select
+                  value={imageStyle}
+                  onChange={(e) => setImageStyle(e.target.value)}
+                  label="Art Style"
+                >
+                  <MenuItem value="realistic">Realistic Portrait</MenuItem>
+                  <MenuItem value="fantasy_art">Fantasy Art</MenuItem>
+                  <MenuItem value="anime">Anime/Manga</MenuItem>
+                  <MenuItem value="watercolor">Watercolor</MenuItem>
+                  <MenuItem value="oil_painting">Oil Painting</MenuItem>
+                  <MenuItem value="digital_art">Digital Art</MenuItem>
+                  <MenuItem value="comic_book">Comic Book</MenuItem>
+                  <MenuItem value="noir">Film Noir</MenuItem>
+                </Select>
+              </FormControl>
+
+              {imageProvider === "openai" && imageModel === "dall-e-3" && (
+                <FormControl sx={{ minWidth: 150 }}>
+                  <InputLabel>Quality</InputLabel>
+                  <Select
+                    value={imageQuality}
+                    onChange={(e) => setImageQuality(e.target.value)}
+                    label="Quality"
+                  >
+                    <MenuItem value="standard">Standard</MenuItem>
+                    <MenuItem value="hd">HD (Higher Cost)</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
+            </Box>
+
+            {/* Generate Button */}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
               <Button
                 variant="outlined"
                 startIcon={
@@ -475,13 +680,14 @@ function CreateCharacterComponent() {
               </Button>
             </Box>
 
-            {(!characterName.trim() || !generatedContent) && !generatingPortrait && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                {!characterName.trim() 
-                  ? "Enter a character name above to enable portrait generation"
-                  : "Character content is required for portrait generation"}
-              </Alert>
-            )}
+            {(!characterName.trim() || !generatedContent) &&
+              !generatingPortrait && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  {!characterName.trim()
+                    ? "Enter a character name above to enable portrait generation"
+                    : "Character content is required for portrait generation"}
+                </Alert>
+              )}
 
             {portraitError && (
               <Alert
@@ -523,6 +729,7 @@ function CreateCharacterComponent() {
             onRefine={handleRefine}
             saving={saving || generating}
             entity="Character"
+            isEditMode={isEditMode}
           />
         </Box>
       )}

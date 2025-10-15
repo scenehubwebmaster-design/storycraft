@@ -24,6 +24,7 @@ export default function GenerationResult({
   onRefine,
   saving = false,
   entity = "content",
+  isEditMode = false,
 }) {
   const [activeTab, setActiveTab] = useState(0);
   const [editedContent, setEditedContent] = useState(content);
@@ -94,7 +95,13 @@ export default function GenerationResult({
             disabled={saving}
             sx={{ mt: 2 }}
           >
-            {saving ? <CircularProgress size={20} /> : "Save Changes"}
+            {saving ? (
+              <CircularProgress size={20} />
+            ) : isEditMode ? (
+              "Update Changes"
+            ) : (
+              "Save Changes"
+            )}
           </Button>
         </Box>
       )}
@@ -144,7 +151,13 @@ export default function GenerationResult({
           disabled={saving}
           fullWidth
         >
-          {saving ? <CircularProgress size={20} /> : `Save ${entity}`}
+          {saving ? (
+            <CircularProgress size={20} />
+          ) : isEditMode ? (
+            `Update ${entity}`
+          ) : (
+            `Save ${entity}`
+          )}
         </Button>
       </Box>
     </Paper>

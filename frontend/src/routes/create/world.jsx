@@ -1,4 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useSearch,
+} from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -34,6 +38,11 @@ const API_URL = "http://localhost:8000";
 const steps = ["Select Parameters", "Generate", "Review & Save"];
 
 function CreateWorldComponent() {
+  const navigate = useNavigate();
+  const searchParams = useSearch({ from: "/create/world" });
+  const editId = searchParams?.edit;
+  const isEditMode = !!editId;
+
   const [options, setOptions] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
 
@@ -52,10 +61,30 @@ function CreateWorldComponent() {
   const [worldName, setWorldName] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadOptions();
-  }, []);
+
+    if (isEditMode && editId) {
+      loadWorldData(editId);
+    }
+  }, [editId, isEditMode]);
+
+  const loadWorldData = async (worldId) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/worlds/${worldId}`);
+      setWorldName(response.data.name);
+      setGeneratedContent(response.data.description);
+      setActiveStep(2); // Skip to review step
+    } catch (error) {
+      console.error("Failed to load world:", error);
+      setError("Failed to load world data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadOptions = async () => {
     try {
@@ -121,22 +150,43 @@ function CreateWorldComponent() {
     setError(null);
 
     try {
-      await axios.post(`${API_URL}/api/generate/world/save`, null, {
-        params: {
+      if (isEditMode && editId) {
+        // Update existing world
+        await axios.put(`${API_URL}/api/worlds/${editId}`, {
           name: worldName,
-          content: finalContent || generatedContent,
-        },
-      });
+          description: finalContent || generatedContent,
+          history: finalContent || generatedContent,
+          geography: finalContent || generatedContent,
+          culture: finalContent || generatedContent,
+          lore: finalContent || generatedContent,
+        });
 
-      setSuccess("World saved successfully!");
-      setTimeout(() => {
-        setActiveStep(0);
-        setGeneratedContent(null);
-        setWorldName("");
-        setSuccess(null);
-      }, 2000);
+        setSuccess("World updated successfully!");
+        setTimeout(() => {
+          navigate({ to: `/worlds/${editId}` });
+        }, 1500);
+      } else {
+        // Create new world
+        await axios.post(`${API_URL}/api/generate/world/save`, null, {
+          params: {
+            name: worldName,
+            content: finalContent || generatedContent,
+          },
+        });
+
+        setSuccess("World saved successfully!");
+        setTimeout(() => {
+          setActiveStep(0);
+          setGeneratedContent(null);
+          setWorldName("");
+          setSuccess(null);
+        }, 2000);
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save world");
+      setError(
+        err.response?.data?.detail ||
+          `Failed to ${isEditMode ? "update" : "save"} world`
+      );
     } finally {
       setSaving(false);
     }
@@ -168,10 +218,12 @@ function CreateWorldComponent() {
     <Container maxWidth="lg">
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" gutterBottom sx={{ fontWeight: 700 }}>
-          Build a World
+          {isEditMode ? "Edit World" : "Build a World"}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Create immersive worlds with rich lore and detail
+          {isEditMode
+            ? "Update your world's details and lore"
+            : "Create immersive worlds with rich lore and detail"}
         </Typography>
       </Box>
 
@@ -286,6 +338,7 @@ function CreateWorldComponent() {
             onRefine={handleRefine}
             saving={saving || generating}
             entity="World"
+            isEditMode={isEditMode}
           />
         </Box>
       )}

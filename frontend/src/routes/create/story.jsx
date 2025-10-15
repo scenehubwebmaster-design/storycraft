@@ -1,4 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useSearch,
+} from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -34,8 +38,14 @@ const API_URL = "http://localhost:8000";
 const steps = ["Select Parameters", "Generate", "Review & Save"];
 
 function CreateStoryComponent() {
+  const navigate = useNavigate();
+  const searchParams = useSearch({ from: "/create/story" });
+  const editId = searchParams?.edit;
+  const isEditMode = !!editId;
+
   const [options, setOptions] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   // Story parameters
   const [selectedThemes, setSelectedThemes] = useState([]);
@@ -57,7 +67,12 @@ function CreateStoryComponent() {
 
   useEffect(() => {
     loadOptions();
-  }, []);
+
+    // Load existing story data if in edit mode
+    if (isEditMode && editId) {
+      loadStoryData(editId);
+    }
+  }, [editId, isEditMode]);
 
   const loadOptions = async () => {
     try {
@@ -65,6 +80,30 @@ function CreateStoryComponent() {
       setOptions(response.data);
     } catch (err) {
       setError("Failed to load options");
+    }
+  };
+
+  const loadStoryData = async (storyId) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/stories/${storyId}`);
+      const story = response.data;
+
+      // Pre-populate form with existing data
+      setStoryTitle(story.title || "");
+      setGeneratedContent(story.description || story.content || "");
+
+      // Skip to review step if we have generated content
+      if (story.description || story.content) {
+        setActiveStep(2);
+      }
+
+      setSuccess("Story data loaded for editing");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to load story");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -125,22 +164,41 @@ function CreateStoryComponent() {
     setError(null);
 
     try {
-      await axios.post(`${API_URL}/api/generate/story/save`, null, {
-        params: {
+      if (isEditMode && editId) {
+        // Update existing story
+        await axios.put(`${API_URL}/api/stories/${editId}`, {
           title: storyTitle,
+          description: finalContent || generatedContent,
           content: finalContent || generatedContent,
-        },
-      });
+        });
+        setSuccess("Story updated successfully!");
 
-      setSuccess("Story saved successfully!");
-      setTimeout(() => {
-        setActiveStep(0);
-        setGeneratedContent(null);
-        setStoryTitle("");
-        setSuccess(null);
-      }, 2000);
+        // Navigate back to detail view after 1.5 seconds
+        setTimeout(() => {
+          navigate({ to: `/stories/${editId}` });
+        }, 1500);
+      } else {
+        // Create new story
+        await axios.post(`${API_URL}/api/generate/story/save`, null, {
+          params: {
+            title: storyTitle,
+            content: finalContent || generatedContent,
+          },
+        });
+        setSuccess("Story saved successfully!");
+
+        setTimeout(() => {
+          setActiveStep(0);
+          setGeneratedContent(null);
+          setStoryTitle("");
+          setSuccess(null);
+        }, 2000);
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save story");
+      setError(
+        err.response?.data?.detail ||
+          `Failed to ${isEditMode ? "update" : "save"} story`
+      );
     } finally {
       setSaving(false);
     }
@@ -172,10 +230,12 @@ function CreateStoryComponent() {
     <Container maxWidth="lg">
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" gutterBottom sx={{ fontWeight: 700 }}>
-          Create a Story
+          {isEditMode ? "Edit Story" : "Create a Story"}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Generate compelling story outlines with AI assistance
+          {isEditMode
+            ? "Update your story details and content"
+            : "Generate compelling story outlines with AI assistance"}
         </Typography>
       </Box>
 
@@ -337,6 +397,7 @@ function CreateStoryComponent() {
             onRefine={handleRefine}
             saving={saving || generating}
             entity="Story"
+            isEditMode={isEditMode}
           />
         </Box>
       )}

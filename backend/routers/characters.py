@@ -23,6 +23,9 @@ class CharacterCreate(CharacterBase):
 
 class CharacterResponse(CharacterBase):
     id: int
+    portrait_image: str | None = None
+    image_prompt: str | None = None
+    generation_log: str | None = None
     created_at: datetime
     updated_at: datetime
     

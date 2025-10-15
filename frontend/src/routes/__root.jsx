@@ -8,11 +8,33 @@ import {
   Box,
   Button,
   IconButton,
+  Paper,
 } from "@mui/material";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+
+function NotFoundComponent() {
+  return (
+    <Container maxWidth="md">
+      <Paper sx={{ p: 6, textAlign: "center", mt: 8 }}>
+        <ErrorOutlineIcon sx={{ fontSize: 80, color: "error.main", mb: 2 }} />
+        <Typography variant="h3" gutterBottom>
+          404 - Page Not Found
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          The page you're looking for doesn't exist or has been moved.
+        </Typography>
+        <Button component={Link} to="/" variant="contained" size="large">
+          Return to Home
+        </Button>
+      </Paper>
+    </Container>
+  );
+}
 
 export const Route = createRootRoute({
   component: RootComponent,
+  notFoundComponent: NotFoundComponent,
 });
 
 function RootComponent() {
