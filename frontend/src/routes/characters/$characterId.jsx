@@ -22,6 +22,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PersonIcon from "@mui/icons-material/Person";
+import StructuredCharacterDisplay from "../../components/StructuredCharacterDisplay";
 
 export const Route = createFileRoute("/characters/$characterId")({
   component: CharacterDetailComponent,
@@ -220,8 +221,40 @@ function CharacterDetailComponent() {
 
         {/* Details Card */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <Card>
-            <CardContent>
+          {/* Check if character has structured data */}
+          {character.structured_data ? (
+            // Display structured character profile
+            <Box>
+              <Box
+                sx={{
+                  mb: 2,
+                  p: 2,
+                  bgcolor: "primary.main",
+                  color: "white",
+                  borderRadius: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <Chip
+                  label="Structured Profile"
+                  size="small"
+                  sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
+                />
+                <Typography variant="body2">
+                  This character uses the new structured format with organized
+                  sections
+                </Typography>
+              </Box>
+              <StructuredCharacterDisplay
+                characterProfile={character.structured_data}
+              />
+            </Box>
+          ) : (
+            // Display legacy character format
+            <Card>
+              <CardContent>
               {/* Description */}
               {character.description && (
                 <Box sx={{ mb: 3 }}>
@@ -339,6 +372,7 @@ function CharacterDetailComponent() {
               )}
             </CardContent>
           </Card>
+          )}
         </Grid>
       </Grid>
 

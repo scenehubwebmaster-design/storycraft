@@ -19,6 +19,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import StructuredWorldDisplay from "../../components/StructuredWorldDisplay";
 
 export const Route = createFileRoute("/worlds/$worldId")({
   component: WorldDetailComponent,
@@ -183,8 +184,36 @@ function WorldDetailComponent() {
       </Box>
 
       {/* Content Card */}
-      <Card>
-        <CardContent>
+      {world.structured_data ? (
+        // Display structured world profile
+        <Box>
+          <Box
+            sx={{
+              mb: 2,
+              p: 2,
+              bgcolor: "primary.main",
+              color: "white",
+              borderRadius: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Chip
+              label="Structured Profile"
+              size="small"
+              sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
+            />
+            <Typography variant="body2">
+              This world uses the new structured format with organized sections
+            </Typography>
+          </Box>
+          <StructuredWorldDisplay worldProfile={world.structured_data} />
+        </Box>
+      ) : (
+        // Display legacy world format
+        <Card>
+          <CardContent>
           {/* Description */}
           {world.description && (
             <Box sx={{ mb: 3 }}>
@@ -264,6 +293,7 @@ function WorldDetailComponent() {
             )}
         </CardContent>
       </Card>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog
