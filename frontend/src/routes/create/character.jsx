@@ -44,6 +44,8 @@ import PromptSelector from "../../components/PromptSelector";
 import GenerationResult from "../../components/GenerationResult";
 import ModelSelector from "../../components/ModelSelector";
 import StructuredCharacterDisplay from "../../components/StructuredCharacterDisplay";
+import DnDCharacterCreator from "../../components/DnDCharacterCreator";
+import DnDCharacterSheet from "../../components/DnDCharacterSheet";
 
 export const Route = createFileRoute("/create/character")({
   component: CreateCharacterComponent,
@@ -89,6 +91,10 @@ function CreateCharacterComponent() {
 
   // Structured generation toggle
   const [useStructured, setUseStructured] = useState(true);
+  
+  // D&D Mode toggle
+  const [isDnDMode, setIsDnDMode] = useState(false);
+  const [dndCharacter, setDndCharacter] = useState(null);
 
   // Generation results
   const [generatedContent, setGeneratedContent] = useState(null);
@@ -553,6 +559,72 @@ function CreateCharacterComponent() {
               labelPlacement="start"
             />
           </Box>
+          
+          {/* D&D Mode Toggle */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: 2,
+              bgcolor: "background.paper",
+              borderRadius: 1,
+              border: "1px solid",
+              borderColor: isDnDMode ? "primary.main" : "divider",
+            }}
+          >
+            <Box>
+              <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                🎲 D&D 5E Mode
+                {isDnDMode && (
+                  <Chip
+                    label="Active"
+                    size="small"
+                    color="primary"
+                    sx={{ fontSize: "0.7rem" }}
+                  />
+                )}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {isDnDMode
+                  ? "Create a complete D&D 5th Edition character with stats, equipment, and AI-generated narrative."
+                  : "Enable D&D mode to generate characters with full D&D 5E stats, abilities, and equipment."}
+              </Typography>
+            </Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isDnDMode}
+                  onChange={(e) => setIsDnDMode(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Typography variant="body2" fontWeight="bold">
+                  D&D Mode
+                </Typography>
+              }
+              labelPlacement="start"
+            />
+          </Box>
+
+          {/* Show D&D Creator when D&D mode is active */}
+          {isDnDMode ? (
+            <DnDCharacterCreator
+              onCharacterGenerated={(character) => {
+                setDndCharacter(character);
+                setGeneratedContent(character);
+                setCharacterName(character.name || "");
+                setActiveStep(2); // Move to review step
+                setSuccess("D&D character generated successfully!");
+              }}
+              onError={(errorMsg) => {
+                setError(errorMsg);
+              }}
+            />
+          ) : (
+            // Original character creation form
+            <div>
 
           <Grid container spacing={3}>
             <Grid size={{ xs: 12 }}>
@@ -631,7 +703,9 @@ function CreateCharacterComponent() {
                         <MenuItem value="sci_fi">🚀 Sci-Fi</MenuItem>
                         <MenuItem value="historical">📜 Historical</MenuItem>
                         <MenuItem value="horror">👻 Horror</MenuItem>
-                        <MenuItem value="mystery_thriller">🔍 Mystery/Thriller</MenuItem>
+                        <MenuItem value="mystery_thriller">
+                          🔍 Mystery/Thriller
+                        </MenuItem>
                         <MenuItem value="romance">💕 Romance</MenuItem>
                         <MenuItem value="adventure">🗺️ Adventure</MenuItem>
                         <MenuItem value="western">🤠 Western</MenuItem>
@@ -1025,6 +1099,8 @@ function CreateCharacterComponent() {
               />
             </Grid>
           </Grid>
+          </div>
+          )}
         </Paper>
       )}
 
@@ -1057,9 +1133,12 @@ function CreateCharacterComponent() {
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2">Genre Variation:</Typography>
                 <Typography variant="body2">
-                  {selectedGenre === "sci_fi" ? "Sci-Fi" : 
-                   selectedGenre === "mystery_thriller" ? "Mystery/Thriller" :
-                   selectedGenre.charAt(0).toUpperCase() + selectedGenre.slice(1)}{" "}
+                  {selectedGenre === "sci_fi"
+                    ? "Sci-Fi"
+                    : selectedGenre === "mystery_thriller"
+                      ? "Mystery/Thriller"
+                      : selectedGenre.charAt(0).toUpperCase() +
+                        selectedGenre.slice(1)}{" "}
                   -{" "}
                   {variations[selectedGenre]?.find(
                     (v) => v.key === selectedVariation
@@ -1333,7 +1412,12 @@ function CreateCharacterComponent() {
           </Paper>
 
           {/* Display Component - Conditional based on generation mode */}
-          {useStructured ? (
+          {dndCharacter && dndCharacter.is_dnd ? (
+            // D&D Character Sheet
+            <Box sx={{ mb: 3 }}>
+              <DnDCharacterSheet character={dndCharacter} />
+            </Box>
+          ) : useStructured ? (
             <Box sx={{ mb: 3 }}>
               <StructuredCharacterDisplay characterProfile={generatedContent} />
               <Box
