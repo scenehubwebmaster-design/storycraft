@@ -638,7 +638,7 @@ ${formatNarrative(char.ai_narrative)}
           )}
 
           {/* AI-Generated Narrative */}
-          {character.ai_narrative && (
+          {(character.structured_data || character.ai_narrative) && (
             <Accordion
               expanded={expanded.narrative}
               onChange={() => handleExpandToggle("narrative")}
@@ -648,22 +648,43 @@ ${formatNarrative(char.ai_narrative)}
               </AccordionSummary>
               <AccordionDetails>
                 <Box>
-                  {character.ai_narrative.appearance && (
+                  {/* Physical Appearance */}
+                  {(character.structured_data?.physical_appearance || character.ai_narrative?.appearance) && (
                     <Box mb={2}>
                       <Typography
                         variant="subtitle2"
                         color="primary"
                         gutterBottom
                       >
-                        Appearance
+                        Physical Appearance
                       </Typography>
                       <Typography variant="body2" paragraph>
-                        {character.ai_narrative.appearance}
+                        {character.structured_data?.physical_appearance || character.ai_narrative?.appearance}
                       </Typography>
+                      {character.structured_data?.height_and_build && (
+                        <Typography variant="body2" color="text.secondary" paragraph>
+                          <strong>Build:</strong> {character.structured_data.height_and_build}
+                        </Typography>
+                      )}
+                      {character.structured_data?.distinctive_features && (
+                        <Box mt={1}>
+                          <Typography variant="caption" color="text.secondary">
+                            Distinctive Features:
+                          </Typography>
+                          <Box component="ul" sx={{ mt: 0.5, pl: 2 }}>
+                            {character.structured_data.distinctive_features.map((feature, idx) => (
+                              <Typography component="li" variant="body2" key={idx}>
+                                {feature}
+                              </Typography>
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
                     </Box>
                   )}
 
-                  {character.ai_narrative.personality && (
+                  {/* Personality */}
+                  {(character.structured_data?.personality_summary || character.ai_narrative?.personality) && (
                     <Box mb={2}>
                       <Typography
                         variant="subtitle2"
@@ -673,12 +694,40 @@ ${formatNarrative(char.ai_narrative)}
                         Personality
                       </Typography>
                       <Typography variant="body2" paragraph>
-                        {character.ai_narrative.personality}
+                        {character.structured_data?.personality_summary || character.ai_narrative?.personality}
                       </Typography>
+                      {character.structured_data?.personality_traits && (
+                        <Box mt={1}>
+                          <Typography variant="caption" color="text.secondary">
+                            Core Traits:
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                            {character.structured_data.personality_traits.map((trait, idx) => (
+                              <Chip key={idx} label={trait} size="small" />
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                      {character.structured_data?.ideals && (
+                        <Typography variant="body2" color="text.secondary" mt={1}>
+                          <strong>Ideals:</strong> {character.structured_data.ideals}
+                        </Typography>
+                      )}
+                      {character.structured_data?.bonds && (
+                        <Typography variant="body2" color="text.secondary" mt={1}>
+                          <strong>Bonds:</strong> {character.structured_data.bonds}
+                        </Typography>
+                      )}
+                      {character.structured_data?.flaws && (
+                        <Typography variant="body2" color="text.secondary" mt={1}>
+                          <strong>Flaws:</strong> {character.structured_data.flaws}
+                        </Typography>
+                      )}
                     </Box>
                   )}
 
-                  {character.ai_narrative.backstory && (
+                  {/* Backstory */}
+                  {(character.structured_data?.backstory || character.ai_narrative?.backstory) && (
                     <Box mb={2}>
                       <Typography
                         variant="subtitle2"
@@ -688,28 +737,72 @@ ${formatNarrative(char.ai_narrative)}
                         Backstory
                       </Typography>
                       <Typography variant="body2" paragraph>
-                        {character.ai_narrative.backstory}
+                        {character.structured_data?.backstory || character.ai_narrative?.backstory}
                       </Typography>
+                      {character.structured_data?.formative_events && (
+                        <Box mt={1}>
+                          <Typography variant="caption" color="text.secondary">
+                            Formative Events:
+                          </Typography>
+                          <Box component="ul" sx={{ mt: 0.5, pl: 2 }}>
+                            {character.structured_data.formative_events.map((event, idx) => (
+                              <Typography component="li" variant="body2" key={idx}>
+                                {event}
+                              </Typography>
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
                     </Box>
                   )}
 
-                  {character.ai_narrative.motivations && (
+                  {/* Motivations */}
+                  {(character.structured_data?.primary_motivation || character.ai_narrative?.motivations) && (
                     <Box mb={2}>
                       <Typography
                         variant="subtitle2"
                         color="primary"
                         gutterBottom
                       >
-                        Motivations
+                        Motivations & Goals
                       </Typography>
-                      <Typography variant="body2" paragraph>
-                        {character.ai_narrative.motivations}
-                      </Typography>
+                      {character.structured_data ? (
+                        <>
+                          <Typography variant="body2" paragraph>
+                            {character.structured_data.primary_motivation}
+                          </Typography>
+                          {character.structured_data.short_term_goals && (
+                            <Box mt={1}>
+                              <Typography variant="caption">Short-term Goals:</Typography>
+                              <Box component="ul" sx={{ pl: 2 }}>
+                                {character.structured_data.short_term_goals.map((goal, idx) => (
+                                  <Typography component="li" variant="body2" key={idx}>{goal}</Typography>
+                                ))}
+                              </Box>
+                            </Box>
+                          )}
+                          {character.structured_data.long_term_goals && (
+                            <Box mt={1}>
+                              <Typography variant="caption">Long-term Goals:</Typography>
+                              <Box component="ul" sx={{ pl: 2 }}>
+                                {character.structured_data.long_term_goals.map((goal, idx) => (
+                                  <Typography component="li" variant="body2" key={idx}>{goal}</Typography>
+                                ))}
+                              </Box>
+                            </Box>
+                          )}
+                        </>
+                      ) : (
+                        <Typography variant="body2" paragraph>
+                          {character.ai_narrative?.motivations}
+                        </Typography>
+                      )}
                     </Box>
                   )}
 
-                  {character.ai_narrative.quirks && (
-                    <Box>
+                  {/* Quirks */}
+                  {(character.structured_data?.quirks || character.ai_narrative?.quirks) && (
+                    <Box mb={2}>
                       <Typography
                         variant="subtitle2"
                         color="primary"
@@ -717,8 +810,105 @@ ${formatNarrative(char.ai_narrative)}
                       >
                         Quirks & Mannerisms
                       </Typography>
+                      {character.structured_data ? (
+                        <>
+                          {character.structured_data.quirks && character.structured_data.quirks.length > 0 && (
+                            <Box component="ul" sx={{ pl: 2, mb: 1 }}>
+                              {character.structured_data.quirks.map((quirk, idx) => (
+                                <Typography component="li" variant="body2" key={idx}>
+                                  {quirk}
+                                </Typography>
+                              ))}
+                            </Box>
+                          )}
+                          {character.structured_data.speech_pattern && (
+                            <Box mt={1}>
+                              <Typography variant="caption">Speech Pattern:</Typography>
+                              <Typography variant="body2">
+                                {character.structured_data.speech_pattern}
+                              </Typography>
+                            </Box>
+                          )}
+                        </>
+                      ) : (
+                        <Typography variant="body2">
+                          {character.ai_narrative.quirks}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Combat Style & Abilities */}
+                  {(character.structured_data?.combat_style_narrative || character.structured_data?.signature_abilities) && (
+                    <Box mb={2}>
+                      <Typography
+                        variant="subtitle2"
+                        color="primary"
+                        gutterBottom
+                      >
+                        Combat Style
+                      </Typography>
+                      {character.structured_data.combat_style_narrative && (
+                        <Typography variant="body2" paragraph>
+                          {character.structured_data.combat_style_narrative}
+                        </Typography>
+                      )}
+                      {character.structured_data.signature_abilities && character.structured_data.signature_abilities.length > 0 && (
+                        <Box mt={1}>
+                          <Typography variant="caption">Signature Abilities:</Typography>
+                          <Box component="ul" sx={{ pl: 2 }}>
+                            {character.structured_data.signature_abilities.map((ability, idx) => (
+                              <Typography component="li" variant="body2" key={idx}>
+                                {ability}
+                              </Typography>
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Social Identity */}
+                  {(character.structured_data?.reputation || character.structured_data?.allies_and_enemies) && (
+                    <Box mb={2}>
+                      <Typography
+                        variant="subtitle2"
+                        color="primary"
+                        gutterBottom
+                      >
+                        Social Identity
+                      </Typography>
+                      {character.structured_data.reputation && (
+                        <Box mb={1}>
+                          <Typography variant="caption">Reputation:</Typography>
+                          <Typography variant="body2">
+                            {character.structured_data.reputation}
+                          </Typography>
+                        </Box>
+                      )}
+                      {character.structured_data.allies_and_enemies && (
+                        <Box mt={1}>
+                          <Typography variant="caption">Allies & Enemies:</Typography>
+                          <Typography variant="body2">
+                            {character.structured_data.allies_and_enemies}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Character Arc Potential */}
+                  {character.structured_data?.character_arc_potential && (
+                    <Box mb={2}>
+                      <Typography
+                        variant="subtitle2"
+                        color="primary"
+                        gutterBottom
+                      >
+                        Character Arc Potential
+                      </Typography>
                       <Typography variant="body2">
-                        {character.ai_narrative.quirks}
+                        {character.structured_data.character_arc_potential}
                       </Typography>
                     </Box>
                   )}
