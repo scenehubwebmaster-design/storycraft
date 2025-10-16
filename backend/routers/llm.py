@@ -499,10 +499,12 @@ async def get_groq_models():
 
 
 @router.get("/claude/models")
+@router.get("/anthropic/models")  # Alias for consistency
 async def get_claude_models():
     """
     Get list of available Claude (Anthropic) models with their capabilities.
     Returns models with pricing, features, and use case recommendations.
+    Available at both /claude/models and /anthropic/models for consistency.
     """
     try:
         models = fetch_claude_models()
