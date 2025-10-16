@@ -534,9 +534,17 @@ REQUIRED FIELDS TO COMPLETE (all must be filled with specific details):
 - Height: Precise measurement (e.g., "5'9\"", "178 cm")
 - Build: Specific body type with details (e.g., "lean and wiry with defined muscles", "stocky with broad shoulders")
 - Hair: Complete description (color, length, style, texture, any distinctive features)
+  ⚠️ AVOID CLICHÉS: No "flowing black hair", "golden blonde locks", or overused descriptors
+  • Use specific, creative descriptions: auburn bob, close-cropped silver, braided copper, shaved temples
 - Eyes: Specific color and notable characteristics (e.g., "piercing green with gold flecks", "deep brown with laugh lines")
+  ⚠️ BE UNIQUE: Avoid repeating common combinations like "green with gold flecks"
+  • Use unexpected colors: slate-gray, amber, hazel with copper, storm-blue, violet, heterochromatic
 - Distinctive Features: List 3-5 unique physical traits (scars, tattoos, birthmarks, mannerisms)
+  ⚠️ CRITICAL: Make these TRULY distinctive - avoid generic "scar on left cheek"
+  • Be specific about location, shape, origin, and appearance
 - Physical Description: 2-3 sentences synthesizing overall appearance and impression
+  ⚠️ NO REPETITION: Avoid phrases like "olive-toned with freckles", "sun-kissed skin", "porcelain complexion"
+  • Use varied, creative skin descriptions: russet, bronze, walnut, alabaster, weathered, battle-scarred
 
 **PERSONALITY:**
 - Personality Traits: List 4-6 core traits with brief explanations
@@ -578,6 +586,12 @@ REQUIRED FIELDS TO COMPLETE (all must be filled with specific details):
 - Quirks and Habits: List 3-5 specific behavioral quirks, habits, or mannerisms
 
 REMEMBER: Every field must be completed with concrete, specific details. No vague descriptions, no placeholders, no omissions.
+
+⚠️ UNIQUENESS MANDATE:
+- Each character MUST be visually and personality-wise DISTINCT from any other
+- NEVER reuse physical trait combinations: "olive-toned with freckles", "green eyes with gold flecks", "flowing black hair"
+- Vary skin tones, eye colors, hair styles, and distinctive features creatively
+- Make every character memorably unique - no generic fantasy tropes
 """
         return base
     

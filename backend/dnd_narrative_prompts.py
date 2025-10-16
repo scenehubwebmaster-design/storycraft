@@ -725,8 +725,22 @@ REQUIRED OUTPUT STRUCTURE (D&D 5E Character Sheet Format)
    ├─ height: {species}-appropriate height
    ├─ weight: Weight matching build and species
    ├─ eyes: Eye color/appearance (consider species traits)
+   │   ⚠️ BE CREATIVE: Avoid common combinations like "green with gold flecks"
+   │   • Use unexpected colors, patterns, or descriptors
+   │   • Examples: slate-gray, amber, heterochromatic, storm-blue, copper, violet
    ├─ skin: Skin tone/scales/fur appropriate to species
+   │   ⚠️ CRITICAL: Generate UNIQUE skin descriptions - NO REPETITION!
+   │   • Avoid clichés: "olive-toned with freckles", "porcelain pale", "sun-kissed"
+   │   • Use diverse, specific descriptions:
+   │     - Varied tones: russet, bronze, ochre, umber, walnut, mahogany, ash, alabaster, sienna
+   │     - Unique textures: weathered, smooth, coarse, calloused, battle-scarred
+   │     - Specific marks: birthmarks, sun damage, frost-touched, wind-burned, tattoos
+   │   • Mix and match creatively - make EVERY character visually distinct
    └─ hair: Hair description (or species equivalent like crests, frills)
+       ⚠️ AVOID REPETITION: No generic "flowing black hair" or "golden blonde"
+       • Use specific styles: cropped, braided, shaved sides, dreadlocks, topknot
+       • Unique colors: auburn, raven-black, salt-and-pepper, copper-streaked, ash-blonde
+       • Textures: coarse, silky, wiry, curled, wavy, straight, tangled
 
 2. CHARACTER APPEARANCE
    └─ character_appearance: Rich visual description for portrait generation
@@ -805,13 +819,17 @@ GENERATION GUIDELINES:
   • Use vivid, evocative language that brings the character to life
   • Ensure backstory explains both class training and background
   • Make the name authentic to species culture
+  • **VARY physical descriptions** - avoid repeating common traits across characters
+  • Use unexpected combinations and creative descriptors
 
 ✗ DON'T:
   • Duplicate mechanical information (HP, AC, spell slots, etc.)
   • Use generic or cliché descriptions
+  • **NEVER repeat common phrases**: "olive-toned with freckles", "piercing green eyes", "flowing black hair"
   • Ignore species or class characteristics
   • Create contradictions with alignment or background
   • Write vague personality traits ("nice", "brave", "smart")
+  • Copy physical trait combinations from previous characters
 
 Generate a complete narrative that makes this character ready to play at the table!
 ═══════════════════════════════════════════════════════════════════════════
