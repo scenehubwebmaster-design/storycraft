@@ -270,14 +270,22 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
                 logger.error(f"Narrative generation failed: {narrative_error}")
                 # Continue without narrative rather than failing entire request
                 narrative_dict = {"error": str(narrative_error)}
-        
-        # Prepare description fields (use narrative if available, otherwise defaults)
-        if narrative_data:
-            description = narrative_dict.get("physical_appearance", dnd_char["class_description"])
-            personality = narrative_dict.get("personality_summary", f"Alignment: {dnd_char['alignment']}")
-            appearance = narrative_dict.get("physical_appearance", dnd_char["species_description"])
-            background_text = narrative_dict.get("backstory", dnd_char["background_description"])
+                narrative_data = None
         else:
+            narrative_dict = None
+        
+        # Extract narrative data for legacy fields
+        if narrative_dict and "error" not in narrative_dict:
+            # Use generated character name if available
+            character_name = narrative_dict.get("character_name", dnd_char["name"])
+            description = narrative_dict.get("character_appearance", dnd_char["class_description"])
+            personality = narrative_dict.get("personality_traits", f"Alignment: {dnd_char['alignment']}")
+            if isinstance(personality, list):
+                personality = ", ".join(personality)  # Convert list to string for legacy field
+            appearance = narrative_dict.get("character_appearance", dnd_char["species_description"])
+            background_text = narrative_dict.get("character_backstory", dnd_char["background_description"])
+        else:
+            character_name = dnd_char["name"]
             description = dnd_char["class_description"]
             personality = f"Alignment: {dnd_char['alignment']}"
             appearance = dnd_char["species_description"]
@@ -285,7 +293,7 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
         
         # Create database character record
         db_character = Character(
-            name=dnd_char["name"],
+            name=character_name,
             description=description,
             background=background_text,
             personality=personality,
@@ -323,6 +331,9 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
             dnd_spellcasting=dnd_char["spellcasting"],
             dnd_languages=dnd_char["languages"],
             
+            # Store structured narrative data if generated
+            structured_data=narrative_dict if (narrative_dict and "error" not in narrative_dict) else None,
+            
             # Store complete character sheet and narrative in generation_log
             generation_log={
                 "type": "dnd_5e_character",
@@ -333,7 +344,7 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
                 "structured_output": request.use_structured if request.generate_narrative else None,
                 "timestamp": datetime.utcnow().isoformat(),
                 "character_sheet": format_character_sheet(dnd_char),
-                "ai_narrative": narrative_dict if narrative_data else None
+                "ai_narrative": narrative_dict if narrative_dict else None
             }
         )
         

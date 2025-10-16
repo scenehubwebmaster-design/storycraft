@@ -337,134 +337,151 @@ class DnDCharacterNarrative(BaseModel):
     """
     Structured narrative profile for D&D 5E characters.
     
-    Designed to complement D&D mechanical stats with rich storytelling elements.
-    Incorporates species traits (like Dragonborn draconic ancestry, breath weapon, etc.)
-    and class features into cohesive narrative descriptions.
+    Aligned with official D&D 5E character sheet sections.
+    Focuses on storytelling "flavor" elements that complement mechanical stats.
+    Avoids duplicating rules-based information (abilities, HP, AC, etc.).
     """
     
-    # Physical Appearance (incorporating species traits)
-    physical_appearance: str = Field(
-        ..., 
+    # Character Information
+    character_name: str = Field(
+        ...,
         description=(
-            "Detailed physical description incorporating species traits. "
-            "For Dragonborn: describe draconic features (scales, horns, coloration matching ancestry), "
-            "wingless bipedal dragon appearance, thick bone structure, bright eyes. "
-            "Include build influenced by ability scores, distinctive features, armor/clothing style, "
-            "and overall presence. 3-5 sentences."
+            "The character's full name, incorporating species naming conventions. "
+            "For Dragonborn: clan names, draconic-sounding names. "
+            "For Elves: flowing, melodic names. Consider cultural background."
         )
     )
-    height_and_build: str = Field(..., description="Height and body build based on species and ability scores")
-    distinctive_features: List[str] = Field(
-        ..., 
+    age: str = Field(
+        ...,
         description=(
-            "Unique physical characteristics (2-4 features). "
-            "For Dragonborn: scale patterns, horn shapes, facial structure, tail presence (optional), "
-            "signs of draconic ancestry (e.g., 'copper-scaled', 'frost-touched', 'fire-warmed skin')"
+            "Age appropriate for species. "
+            "Dragonborn: young adult (15-20), adult (30-60), elder (80+). "
+            "Elves: young (20-100), adult (100-500), elder (600+). "
+            "Include context like 'young for her kind' or 'seasoned veteran'."
+        )
+    )
+    height: str = Field(..., description="Height appropriate for species and build")
+    weight: str = Field(..., description="Weight reflecting build and species")
+    eyes: str = Field(
+        ...,
+        description=(
+            "Eye color and appearance. For Dragonborn: bright, reptilian eyes matching "
+            "draconic ancestry (copper, gold, red, etc.). May glow or have slit pupils."
+        )
+    )
+    skin: str = Field(
+        ...,
+        description=(
+            "Skin tone/type. For Dragonborn: scale color matching ancestry "
+            "(brass, bronze, copper, gold, red, etc.), texture, patterns. "
+            "For other species: complexion, distinguishing marks."
+        )
+    )
+    hair: str = Field(
+        ...,
+        description=(
+            "Hair color, style, length. For Dragonborn: often none, but may have "
+            "decorative crests, frills, or horn decorations instead."
         )
     )
     
-    # Personality and Demeanor
-    personality_summary: str = Field(
-        ..., 
+    # Character Appearance (narrative description for portrait reference)
+    character_appearance: str = Field(
+        ...,
         description=(
-            "Rich personality profile based on alignment, background, and class philosophy. "
-            "Include core traits, behavioral patterns, social tendencies, emotional characteristics. "
-            "3-4 sentences."
+            "Rich visual description for portrait generation and visualization. "
+            "Include clothing style, armor type, carried weapons, distinctive gear, "
+            "posture, overall impression. This complements the portrait generator. "
+            "3-4 sentences focusing on visual elements."
         )
     )
-    personality_traits: List[str] = Field(..., description="Core personality traits (3-5 traits)")
-    ideals: str = Field(..., description="Personal ideals and beliefs shaped by background and alignment")
-    bonds: str = Field(..., description="Important relationships or connections to people, places, or things")
-    flaws: str = Field(..., description="Character flaws or weaknesses that create drama and growth")
     
-    # Backstory and Origins
-    backstory: str = Field(
-        ..., 
+    # Allies & Organizations
+    allies_and_organizations: str = Field(
+        ...,
+        description=(
+            "Important allies, contacts, factions, or organizations the character "
+            "is connected to. Include guilds, religious orders, noble houses, "
+            "adventuring companies, or mentors. Mention relationship nature. "
+            "2-3 sentences."
+        )
+    )
+    
+    # Character Backstory
+    character_backstory: str = Field(
+        ...,
         description=(
             "Compelling backstory incorporating background feature, species history, "
-            "class training origin, and alignment influences. "
-            "For Dragonborn: consider their connection to dragon progenitors (Bahamut/Tiamat), "
-            "clan/clan-less status, relationship with draconic ancestry. "
-            "Include origins, formative experiences, key relationships, path to becoming adventurer. "
-            "4-7 sentences."
+            "class training origin, and alignment influences. Include origins, "
+            "formative experiences, key relationships, and path to becoming an adventurer. "
+            "For Dragonborn: consider clan ties, draconic ancestry connection, "
+            "relationship with dragon progenitors (Bahamut/Tiamat). "
+            "4-6 sentences of rich narrative."
         )
     )
-    formative_events: List[str] = Field(
-        ..., 
-        description="Key events that shaped the character (2-4 events)"
-    )
     
-    # Motivations and Goals
-    primary_motivation: str = Field(
-        ..., 
-        description="Main driving force for adventuring, influenced by background and alignment"
-    )
-    short_term_goals: List[str] = Field(..., description="Immediate objectives (2-3 goals)")
-    long_term_goals: List[str] = Field(..., description="Overarching ambitions (1-2 goals)")
-    fears: str = Field(..., description="What they fear or worry about")
-    
-    # Quirks and Mannerisms
-    quirks: List[str] = Field(
-        ..., 
+    # Additional Features & Traits (narrative flavor)
+    additional_features_and_traits: str = Field(
+        ...,
         description=(
-            "Memorable quirks, habits, and mannerisms reflecting species and background. "
-            "For Dragonborn: draconic behaviors (hissing when angry, territorial instincts, "
-            "hoarding tendencies, preference for warm environments, etc.). "
-            "2-4 distinctive quirks."
+            "Unique quirks, habits, mannerisms, and distinguishing characteristics. "
+            "For Dragonborn: draconic behaviors (hissing when angry, hoarding tendencies, "
+            "territorial instincts, preference for heat, gravelly voice). "
+            "Include speech patterns, nervous habits, talents, or unusual knowledge. "
+            "3-5 distinctive traits as flowing text."
         )
     )
-    speech_pattern: str = Field(
-        ..., 
+    
+    # Character Motivations (D&D 5E standard fields)
+    personality_traits: List[str] = Field(
+        ...,
         description=(
-            "How they speak and communicate. "
-            "For Dragonborn: consider gravelly voice, formal speech, draconic phrases, "
-            "tendency to use dragon-related metaphors."
-        )
+            "2 distinct personality traits from background or custom traits. "
+            "Should reflect character's behavior, attitudes, and mannerisms. "
+            "D&D 5E expects exactly 2 traits."
+        ),
+        min_length=2,
+        max_length=2
     )
-    
-    # Class and Combat Identity
-    combat_style_narrative: str = Field(
-        ..., 
+    ideals: str = Field(
+        ...,
         description=(
-            "Narrative description of their fighting style incorporating class features. "
-            "For Dragonborn: mention breath weapon usage in combat, fighting style that "
-            "complements their draconic abilities. 2-3 sentences."
+            "One ideal that drives the character. Should align with alignment "
+            "(Good, Evil, Lawful, Chaotic, Neutral, or Any). "
+            "Format: 'Ideal: Description' (e.g., 'Honor: I don't steal from others'). "
+            "D&D 5E expects 1 ideal."
         )
     )
-    signature_abilities: List[str] = Field(
-        ..., 
+    bonds: str = Field(
+        ...,
         description=(
-            "Their most distinctive abilities or tactics in narrative form (2-4 abilities). "
-            "For Dragonborn: MUST include breath weapon description (Cone or Line, damage type "
-            "matching ancestry), damage resistance, and darkvision. At level 5+: mention Draconic Flight."
+            "One bond connecting character to people, places, or events. "
+            "Should create story hooks and emotional investment. "
+            "D&D 5E expects 1 bond."
+        )
+    )
+    flaws: str = Field(
+        ...,
+        description=(
+            "One flaw or weakness. Should create interesting roleplay challenges "
+            "and character growth opportunities. D&D 5E expects 1 flaw."
         )
     )
     
-    # Social and Relationships
-    reputation: str = Field(
-        ..., 
-        description="How they're perceived by others, their social standing"
-    )
-    allies_and_enemies: str = Field(
-        ..., 
-        description="Brief mention of key allies, rivals, or enemies from their past"
-    )
-    
-    # Character Development Potential
-    character_arc_potential: str = Field(
-        ..., 
-        description="Potential for growth, internal conflicts, and story development"
-    )
-    
-    # Validators
-    @field_validator('distinctive_features', 'personality_traits', 'formative_events', 
-                     'short_term_goals', 'long_term_goals', 'quirks', 'signature_abilities', 
-                     mode='before')
+    # Validators for backwards compatibility and string-to-list conversion
+    @field_validator('personality_traits', mode='before')
     @classmethod
-    def convert_string_to_list(cls, v):
-        """Convert string to list if LLM returns string instead of array"""
+    def convert_personality_to_list(cls, v):
+        """Convert string to list of exactly 2 traits if needed"""
         if isinstance(v, str):
-            return [v]
+            # Split by common delimiters and take first 2
+            traits = [t.strip() for t in v.replace('\n', ',').split(',') if t.strip()]
+            return traits[:2] if len(traits) >= 2 else traits + ['Adaptable'] * (2 - len(traits))
+        if isinstance(v, list):
+            # Ensure exactly 2 traits
+            if len(v) < 2:
+                return v + ['Adaptable'] * (2 - len(v))
+            return v[:2]
         return v
 
 

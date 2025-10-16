@@ -493,8 +493,8 @@ def build_dnd_narrative_prompt(
     """
     Build a comprehensive prompt for structured D&D character narrative generation.
     
-    This function creates a single prompt that will generate all narrative aspects
-    using the DnDCharacterNarrative schema structure.
+    Aligned with official D&D 5E character sheet sections. Generates storytelling
+    "flavor" elements that complement mechanical stats without duplicating them.
     
     Args:
         dnd_character: Complete D&D character data from generator
@@ -514,165 +514,290 @@ def build_dnd_narrative_prompt(
     
     # Get base context
     base_context = builder.get_base_context()
+    species = dnd_character.get("dnd_species", "Human").title()
+    char_class = dnd_character.get("dnd_class", "Fighter").title()
+    background = dnd_character.get("dnd_background", "Folk Hero").title()
+    alignment = dnd_character.get("dnd_alignment", "Neutral")
     
     # Build comprehensive prompt for all narrative aspects
     prompt = f"""{base_context}
 
-Generate a comprehensive, structured narrative profile for this D&D 5E character.
-The narrative should fully integrate their mechanical stats, species traits, class features, 
-and background into cohesive storytelling elements.
+═══════════════════════════════════════════════════════════════════════════
+D&D 5E CHARACTER NARRATIVE GENERATION
+Official Character Sheet Format
+═══════════════════════════════════════════════════════════════════════════
+
+Generate a comprehensive, immersive narrative profile for a {species} {char_class}.
+Focus on STORYTELLING FLAVOR that brings the character to life while avoiding
+duplication of mechanical stats (HP, AC, abilities, etc.).
 
 NARRATIVE STYLE: {style_enum.value}
 
-IMPORTANT SPECIES-SPECIFIC CONSIDERATIONS:
+SPECIES-SPECIFIC GUIDANCE:
 """
 
     # Add species-specific guidance
-    species = dnd_character.get("species", "").lower()
+    species_lower = species.lower()
     
-    if "dragonborn" in species:
+    if "dragonborn" in species_lower:
         prompt += """
-- DRAGONBORN: This character is a wingless, bipedal dragon with draconic features
-- Describe their scale coloration matching their draconic ancestry
-- Mention their horns, thick-boned structure, bright eyes, and imposing presence
-- Include how their breath weapon (Cone or Line attack) manifests in combat
-- Reference their damage resistance to their ancestry's element
-- At level 5+: Describe how they manifest spectral draconic wings for flight
-- Consider draconic behaviors: formal speech, territorial instincts, honor-bound nature
-- Connection to dragon progenitors (Bahamut/Tiamat legends)
+🐉 DRAGONBORN - Proud Dragon-Blooded Warriors
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Physical Features:
+  - Wingless bipedal dragons with draconic features
+  - Scales matching draconic ancestry (brass, bronze, copper, gold, silver, red, etc.)
+  - Distinctive horns, thick-boned build, bright reptilian eyes
+  - No hair (may have decorative crests or frills)
+  - Imposing, powerful presence
+
+Cultural Elements:
+  - Clan-based society with strong honor codes
+  - Connection to dragon progenitors (Bahamut for good, Tiamat for evil)
+  - Formal speech patterns, gravelly voices
+  - Draconic behaviors: territorial, hoard keepsakes, prefer warmth
+
+Special Abilities to Reference:
+  - Breath weapon (describe in combat style or traits)
+  - Damage resistance to ancestry element
+  - At level 5+: Spectral draconic wings for flight
 """
-    elif "elf" in species:
+    elif "elf" in species_lower or "eladrin" in species_lower:
         prompt += """
-- ELF: Emphasize grace, longevity perspective, keen senses, and connection to nature/magic
-- Describe their elegant features, pointed ears, and ageless appearance
+🍃 ELF - Graceful, Long-Lived Fey-Touched
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Physical Features:
+  - Slender, graceful build with pointed ears
+  - Ageless, timeless appearance
+  - Flowing hair, ethereal beauty
+  - Keen eyes that miss nothing
+
+Cultural Elements:
+  - Long perspective from centuries of life
+  - Deep connection to nature, magic, or ancient traditions
+  - Refined, elegant mannerisms
+  - May seem aloof but deeply passionate
 """
-    elif "dwarf" in species:
+    elif "dwarf" in species_lower:
         prompt += """
-- DWARF: Emphasize stout build, resilience, craftsmanship appreciation, and clan connections
-- Describe their robust frame, distinctive beard/facial features, and sturdy presence
+⚒️ DWARF - Resilient Mountain-Folk
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Physical Features:
+  - Stout, broad build (4-5 feet tall but heavy)
+  - Magnificent beard (or braided facial hair)
+  - Weathered, hardy features
+  - Strong, calloused hands
+
+Cultural Elements:
+  - Clan and family central to identity
+  - Appreciation for craftsmanship and quality
+  - Stubborn, loyal, traditional
+  - Direct communication style
 """
-    elif "halfling" in species:
+    elif "halfling" in species_lower:
         prompt += """
-- HALFLING: Emphasize small stature, lucky nature, courage, and community bonds
-- Describe their diminutive but nimble form, cheerful demeanor, and practical nature
+🌾 HALFLING - Brave Hearts in Small Packages
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Physical Features:
+  - Small stature (about 3 feet tall)
+  - Nimble, quick movements
+  - Curly hair, often on bare feet
+  - Warm, friendly faces
+
+Cultural Elements:
+  - Community-focused, hospitable
+  - Surprisingly brave and resourceful
+  - Practical, down-to-earth wisdom
+  - Lucky and optimistic
+"""
+    elif "tiefling" in species_lower:
+        prompt += """
+😈 TIEFLING - Infernal Heritage
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Physical Features:
+  - Horns (various shapes), skin in unusual tones (red, purple, blue)
+  - Solid-color eyes (no pupils) or exotic eye colors
+  - Tail, sometimes cloven hooves
+  - Often striking or unsettling appearance
+
+Cultural Elements:
+  - Face prejudice due to infernal bloodline
+  - Often develop strong sense of self-reliance
+  - May embrace or reject their heritage
+  - Charismatic presence
 """
     else:
         prompt += f"""
-- {species.upper()}: Incorporate appropriate species traits and characteristics
-- Reflect their unique racial abilities and cultural background
-"""
-    
-    # Add class-specific guidance
-    char_class = dnd_character.get("class", "").lower()
-    if char_class in ["wizard", "sorcerer", "warlock"]:
-        prompt += f"""
-- {char_class.upper()}: Weave their magical abilities into combat style and personality
-- Describe how they channel magical energy and their relationship with arcane forces
-"""
-    elif char_class in ["fighter", "barbarian", "paladin"]:
-        prompt += f"""
-- {char_class.upper()}: Emphasize martial prowess, combat training, and physical conditioning
-- Describe their fighting technique and warrior bearing
-"""
-    elif char_class in ["rogue", "ranger"]:
-        prompt += f"""
-- {char_class.upper()}: Highlight stealth, skill expertise, and tactical thinking
-- Describe their cautious approach and sharp observational skills
-"""
-    elif char_class == "cleric":
-        prompt += """
-- CLERIC: Balance divine faith with practical healing/combat abilities
-- Describe their spiritual connection and how their deity influences them
-"""
-    elif char_class == "bard":
-        prompt += """
-- BARD: Showcase their charisma, artistic talents, and Jack-of-all-trades versatility
-- Describe their performance style and how they inspire others
-"""
-    elif char_class == "monk":
-        prompt += """
-- MONK: Emphasize discipline, ki energy manipulation, and martial arts philosophy
-- Describe their centered demeanor and fluid combat movements
-"""
-    elif char_class == "druid":
-        prompt += """
-- DRUID: Highlight connection to nature, Wild Shape abilities, and primal magic
-- Describe their attunement to natural cycles and wild places
+{species.upper()} Traits:
+  - Incorporate appropriate species characteristics
+  - Reflect cultural background and racial abilities
+  - Draw from species lore and typical features
 """
     
     prompt += f"""
 
-ABILITY SCORE INTERPRETATION:
+CLASS-SPECIFIC GUIDANCE FOR {char_class.upper()}:
+"""
+
+    # Add class guidance
+    class_lower = char_class.lower()
+    if class_lower in ["wizard", "sorcerer", "warlock"]:
+        prompt += """
+  - Describe relationship with magic (scholarly study, innate power, pact)
+  - Mention magical mannerisms or effects
+  - Reference spellcasting in combat approach
+"""
+    elif class_lower in ["fighter", "barbarian", "paladin"]:
+        prompt += """
+  - Emphasize combat training and martial discipline
+  - Describe weapon preferences and fighting technique
+  - Mention physical conditioning and warrior bearing
+"""
+    elif class_lower in ["rogue", "ranger"]:
+        prompt += """
+  - Highlight stealth, cunning, and expertise
+  - Describe tactical thinking and observational skills
+  - Mention preferred tools of the trade
+"""
+    elif class_lower == "cleric":
+        prompt += """
+  - Balance divine faith with practical abilities
+  - Describe connection to deity and how it manifests
+  - Mention holy symbols, prayers, or rituals
+"""
+    elif class_lower == "bard":
+        prompt += """
+  - Showcase artistic talents and performance style
+  - Describe charisma and how they inspire others
+  - Mention instrument or performance preference
+"""
+    elif class_lower == "monk":
+        prompt += """
+  - Emphasize discipline, meditation, and philosophy
+  - Describe martial arts style and ki manifestation
+  - Mention monastery background or training
+"""
+    elif class_lower == "druid":
+        prompt += """
+  - Highlight attunement to nature and wild places
+  - Describe Wild Shape preferences
+  - Mention natural symbols or druidic focus
+"""
+    elif class_lower == "artificer":
+        prompt += """
+  - Emphasize magical invention and crafting
+  - Describe tools, gadgets, or infusions
+  - Mention innovative thinking and experimentation
+"""
+    
+    prompt += f"""
+
+BACKGROUND INFLUENCE ({background}):
+  - This background shapes their past, skills, and worldview
+  - Incorporate background feature into backstory
+  - Reference background-appropriate relationships and experiences
+
+═══════════════════════════════════════════════════════════════════════════
+REQUIRED OUTPUT STRUCTURE (D&D 5E Character Sheet Format)
+═══════════════════════════════════════════════════════════════════════════
+
+1. CHARACTER INFORMATION
+   ├─ character_name: Full name following {species} naming conventions
+   ├─ age: Age appropriate for {species} (with context like "young", "seasoned", "elder")
+   ├─ height: {species}-appropriate height
+   ├─ weight: Weight matching build and species
+   ├─ eyes: Eye color/appearance (consider species traits)
+   ├─ skin: Skin tone/scales/fur appropriate to species
+   └─ hair: Hair description (or species equivalent like crests, frills)
+
+2. CHARACTER APPEARANCE
+   └─ character_appearance: Rich visual description for portrait generation
+      • Include clothing, armor type, carried weapons, gear
+      • Describe posture, demeanor, overall impression
+      • 3-4 sentences focused on visual storytelling
+
+3. ALLIES & ORGANIZATIONS
+   └─ allies_and_organizations: Important connections and affiliations
+      • Guilds, religious orders, noble houses, factions
+      • Mentors, companions, or contacts
+      • Nature of relationships (2-3 sentences)
+
+4. CHARACTER BACKSTORY
+   └─ character_backstory: Complete origin story
+      • Birthplace and upbringing
+      • How they gained class training
+      • Connection to {background} background
+      • Path to becoming an adventurer
+      • 4-6 sentences of compelling narrative
+
+5. ADDITIONAL FEATURES & TRAITS
+   └─ additional_features_and_traits: Quirks, habits, and distinguishing characteristics
+      • Unique mannerisms or behaviors (especially {species}-specific)
+      • Speech patterns and voice characteristics
+      • Nervous habits, talents, or unusual knowledge
+      • 3-5 distinctive traits as flowing narrative
+
+6. CHARACTER MOTIVATIONS (D&D 5E Standard Format)
+   ├─ personality_traits: [EXACTLY 2 traits]
+   │   • Distinct behavioral characteristics
+   │   • Should drive roleplay decisions
+   │
+   ├─ ideals: ONE ideal aligned with {alignment}
+   │   • Format: "Ideal: Description"
+   │   • Should reflect alignment (Good/Evil/Lawful/Chaotic/Neutral)
+   │
+   ├─ bonds: ONE bond to people, places, or events
+   │   • Creates emotional investment
+   │   • Generates story hooks
+   │
+   └─ flaws: ONE character flaw
+       • Creates roleplay challenges
+       • Opportunity for character growth
+
+═══════════════════════════════════════════════════════════════════════════
+ABILITY SCORE CONTEXT (Use to inform personality and appearance):
+═══════════════════════════════════════════════════════════════════════════
+
 {builder._get_ability_summary()}
 
-Physical: {builder._get_physical_traits()}
-Mental: {builder._get_mental_traits()}
-Social: {builder._get_social_traits()}
+Physical Interpretation: {builder._get_physical_traits()}
+Mental Interpretation: {builder._get_mental_traits()}
+Social Interpretation: {builder._get_social_traits()}
 
-REQUIRED NARRATIVE ELEMENTS:
-
-1. PHYSICAL APPEARANCE (3-5 sentences):
-   - Full physical description incorporating species traits
-   - Build reflecting ability scores (STR, DEX, CON, CHA)
-   - Distinctive features unique to this character
-   - Clothing/armor style appropriate to class and background
-   - Overall presence and first impression they make
-
-2. PERSONALITY & DEMEANOR:
-   - Core personality traits (3-5 traits) reflecting alignment and background
-   - Ideals shaped by background and alignment
-   - Bonds (relationships, connections, loyalties)
-   - Flaws (weaknesses that create drama and depth)
-   - Overall behavioral patterns and social tendencies
-
-3. BACKSTORY (4-7 sentences):
-   - Origins and upbringing reflecting background
-   - How they gained their class training
-   - Formative events (2-4 specific events) that shaped them
-   - Key relationships from their past
-   - Path that led them to become an adventurer
-   - Connection to species culture/society
-
-4. MOTIVATIONS & GOALS:
-   - Primary motivation for adventuring
-   - Short-term goals (2-3 immediate objectives)
-   - Long-term goals (1-2 overarching ambitions)
-   - Fears and concerns
-
-5. QUIRKS & MANNERISMS (2-4 items):
-   - Unique habits reflecting species and background
-   - Speech patterns and communication style
-   - Memorable behavioral quirks
-
-6. COMBAT STYLE & SIGNATURE ABILITIES:
-   - Narrative description of fighting approach
-   - Signature abilities in story form (MUST include racial abilities like breath weapon)
-   - How they use class features creatively
-
-7. SOCIAL IDENTITY:
-   - How others perceive them
-   - Reputation and social standing
-   - Key allies, rivals, or enemies
-
-8. CHARACTER DEVELOPMENT:
-   - Potential for growth and change
-   - Internal conflicts
-   - Story arc opportunities
 """
     
     if additional_context:
         prompt += f"""
-
-ADDITIONAL CONTEXT:
+═══════════════════════════════════════════════════════════════════════════
+ADDITIONAL PLAYER CONTEXT:
+═══════════════════════════════════════════════════════════════════════════
 {additional_context}
+
 """
     
     prompt += """
+═══════════════════════════════════════════════════════════════════════════
+GENERATION GUIDELINES:
+═══════════════════════════════════════════════════════════════════════════
 
-Generate a complete, cohesive narrative profile that brings this character to life as a 
-fully-realized individual, not just a collection of stats. Make them memorable, complex, 
-and ready for epic adventures!
+✓ DO:
+  • Create a unique, memorable individual with depth and complexity
+  • Integrate species traits naturally into all aspects
+  • Make personality traits, ideals, bonds, and flaws SPECIFIC and story-driven
+  • Use vivid, evocative language that brings the character to life
+  • Ensure backstory explains both class training and background
+  • Make the name authentic to species culture
+
+✗ DON'T:
+  • Duplicate mechanical information (HP, AC, spell slots, etc.)
+  • Use generic or cliché descriptions
+  • Ignore species or class characteristics
+  • Create contradictions with alignment or background
+  • Write vague personality traits ("nice", "brave", "smart")
+
+Generate a complete narrative that makes this character ready to play at the table!
+═══════════════════════════════════════════════════════════════════════════
 """
     
     return prompt
+
 
