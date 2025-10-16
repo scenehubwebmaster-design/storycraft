@@ -971,6 +971,939 @@ SPECIFIC DETAILS TO INCLUDE:
 }
 
 # ============================================================================
+# HORROR CHARACTER PROMPTS (5 Variations)
+# ============================================================================
+
+HORROR_VARIATIONS = {
+    "gothic_horror": {
+        "name": "Gothic Horror (Classic Terror)",
+        "description": "Atmospheric dread, haunted locations, psychological terror",
+        "prompt_additions": """
+HORROR SETTING: Gothic Horror (Classic Terror)
+- World: Fog-shrouded estates, crumbling castles, cursed bloodlines
+- Threat Level: Ancient evils, family curses, vengeful spirits
+- Atmosphere: Oppressive dread, Victorian aesthetics, creeping madness
+- Tone: Atmospheric, psychological, elegantly horrifying
+
+CHARACTER FOCUS:
+- Connection to cursed family lines or haunted locations
+- Psychological fragility or mental deterioration
+- Dark secrets, forbidden knowledge, or terrible inheritance
+- Period-appropriate attire (Victorian, Edwardian)
+- Relationships with the supernatural (medium, investigator, victim)
+- Internal conflict between reason and terror
+
+SPECIFIC DETAILS TO INCLUDE:
+- Family history of tragedy or curse
+- Phobias, fears, or psychological vulnerabilities
+- Knowledge of occult or forbidden lore
+- Physical or mental scars from supernatural encounters
+- Relationships with other victims or investigators
+""",
+    },
+    
+    "cosmic_horror": {
+        "name": "Cosmic Horror (Lovecraftian)",
+        "description": "Incomprehensible entities, existential dread, sanity-shattering truths",
+        "prompt_additions": """
+HORROR SETTING: Cosmic Horror (Lovecraftian)
+- World: Reality is thin, ancient beings lurk beyond comprehension
+- Threat Level: Cosmic entities that defy understanding
+- Atmosphere: Existential dread, inevitable doom, insignificance
+- Tone: Cerebral, philosophical, sanity-eroding
+
+CHARACTER FOCUS:
+- Scholar, investigator, or unwitting discoverer of forbidden truths
+- Gradual realization of humanity's cosmic insignificance
+- Mental deterioration from exposure to incomprehensible horrors
+- Obsessive pursuit of knowledge despite the cost
+- Cultist connections or opposition to dark cults
+- Witnesses to reality-breaking phenomena
+
+SPECIFIC DETAILS TO INCLUDE:
+- Academic background (archaeology, occult studies, astronomy)
+- Sanity deterioration markers (nightmares, paranoia, obsession)
+- Encounters with impossible geometry or non-Euclidean spaces
+- Knowledge of ancient languages or forbidden texts
+- Physical transformations from cosmic exposure
+""",
+    },
+    
+    "survival_horror": {
+        "name": "Survival Horror (Fight or Flight)",
+        "description": "Resource scarcity, constant danger, desperate survival",
+        "prompt_additions": """
+HORROR SETTING: Survival Horror (Fight or Flight)
+- World: Isolated location, cut off from help, limited resources
+- Threat Level: Persistent danger, limited combat capability
+- Atmosphere: Claustrophobic tension, resource management stress
+- Tone: Desperate, visceral, survival-focused
+
+CHARACTER FOCUS:
+- Ordinary person thrust into extraordinary danger
+- Practical survival skills (medical, mechanical, tactical)
+- Psychological resilience and breaking points
+- Resource management mindset
+- Relationships with other survivors (trust, betrayal)
+- Physical injuries and limitations
+
+SPECIFIC DETAILS TO INCLUDE:
+- Survival skills and practical knowledge
+- Physical condition and injuries
+- Inventory of useful items or weapons
+- Psychological state (fear, determination, paranoia)
+- Relationship dynamics with other survivors
+""",
+    },
+    
+    "folk_horror": {
+        "name": "Folk Horror (Rural Nightmare)",
+        "description": "Pagan rituals, isolated communities, nature's vengeance",
+        "prompt_additions": """
+HORROR SETTING: Folk Horror (Rural Nightmare)
+- World: Remote villages, ancient traditions, nature's dark side
+- Threat Level: Pagan entities, cult rituals, seasonal sacrifices
+- Atmosphere: Rustic unease, tradition vs modernity, rural isolation
+- Tone: Unsettling, ritualistic, nature-focused
+
+CHARACTER FOCUS:
+- Outsider discovering dark community secrets, or local initiated into mysteries
+- Connection to land, seasons, and ancient traditions
+- Conflict between modern rationality and old ways
+- Participation in or resistance to dark rituals
+- Knowledge of folk customs and pagan lore
+- Relationship with nature (respect, fear, communion)
+
+SPECIFIC DETAILS TO INCLUDE:
+- Rural background or outsider perspective
+- Knowledge of folklore, herbs, and seasonal rites
+- Role in community (elder, initiate, skeptic, victim)
+- Connection to specific location or sacred site
+- Physical markers of ritual participation (scars, tattoos, offerings)
+""",
+    },
+    
+    "body_horror": {
+        "name": "Body Horror (Biological Nightmare)",
+        "description": "Physical transformation, visceral grotesquery, loss of bodily autonomy",
+        "prompt_additions": """
+HORROR SETTING: Body Horror (Biological Nightmare)
+- World: Medical facilities, scientific experiments, biological outbreaks
+- Threat Level: Physical transformation, viral infection, genetic mutation
+- Atmosphere: Visceral disgust, loss of identity, transformation terror
+- Tone: Grotesque, medical, identity-crisis focused
+
+CHARACTER FOCUS:
+- Undergoing or resisting physical transformation
+- Medical background or experimental subject
+- Body dysmorphia or transformation anxiety
+- Struggle to maintain humanity during change
+- Relationships affected by physical alteration
+- Scientific curiosity vs ethical horror
+
+SPECIFIC DETAILS TO INCLUDE:
+- Current physical state and ongoing transformations
+- Medical or scientific knowledge
+- Psychological response to bodily changes
+- Attempts to reverse or control transformation
+- Relationships before and after physical changes
+""",
+    },
+}
+
+# ============================================================================
+# MYSTERY/THRILLER CHARACTER PROMPTS (5 Variations)
+# ============================================================================
+
+MYSTERY_THRILLER_VARIATIONS = {
+    "detective_noir": {
+        "name": "Detective Noir (Hard-Boiled)",
+        "description": "Cynical investigator, urban corruption, femme fatales",
+        "prompt_additions": """
+MYSTERY SETTING: Detective Noir (Hard-Boiled)
+- World: Rain-soaked streets, smoke-filled rooms, urban decay
+- Crime Level: Murder, corruption, organized crime
+- Atmosphere: Cynical, atmospheric, morally grey
+- Tone: Hard-boiled, world-weary, cigarette-stained
+
+CHARACTER FOCUS:
+- Private investigator, detective, or journalist
+- Cynical worldview from years of seeing humanity's worst
+- Complex relationship with law enforcement (ally, rival, or corrupt)
+- Personal code of ethics in an immoral world
+- Troubled past (failed relationships, lost cases, personal demons)
+- Sharp wit and observational skills
+
+SPECIFIC DETAILS TO INCLUDE:
+- Investigative methodology and signature techniques
+- Vices (drinking, smoking, gambling)
+- Network of informants and contacts
+- Office or workspace details (dusty, cramped, lived-in)
+- Relationship with police, criminals, and clients
+""",
+    },
+    
+    "psychological_thriller": {
+        "name": "Psychological Thriller (Mind Games)",
+        "description": "Unreliable narrator, gaslighting, perception vs reality",
+        "prompt_additions": """
+MYSTERY SETTING: Psychological Thriller (Mind Games)
+- World: Everyday settings hiding dark secrets
+- Threat Level: Mental manipulation, psychological warfare
+- Atmosphere: Paranoia, doubt, shifting reality
+- Tone: Unsettling, cerebral, twist-laden
+
+CHARACTER FOCUS:
+- Unreliable perception or memory issues
+- Gaslit by others or questioning own sanity
+- Intelligence matched against manipulator
+- Past trauma affecting present perception
+- Isolation from potential allies
+- Obsessive personality traits
+
+SPECIFIC DETAILS TO INCLUDE:
+- Mental health history or current issues
+- Specific triggers or phobias
+- Relationships with manipulative individuals
+- Coping mechanisms (healthy or destructive)
+- Evidence of manipulation (journals, recordings, witnesses)
+""",
+    },
+    
+    "conspiracy_thriller": {
+        "name": "Conspiracy Thriller (Paranoid Truth)",
+        "description": "Government cover-ups, shadowy organizations, dangerous knowledge",
+        "prompt_additions": """
+MYSTERY SETTING: Conspiracy Thriller (Paranoid Truth)
+- World: Shadowy agencies, global conspiracies, hidden truths
+- Threat Level: Powerful organizations, surveillance, assassination
+- Atmosphere: Paranoid, no one to trust, layers of deception
+- Tone: Fast-paced, revelatory, ever-escalating
+
+CHARACTER FOCUS:
+- Whistleblower, investigator, or accidental discoverer of secrets
+- Technical skills (hacking, encryption, investigation)
+- Paranoia justified by real threats
+- Network of allies and uncertain loyalties
+- Pursued by powerful forces
+- Moral conflict about exposing truth vs safety
+
+SPECIFIC DETAILS TO INCLUDE:
+- Area of expertise (journalism, programming, intelligence)
+- Methods of information gathering
+- Personal security measures
+- Who's hunting them and why
+- Evidence collected and hidden
+""",
+    },
+    
+    "cozy_mystery": {
+        "name": "Cozy Mystery (Amateur Sleuth)",
+        "description": "Small-town murder, amateur detective, low violence",
+        "prompt_additions": """
+MYSTERY SETTING: Cozy Mystery (Amateur Sleuth)
+- World: Quaint villages, bookshops, tea rooms, tight-knit communities
+- Crime Level: Murder (but off-screen), theft, blackmail
+- Atmosphere: Charming setting, darker undercurrents, community secrets
+- Tone: Light-hearted despite death, puzzle-focused, character-driven
+
+CHARACTER FOCUS:
+- Amateur detective with day job (librarian, baker, teacher)
+- Natural curiosity and observational skills
+- Deep community connections and gossip network
+- Non-violent problem-solving approach
+- Quirky hobbies or special knowledge
+- Relationships with recurring cast (friendly cop, suspect, rival)
+
+SPECIFIC DETAILS TO INCLUDE:
+- Profession and how it aids investigations
+- Personality quirks and charming traits
+- Social network within community
+- Special knowledge (history, psychology, crafts)
+- Relationship with local law enforcement
+""",
+    },
+    
+    "legal_thriller": {
+        "name": "Legal Thriller (Courtroom Drama)",
+        "description": "Legal battles, courtroom intrigue, justice vs law",
+        "prompt_additions": """
+MYSTERY SETTING: Legal Thriller (Courtroom Drama)
+- World: Courtrooms, law offices, legal system complexities
+- Conflict: Legal battles, ethical dilemmas, procedural warfare
+- Atmosphere: High-stakes litigation, career-defining cases
+- Tone: Intellectual combat, moral complexity, dramatic reveals
+
+CHARACTER FOCUS:
+- Lawyer (defense, prosecution, or civil), judge, or legal investigator
+- Passionate about justice or cynical about system
+- Exceptional legal mind and rhetorical skills
+- Work-life balance struggles
+- Ethical dilemmas (letter of law vs spirit of justice)
+- Mentors, rivals, and allies in legal world
+
+SPECIFIC DETAILS TO INCLUDE:
+- Legal specialization and notable cases
+- Courtroom style and strategies
+- Personal stakes in current case
+- Relationships with colleagues and opponents
+- Ethical boundaries and compromises
+""",
+    },
+}
+
+# ============================================================================
+# ROMANCE CHARACTER PROMPTS (5 Variations)
+# ============================================================================
+
+ROMANCE_VARIATIONS = {
+    "contemporary_romance": {
+        "name": "Contemporary Romance (Modern Love)",
+        "description": "Modern settings, real-world relationships, emotional growth",
+        "prompt_additions": """
+ROMANCE SETTING: Contemporary Romance (Modern Love)
+- World: Modern cities, workplaces, everyday locations
+- Relationship: Realistic obstacles, personal growth, communication
+- Atmosphere: Warm, relatable, emotionally authentic
+- Tone: Heartfelt, hopeful, character-driven
+
+CHARACTER FOCUS:
+- Relatable modern person with career, friends, family
+- Past relationship trauma or baggage
+- Personal growth arc through relationship
+- Clear desires, fears, and vulnerabilities
+- Work-life balance struggles
+- Authentic emotional expression
+
+SPECIFIC DETAILS TO INCLUDE:
+- Career and how it affects relationships
+- Past relationships and lessons learned
+- Emotional wounds and healing needs
+- Love language and communication style
+- Support network (friends, family)
+""",
+    },
+    
+    "paranormal_romance": {
+        "name": "Paranormal Romance (Supernatural Love)",
+        "description": "Vampires, shifters, fae—forbidden supernatural attraction",
+        "prompt_additions": """
+ROMANCE SETTING: Paranormal Romance (Supernatural Love)
+- World: Hidden supernatural communities within modern world
+- Relationship: Forbidden attraction, species barriers, danger
+- Atmosphere: Mystical, dangerous, intensely passionate
+- Tone: Dramatic, sensual, stakes-filled
+
+CHARACTER FOCUS:
+- Human discovering supernatural world, or supernatural being
+- Species-specific traits (vampire allure, shifter pack dynamics, fae glamour)
+- Forbidden nature of relationship (species, rival groups, laws)
+- Supernatural powers or vulnerabilities
+- Divided loyalties (love vs duty/pack/coven)
+- Immortality concerns or mortal dangers
+
+SPECIFIC DETAILS TO INCLUDE:
+- Supernatural nature and associated powers
+- How they discovered/hide their nature
+- Community rules about inter-species relationships
+- Supernatural enemies or political complications
+- Physical manifestations of supernatural nature
+""",
+    },
+    
+    "historical_romance": {
+        "name": "Historical Romance (Period Love)",
+        "description": "Regency, Victorian, or historical era romance with period constraints",
+        "prompt_additions": """
+ROMANCE SETTING: Historical Romance (Period Love)
+- World: Historical period (specify: Regency, Victorian, Medieval, etc.)
+- Relationship: Social class barriers, reputation, propriety
+- Atmosphere: Period-appropriate manners, societal pressure
+- Tone: Longing, scandal, social navigation
+
+CHARACTER FOCUS:
+- Period-appropriate social standing (nobility, merchant class, servant)
+- Adherence to or rebellion against social norms
+- Reputation concerns and scandal potential
+- Family expectations and duty
+- Period-specific accomplishments (music, riding, swordplay)
+- Secret desires vs public persona
+
+SPECIFIC DETAILS TO INCLUDE:
+- Exact historical period and location
+- Social status and expectations
+- Period-appropriate skills and education
+- Family pressure and arranged matches
+- Reputation stakes and scandal risks
+""",
+    },
+    
+    "romantic_comedy": {
+        "name": "Romantic Comedy (Meet-Cute Love)",
+        "description": "Humorous situations, witty banter, heartwarming connections",
+        "prompt_additions": """
+ROMANCE SETTING: Romantic Comedy (Meet-Cute Love)
+- World: Charming locations, awkward situations, comedy of errors
+- Relationship: Misunderstandings, witty banter, opposites attract
+- Atmosphere: Light-hearted, humorous, endearing
+- Tone: Funny, warm, optimistic
+
+CHARACTER FOCUS:
+- Quirky personality traits and endearing flaws
+- Comedic misunderstandings and mishaps
+- Sharp wit and banter capabilities
+- Relatable awkwardness and insecurities
+- Close friends providing comic relief and advice
+- Career or life situation ripe for comedy
+
+SPECIFIC DETAILS TO INCLUDE:
+- Specific quirks and comedy-enabling traits
+- Embarrassing moments and awkward tendencies
+- Witty comebacks and verbal sparring style
+- Circle of comedic supporting characters
+- Comedic obstacles to relationship
+""",
+    },
+    
+    "second_chance_romance": {
+        "name": "Second Chance Romance (Lost Love)",
+        "description": "Reunited lovers, past mistakes, emotional healing",
+        "prompt_additions": """
+ROMANCE SETTING: Second Chance Romance (Lost Love)
+- World: Characters reunited after years apart
+- Relationship: Unresolved past, emotional wounds, growth needed
+- Atmosphere: Bittersweet, nostalgic, healing-focused
+- Tone: Emotional, mature, redemptive
+
+CHARACTER FOCUS:
+- Shared history with past romantic partner
+- Reasons for original separation (misunderstanding, timing, mistakes)
+- Personal growth since separation
+- Unresolved feelings and lingering pain
+- Changed circumstances bringing them together
+- Maturity and lessons learned
+
+SPECIFIC DETAILS TO INCLUDE:
+- Nature of original relationship and breakup
+- How much time has passed
+- What each has done in intervening years
+- Remaining emotional wounds
+- Current circumstances forcing reunion
+""",
+    },
+}
+
+# ============================================================================
+# ADVENTURE CHARACTER PROMPTS (5 Variations)
+# ============================================================================
+
+ADVENTURE_VARIATIONS = {
+    "treasure_hunter": {
+        "name": "Treasure Hunter (Indiana Jones Style)",
+        "description": "Archaeological adventures, ancient puzzles, rival treasure seekers",
+        "prompt_additions": """
+ADVENTURE SETTING: Treasure Hunter (Archaeological Action)
+- World: Ancient ruins, hidden temples, archaeological sites
+- Quest: Lost artifacts, legendary treasures, historical mysteries
+- Atmosphere: Exotic locales, death traps, rival seekers
+- Tone: Adventurous, witty, action-packed
+
+CHARACTER FOCUS:
+- Archaeologist, historian, or professional treasure hunter
+- Knowledge of ancient civilizations and languages
+- Physical fitness for climbing, exploring, fighting
+- Rivals and allies in treasure-hunting world
+- Moral code about preservation vs profit
+- Signature equipment and tools
+
+SPECIFIC DETAILS TO INCLUDE:
+- Area of historical expertise
+- Famous finds or notable failures
+- Signature gear (whip, maps, tools)
+- Network of contacts and information sources
+- Nemesis or rival treasure hunter
+""",
+    },
+    
+    "survival_adventure": {
+        "name": "Survival Adventure (Into the Wild)",
+        "description": "Wilderness survival, natural challenges, self-discovery",
+        "prompt_additions": """
+ADVENTURE SETTING: Survival Adventure (Wilderness Challenge)
+- World: Untamed wilderness, harsh environments, nature's power
+- Challenge: Survival against elements, dangerous wildlife
+- Atmosphere: Raw nature, self-reliance, primal struggle
+- Tone: Gritty, introspective, human vs nature
+
+CHARACTER FOCUS:
+- Survival skills (fire, shelter, water, food)
+- Physical endurance and mental resilience
+- Reason for being in wilderness (choice, accident, mission)
+- Relationship with nature (respect, fear, dominance)
+- Internal journey paralleling physical survival
+- Minimal equipment philosophy
+
+SPECIFIC DETAILS TO INCLUDE:
+- Specific survival skills and knowledge
+- Physical condition and adaptations
+- Mental state and coping strategies
+- Equipment carried and improvised
+- Wildlife encounters and responses
+""",
+    },
+    
+    "heist_adventure": {
+        "name": "Heist Adventure (Master Thief)",
+        "description": "Elaborate plans, specialized skills, one big score",
+        "prompt_additions": """
+ADVENTURE SETTING: Heist Adventure (The Big Score)
+- World: High-security locations, criminal underworld, planning stages
+- Objective: Impossible theft, intricate planning, team coordination
+- Atmosphere: Tension, precision timing, backup plans
+- Tone: Clever, stylish, team-focused
+
+CHARACTER FOCUS:
+- Specialized role (mastermind, safecracker, con artist, muscle, hacker)
+- Unique skills perfected over years
+- Past heists (successes and failures)
+- Team dynamics and trust issues
+- Code of honor among thieves
+- Personal motivation for this particular job
+
+SPECIFIC DETAILS TO INCLUDE:
+- Specific heist specialty and skills
+- Tools of the trade
+- Signature techniques or style
+- Relationships with crew members
+- Stakes if caught or if heist fails
+""",
+    },
+    
+    "exploration_adventure": {
+        "name": "Exploration Adventure (Uncharted Territories)",
+        "description": "Discovering new lands, first contact, mapping the unknown",
+        "prompt_additions": """
+ADVENTURE SETTING: Exploration Adventure (Uncharted Lands)
+- World: Unexplored regions, unknown civilizations, geographical mysteries
+- Mission: Discovery, mapping, scientific study, first contact
+- Atmosphere: Wonder, danger, isolation, discovery
+- Tone: Curious, respectful, pioneering
+
+CHARACTER FOCUS:
+- Explorer, scientist, cartographer, or expedition member
+- Curiosity balanced with caution
+- Scientific or geographical expertise
+- Leadership or teamwork skills
+- Respect for or exploitation of discoveries
+- Documentation and observation focus
+
+SPECIFIC DETAILS TO INCLUDE:
+- Exploration specialization (biology, geography, anthropology)
+- Equipment for documentation and survival
+- Expedition role and responsibilities
+- Previous expeditions and discoveries
+- Ethical approach to new discoveries
+""",
+    },
+    
+    "sky_adventure": {
+        "name": "Sky Adventure (Airship & Aviation)",
+        "description": "Flying machines, aerial combat, sky pirates and kingdoms",
+        "prompt_additions": """
+ADVENTURE SETTING: Sky Adventure (Aerial Action)
+- World: Floating islands, airship trade routes, sky kingdoms
+- Transport: Airships, flying machines, personal flight devices
+- Atmosphere: Freedom of flight, aerial combat, clouds and storms
+- Tone: Swashbuckling, atmospheric, vertigo-inducing
+
+CHARACTER FOCUS:
+- Pilot, sky pirate, airship crew, or aerial courier
+- Aviation skills and mechanical knowledge
+- Comfort with heights and aerial maneuvering
+- Relationships in flying communities
+- Adventures at various altitudes
+- Signature aircraft or vessel
+
+SPECIFIC DETAILS TO INCLUDE:
+- Piloting skills and specialization
+- Personal aircraft details
+- Aerial combat experience
+- Fear of heights overcome or embraced
+- Sky-faring culture knowledge
+""",
+    },
+}
+
+# ============================================================================
+# WESTERN CHARACTER PROMPTS (3 Variations)
+# ============================================================================
+
+WESTERN_VARIATIONS = {
+    "classic_western": {
+        "name": "Classic Western (Frontier Justice)",
+        "description": "Cowboys, outlaws, frontier towns, Old West adventure",
+        "prompt_additions": """
+WESTERN SETTING: Classic Western (Old West)
+- World: American frontier (1860s-1890s), lawless territories
+- Conflict: Outlaws vs lawmen, settlers vs bandits, honor codes
+- Atmosphere: Dusty streets, saloons, wide open spaces
+- Tone: Stoic, honorable, action-driven
+
+CHARACTER FOCUS:
+- Gunslinger, lawman, outlaw, rancher, or drifter
+- Shooting skills and quick-draw reputation
+- Personal code of honor in lawless land
+- Past defining them (war veteran, reformed outlaw, revenge seeker)
+- Horse as trusted companion
+- Few words, decisive actions
+
+SPECIFIC DETAILS TO INCLUDE:
+- Gun skills and signature weapon
+- Reputation in various towns
+- Horse details and bond
+- Western attire specifics (hat, boots, duster)
+- Past events driving current path
+""",
+    },
+    
+    "weird_western": {
+        "name": "Weird Western (Frontier Fantasy)",
+        "description": "Old West meets supernatural, steampunk, or magic",
+        "prompt_additions": """
+WESTERN SETTING: Weird Western (Supernatural Frontier)
+- World: Old West infused with magic, monsters, or advanced technology
+- Conflict: Supernatural threats, mad science, mystical outlaws
+- Atmosphere: Western aesthetics meet impossible elements
+- Tone: Genre-blending, imaginative, anachronistic
+
+CHARACTER FOCUS:
+- Traditional western role enhanced by supernatural/tech element
+- Magic user, monster hunter, or steampunk inventor in Old West
+- Dealing with both mundane and supernatural threats
+- Unique weapons blending tech and tradition
+- Knowledge of occult or advanced science
+- Straddling two worlds (ordinary and extraordinary)
+
+SPECIFIC DETAILS TO INCLUDE:
+- Nature of weird element (magic, tech, supernatural)
+- How they acquired unusual abilities/knowledge
+- Specialized equipment or weapons
+- Reputation in both normal and weird circles
+- Conflicts between Old West values and new possibilities
+""",
+    },
+    
+    "modern_western": {
+        "name": "Modern Western (Contemporary Frontier)",
+        "description": "Western themes in modern/contemporary setting",
+        "prompt_additions": """
+WESTERN SETTING: Modern Western (Contemporary)
+- World: Modern rural West, ranches, small towns, desert landscapes
+- Conflict: Modern issues with Western sensibilities
+- Atmosphere: Traditional values meet contemporary challenges
+- Tone: Neo-western, character-study, landscape-focused
+
+CHARACTER FOCUS:
+- Modern rancher, sheriff, drifter, or rodeo performer
+- Traditional skills in contemporary world
+- Tension between old ways and modern life
+- Connection to land and frontier heritage
+- Pickup truck as modern horse
+- Fewer words, more action still applies
+
+SPECIFIC DETAILS TO INCLUDE:
+- Modern profession with western roots
+- Traditional skills still practiced
+- Contemporary challenges faced
+- Vehicle and modern equipment
+- Balance of tradition and modernity
+""",
+    },
+}
+
+# ============================================================================
+# DYSTOPIAN CHARACTER PROMPTS (5 Variations)
+# ============================================================================
+
+DYSTOPIAN_VARIATIONS = {
+    "totalitarian_dystopia": {
+        "name": "Totalitarian Dystopia (1984-Style)",
+        "description": "Oppressive government, surveillance state, thought control",
+        "prompt_additions": """
+DYSTOPIAN SETTING: Totalitarian Dystopia (Orwellian)
+- World: All-powerful government, constant surveillance, propaganda
+- Conflict: Individual freedom vs state control, rebellion vs compliance
+- Atmosphere: Paranoid, oppressive, grey and uniform
+- Tone: Political, psychological, resistance-focused
+
+CHARACTER FOCUS:
+- Role in system (party member, rebel, citizen, enforcer)
+- Awareness of oppression (awakening, always knew, actively denying)
+- Surveillance paranoia and doublethink
+- Secret rebellion or public compliance
+- Loss of identity and personhood
+- Relationships tested by ideology
+
+SPECIFIC DETAILS TO INCLUDE:
+- Official position in society
+- Secret thoughts vs public persona
+- Methods of resistance or survival
+- Relationships under state scrutiny
+- Awareness of historical truth vs propaganda
+""",
+    },
+    
+    "environmental_dystopia": {
+        "name": "Environmental Dystopia (Climate Collapse)",
+        "description": "Ecological disaster, resource wars, survival adaptation",
+        "prompt_additions": """
+DYSTOPIAN SETTING: Environmental Dystopia (Eco-Collapse)
+- World: Climate catastrophe, scarce resources, environmental refugees
+- Conflict: Survival in harsh environment, resource conflicts
+- Atmosphere: Polluted, extreme weather, desperate adaptation
+- Tone: Survivalist, ecological, resource-focused
+
+CHARACTER FOCUS:
+- Survival skills in hostile environment
+- Role in resource economy (scavenger, trader, guardian)
+- Adaptation to climate extremes
+- Memory of better times vs acceptance of new normal
+- Environmental knowledge and sustainability skills
+- Community bonds under resource stress
+
+SPECIFIC DETAILS TO INCLUDE:
+- Specific environmental challenges faced
+- Adaptation strategies and equipment
+- Resource access and trading goods
+- Health effects from environmental damage
+- Skills for surviving in changed climate
+""",
+    },
+    
+    "corporate_dystopia": {
+        "name": "Corporate Dystopia (Mega-Corp Control)",
+        "description": "Corporate rule, privatized everything, consumer culture extremes",
+        "prompt_additions": """
+DYSTOPIAN SETTING: Corporate Dystopia (Mega-Corp Rule)
+- World: Corporations replaced governments, everything commodified
+- Conflict: Worker exploitation, branded existence, economic slavery
+- Atmosphere: Hyper-commercial, class stratification, synthetic
+- Tone: Satirical, capitalist critique, brand-saturated
+
+CHARACTER FOCUS:
+- Corporate rank (executive, wage slave, unemployed, rebel)
+- Brand loyalty or rebellion against consumerism
+- Debt slavery or economic freedom quest
+- Skills marketable in corporate economy
+- Relationship with company (employee, subcontractor, enemy)
+- Identity defined by consumption or resisting it
+
+SPECIFIC DETAILS TO INCLUDE:
+- Corporate affiliation and rank
+- Economic status and debt level
+- Marketable skills and resume
+- Brand preferences enforced or resisted
+- Methods of surviving corporate system
+""",
+    },
+    
+    "tech_dystopia": {
+        "name": "Tech Dystopia (Digital Nightmare)",
+        "description": "AI control, virtual reality addiction, technology dependency",
+        "prompt_additions": """
+DYSTOPIAN SETTING: Tech Dystopia (Digital Control)
+- World: AI governance, VR escapism, human-tech fusion gone wrong
+- Conflict: Humanity vs technology, digital vs physical existence
+- Atmosphere: Glitching reality, screen-saturated, posthuman
+- Tone: Philosophical, cyber, existential
+
+CHARACTER FOCUS:
+- Relationship with technology (addicted, resistant, merged)
+- Digital presence vs physical body
+- Hacking skills or technological illiteracy
+- AI interactions (servant, overlord, companion)
+- Virtual vs real identity crisis
+- Augmentations or rejection of enhancement
+
+SPECIFIC DETAILS TO INCLUDE:
+- Technology augmentations or modifications
+- Digital skills and virtual presence
+- AI relationships and dependencies
+- Screen time and reality disconnection
+- Resistance to or embrace of tech integration
+""",
+    },
+    
+    "plague_dystopia": {
+        "name": "Plague Dystopia (Pandemic World)",
+        "description": "Disease-ravaged society, quarantine zones, immune vs infected",
+        "prompt_additions": """
+DYSTOPIAN SETTING: Plague Dystopia (Pandemic Collapse)
+- World: Global pandemic, quarantine enforcement, medical martial law
+- Conflict: Survival vs infection, immunity privilege, medical resources
+- Atmosphere: Masked faces, empty streets, quarantine barriers
+- Tone: Medical horror, survival, social breakdown
+
+CHARACTER FOCUS:
+- Immune status (immune, carrier, vulnerable, infected)
+- Medical knowledge or desperate ignorance
+- Quarantine enforcement or violation
+- Loss from pandemic (family, community, normalcy)
+- Survival strategies in plague world
+- Moral choices about resource distribution
+
+SPECIFIC DETAILS TO INCLUDE:
+- Immune status and how discovered
+- Medical skills or vulnerabilities
+- Personal losses from pandemic
+- Protective equipment and hygiene rituals
+- Role in pandemic society (enforcer, caregiver, survivor)
+""",
+    },
+}
+
+# ============================================================================
+# SUPERHERO CHARACTER PROMPTS (5 Variations)
+# ============================================================================
+
+SUPERHERO_VARIATIONS = {
+    "classic_superhero": {
+        "name": "Classic Superhero (Silver Age)",
+        "description": "Traditional heroes, clear morality, colorful costumes, secret identities",
+        "prompt_additions": """
+SUPERHERO SETTING: Classic Superhero (Silver Age)
+- World: Bright cities, clear good vs evil, colorful heroics
+- Powers: Defined abilities, dramatic origin stories
+- Atmosphere: Optimistic, adventurous, comic-book action
+- Tone: Heroic, inspirational, morally clear
+
+CHARACTER FOCUS:
+- Superhero identity vs civilian identity
+- Origin story of powers (accident, experiment, alien, mutation)
+- Clear moral code and heroic ideals
+- Arch-nemesis and rogues gallery
+- Secret identity protection
+- Day job as cover identity
+
+SPECIFIC DETAILS TO INCLUDE:
+- Specific superpowers and limitations
+- Origin story details
+- Costume design and symbolism
+- Secret identity and civilian life
+- Arch-enemy and their connection
+""",
+    },
+    
+    "dark_vigilante": {
+        "name": "Dark Vigilante (Gritty Street-Level)",
+        "description": "Urban crime-fighter, no superpowers, brutal methods, trauma-driven",
+        "prompt_additions": """
+SUPERHERO SETTING: Dark Vigilante (Street-Level)
+- World: Crime-ridden cities, corrupt systems, street-level threats
+- Powers: Mostly none—relies on skills, training, and equipment
+- Atmosphere: Noir-ish, violent, psychologically complex
+- Tone: Dark, brutal, morally grey
+
+CHARACTER FOCUS:
+- Traumatic origin driving vigilante mission
+- Martial arts and detective skills
+- Brutal but non-lethal methods (or not)
+- Psychological damage from double life
+- War on crime that can't be won
+- Relationship with actual law enforcement
+
+SPECIFIC DETAILS TO INCLUDE:
+- Traumatic origin event
+- Training and skill acquisition
+- Equipment and gadgets
+- Methods and ethical boundaries
+- Toll of vigilante life on psyche
+""",
+    },
+    
+    "team_hero": {
+        "name": "Team Hero (Avengers/X-Men Style)",
+        "description": "Part of superhero team, power synergy, team dynamics",
+        "prompt_additions": """
+SUPERHERO SETTING: Team Hero (Super-Group)
+- World: Coordinated hero teams, large-scale threats
+- Powers: Unique abilities complementing team members
+- Atmosphere: Collaborative, friendship-focused, training together
+- Tone: Team dynamics, found family, coordinated action
+
+CHARACTER FOCUS:
+- Specific role within team (leader, powerhouse, tech, stealth)
+- Powers that synergize with teammates
+- Relationships within team (rivalry, romance, mentorship)
+- Personal arc within team context
+- Team base as second home
+- Balancing individual goals with team needs
+
+SPECIFIC DETAILS TO INCLUDE:
+- Specific powers and team role
+- Relationships with each teammate
+- Team dynamics and your position
+- Team base and shared resources
+- Personal arc within team context
+""",
+    },
+    
+    "flawed_hero": {
+        "name": "Flawed Hero (Tragic/Anti-Hero)",
+        "description": "Powers as curse, reluctant hero, moral compromises",
+        "prompt_additions": """
+SUPERHERO SETTING: Flawed Hero (Tragic Powers)
+- World: Powers bring as much suffering as strength
+- Powers: Come with terrible costs or dark sides
+- Atmosphere: Burden of power, isolation, moral complexity
+- Tone: Tragic, conflicted, redemption-seeking
+
+CHARACTER FOCUS:
+- Powers as curse rather than gift
+- Collateral damage and unintended consequences
+- Temptation to misuse powers
+- Isolation due to dangerous abilities
+- Struggle to be hero despite darkness
+- Redemption arc or tragic spiral
+
+SPECIFIC DETAILS TO INCLUDE:
+- Powers and their dark costs
+- Incidents of powers causing harm
+- Moral compromises made
+- Isolation and relationship difficulties
+- Path toward redemption or destruction
+""",
+    },
+    
+    "cosmic_hero": {
+        "name": "Cosmic Hero (Galactic Guardian)",
+        "description": "Cosmic powers, space-faring, universal threats, god-like abilities",
+        "prompt_additions": """
+SUPERHERO SETTING: Cosmic Hero (Universal Scale)
+- World: Multiple planets, cosmic entities, universal threats
+- Powers: God-like abilities, energy manipulation, cosmic awareness
+- Atmosphere: Epic scale, existential stakes, alien encounters
+- Tone: Philosophical, vast, awe-inspiring
+
+CHARACTER FOCUS:
+- Cosmic-level powers (energy manipulation, flight, invulnerability)
+- Origin of cosmic power (alien tech, cosmic entity, transformation)
+- Perspective changed by cosmic awareness
+- Relationship with Earth vs universe
+- Cosmic threats and entities as peers/enemies
+- Struggle to relate to humanity
+
+SPECIFIC DETAILS TO INCLUDE:
+- Source and nature of cosmic powers
+- Cosmic entities encountered or allied with
+- Relationship with Earth after cosmic exposure
+- Scale of threats typically faced
+- Loneliness of cosmic existence
+""",
+    },
+}
+
+# ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
 
@@ -980,6 +1913,13 @@ def get_all_variations():
         "fantasy": FANTASY_VARIATIONS,
         "sci_fi": SCI_FI_VARIATIONS,
         "historical": HISTORICAL_VARIATIONS,
+        "horror": HORROR_VARIATIONS,
+        "mystery_thriller": MYSTERY_THRILLER_VARIATIONS,
+        "romance": ROMANCE_VARIATIONS,
+        "adventure": ADVENTURE_VARIATIONS,
+        "western": WESTERN_VARIATIONS,
+        "dystopian": DYSTOPIAN_VARIATIONS,
+        "superhero": SUPERHERO_VARIATIONS,
     }
 
 def get_variation_by_key(genre: str, variation_key: str):

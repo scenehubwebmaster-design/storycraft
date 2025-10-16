@@ -627,9 +627,16 @@ function CreateCharacterComponent() {
                         <MenuItem value="">
                           <em>None</em>
                         </MenuItem>
-                        <MenuItem value="fantasy">Fantasy</MenuItem>
-                        <MenuItem value="sci_fi">Sci-Fi</MenuItem>
-                        <MenuItem value="historical">Historical</MenuItem>
+                        <MenuItem value="fantasy">🧙‍♂️ Fantasy</MenuItem>
+                        <MenuItem value="sci_fi">🚀 Sci-Fi</MenuItem>
+                        <MenuItem value="historical">📜 Historical</MenuItem>
+                        <MenuItem value="horror">👻 Horror</MenuItem>
+                        <MenuItem value="mystery_thriller">🔍 Mystery/Thriller</MenuItem>
+                        <MenuItem value="romance">💕 Romance</MenuItem>
+                        <MenuItem value="adventure">🗺️ Adventure</MenuItem>
+                        <MenuItem value="western">🤠 Western</MenuItem>
+                        <MenuItem value="dystopian">🏚️ Dystopian</MenuItem>
+                        <MenuItem value="superhero">🦸 Superhero</MenuItem>
                       </Select>
                     </FormControl>
 
@@ -1050,8 +1057,9 @@ function CreateCharacterComponent() {
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2">Genre Variation:</Typography>
                 <Typography variant="body2">
-                  {selectedGenre.charAt(0).toUpperCase() +
-                    selectedGenre.slice(1)}{" "}
+                  {selectedGenre === "sci_fi" ? "Sci-Fi" : 
+                   selectedGenre === "mystery_thriller" ? "Mystery/Thriller" :
+                   selectedGenre.charAt(0).toUpperCase() + selectedGenre.slice(1)}{" "}
                   -{" "}
                   {variations[selectedGenre]?.find(
                     (v) => v.key === selectedVariation
