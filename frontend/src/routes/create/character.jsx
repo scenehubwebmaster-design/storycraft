@@ -1474,11 +1474,11 @@ function CreateCharacterComponent() {
                     <Button
                       variant="outlined"
                       onClick={() => {
-                        // Regenerate D&D character - reset to generation step with fresh form
+                        // Regenerate D&D character - reset to D&D generation form (step 0)
                         setDndCharacter(null);
                         setGeneratedContent(null);
-                        setActiveStep(1);
-                        setDndRegenerationKey(prev => prev + 1); // Force DnDCharacterCreator to remount
+                        setActiveStep(0); // Go back to step 0 where DnDCharacterCreator is shown
+                        setDndRegenerationKey((prev) => prev + 1); // Force DnDCharacterCreator to remount
                         setSuccess(null);
                         setError(null);
                       }}
