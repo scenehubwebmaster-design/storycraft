@@ -205,18 +205,28 @@ export default function DnDCharacterCreator({ onCharacterGenerated, onError }) {
       const character = dndResponse.data;
 
       // Parse JSON strings from SQLite TEXT columns
-      if (character.structured_data && typeof character.structured_data === 'string') {
+      if (
+        character.structured_data &&
+        typeof character.structured_data === "string"
+      ) {
         try {
           character.structured_data = JSON.parse(character.structured_data);
         } catch (e) {
-          console.error('Failed to parse structured_data:', e);
+          console.error("Failed to parse structured_data:", e);
         }
       }
-      if (character.generation_log && typeof character.generation_log === 'string') {
+
+      // Debug: Log the structured_data to see what we got
+      console.log("Character structured_data:", character.structured_data);
+      console.log("Character generation_log:", character.generation_log);
+      if (
+        character.generation_log &&
+        typeof character.generation_log === "string"
+      ) {
         try {
           character.generation_log = JSON.parse(character.generation_log);
         } catch (e) {
-          console.error('Failed to parse generation_log:', e);
+          console.error("Failed to parse generation_log:", e);
         }
       }
 

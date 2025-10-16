@@ -45,6 +45,26 @@ class CharacterResponse(CharacterBase):
     created_at: datetime
     updated_at: datetime
     
+    # D&D 5E fields
+    is_dnd: bool | None = None
+    dnd_class: str | None = None
+    dnd_level: int | None = None
+    dnd_species: str | None = None
+    dnd_background: str | None = None
+    dnd_alignment: str | None = None
+    dnd_ability_scores: Dict[str, int] | None = None
+    dnd_hit_points: int | None = None
+    dnd_armor_class: int | None = None
+    dnd_initiative: str | None = None
+    dnd_speed: int | None = None
+    dnd_proficiency_bonus: str | None = None
+    dnd_skills: List[str] | None = None
+    dnd_proficiencies: Dict[str, Any] | None = None
+    dnd_features: Dict[str, Any] | None = None
+    dnd_equipment: Dict[str, Any] | None = None
+    dnd_spellcasting: Dict[str, Any] | None = None
+    dnd_languages: List[str] | None = None
+    
     class Config:
         from_attributes = True
 

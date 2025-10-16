@@ -1429,7 +1429,17 @@ function CreateCharacterComponent() {
           </Paper>
 
           {/* Display Component - Conditional based on generation mode */}
-          {dndCharacter && dndCharacter.is_dnd ? (
+          {console.log(
+            "Display logic - dndCharacter:",
+            dndCharacter,
+            "is_dnd:",
+            dndCharacter?.is_dnd,
+            "typeof is_dnd:",
+            typeof dndCharacter?.is_dnd,
+            "useStructured:",
+            useStructured
+          )}
+          {dndCharacter && dndCharacter.is_dnd === true ? (
             // D&D Character Sheet
             <Box sx={{ mb: 3 }}>
               <DnDCharacterSheet character={dndCharacter} />
