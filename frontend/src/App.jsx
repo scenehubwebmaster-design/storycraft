@@ -1,5 +1,10 @@
-import { createRootRoute, Outlet, Link } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  useLocation,
+} from "react-router-dom";
 import { useState } from "react";
 import {
   AppBar,
@@ -31,7 +36,23 @@ import PublicIcon from "@mui/icons-material/Public";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 
-function NotFoundComponent() {
+// Route Components
+import HomePage from "./pages/Home";
+import CreatePage from "./pages/Create";
+import CreateCharacterPage from "./pages/CreateCharacter";
+import CreateStoryPage from "./pages/CreateStory";
+import CreateWorldPage from "./pages/CreateWorld";
+import CreateScenePage from "./pages/CreateScene";
+import CreateLocationPage from "./pages/CreateLocation";
+import StoriesPage from "./pages/Stories";
+import StoryDetailPage from "./pages/StoryDetail";
+import CharactersPage from "./pages/Characters";
+import CharacterDetailPage from "./pages/CharacterDetail";
+import WorldsPage from "./pages/Worlds";
+import WorldDetailPage from "./pages/WorldDetail";
+import SettingsPage from "./pages/Settings";
+
+function NotFound() {
   return (
     <Container maxWidth="md">
       <Paper sx={{ p: 6, textAlign: "center", mt: 8 }}>
@@ -50,15 +71,11 @@ function NotFoundComponent() {
   );
 }
 
-export const Route = createRootRoute({
-  component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-});
-
-function RootComponent() {
+function Layout({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const location = useLocation();
 
   const navigationItems = [
     { label: "Home", path: "/", icon: <HomeIcon /> },
@@ -109,16 +126,17 @@ function RootComponent() {
               {navigationItems.map((item) => (
                 <Button
                   key={item.path}
-                  color="inherit"
                   component={Link}
                   to={item.path}
+                  color="inherit"
+                  startIcon={item.icon}
                   sx={{
                     ...(item.highlight && {
                       background:
-                        "linear-gradient(45deg, #9c27b0 30%, #00bcd4 90%)",
+                        "linear-gradient(45deg, #FF6B6B 30%, #4ECDC4 90%)",
                       "&:hover": {
                         background:
-                          "linear-gradient(45deg, #7b1fa2 30%, #0097a7 90%)",
+                          "linear-gradient(45deg, #FF8787 30%, #6FE0D8 90%)",
                       },
                     }),
                   }}
@@ -129,14 +147,13 @@ function RootComponent() {
             </Box>
           )}
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Hamburger Menu */}
           {isMobile && (
             <IconButton
               color="inherit"
-              aria-label="open menu"
+              aria-label="open drawer"
               edge="end"
               onClick={handleDrawerToggle}
-              sx={{ ml: 1 }}
             >
               <MenuIcon />
             </IconButton>
@@ -144,13 +161,12 @@ function RootComponent() {
         </Toolbar>
       </AppBar>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer */}
       <Drawer
         anchor="right"
         open={mobileMenuOpen}
         onClose={handleDrawerClose}
         sx={{
-          display: { xs: "block", md: "none" },
           "& .MuiDrawer-paper": {
             width: 280,
             maxWidth: "80vw",
@@ -165,14 +181,8 @@ function RootComponent() {
             alignItems: "center",
           }}
         >
-          <Typography
-            variant="h6"
-            sx={{ display: "flex", alignItems: "center", gap: 1 }}
-          >
-            <MenuBookIcon />
-            StoryCraft
-          </Typography>
-          <IconButton onClick={handleDrawerClose} aria-label="close menu">
+          <Typography variant="h6">StoryCraft</Typography>
+          <IconButton onClick={handleDrawerClose}>
             <CloseIcon />
           </IconButton>
         </Box>
@@ -184,51 +194,93 @@ function RootComponent() {
                 component={Link}
                 to={item.path}
                 onClick={handleDrawerClose}
+                selected={location.pathname === item.path}
                 sx={{
-                  py: 1.5,
                   ...(item.highlight && {
                     background:
-                      "linear-gradient(45deg, #9c27b0 30%, #00bcd4 90%)",
+                      "linear-gradient(45deg, #FF6B6B 30%, #4ECDC4 90%)",
                     "&:hover": {
                       background:
-                        "linear-gradient(45deg, #7b1fa2 30%, #0097a7 90%)",
+                        "linear-gradient(45deg, #FF8787 30%, #6FE0D8 90%)",
                     },
                   }),
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+                <ListItemIcon
+                  sx={{ color: item.highlight ? "white" : "inherit" }}
+                >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText primary={item.label} />
+                <ListItemText
+                  primary={item.label}
+                  sx={{ color: item.highlight ? "white" : "inherit" }}
+                />
               </ListItemButton>
             </ListItem>
           ))}
         </List>
       </Drawer>
 
-      <Container component="main" sx={{ flex: 1, py: 4 }}>
-        <Outlet />
+      {/* Main Content */}
+      <Container
+        component="main"
+        maxWidth="xl"
+        sx={{
+          flexGrow: 1,
+          py: { xs: 2, sm: 3, md: 4 },
+          px: { xs: 2, sm: 3 },
+        }}
+      >
+        {children}
       </Container>
 
+      {/* Footer */}
       <Box
         component="footer"
         sx={{
           py: 3,
           px: 2,
           mt: "auto",
-          backgroundColor: (theme) => theme.palette.background.paper,
+          backgroundColor: "background.paper",
+          borderTop: 1,
+          borderColor: "divider",
         }}
       >
-        <Container maxWidth="lg">
+        <Container maxWidth="xl">
           <Typography variant="body2" color="text.secondary" align="center">
-            {"StoryCraft © "}
-            {new Date().getFullYear()}
-            {" - AI-Powered Story Creation"}
+            StoryCraft © {new Date().getFullYear()} - AI-Powered Story Creation
           </Typography>
         </Container>
       </Box>
-
-      <TanStackRouterDevtools position="bottom-right" />
     </Box>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/create" element={<CreatePage />} />
+          <Route path="/create/character" element={<CreateCharacterPage />} />
+          <Route path="/create/story" element={<CreateStoryPage />} />
+          <Route path="/create/world" element={<CreateWorldPage />} />
+          <Route path="/create/scene" element={<CreateScenePage />} />
+          <Route path="/create/location" element={<CreateLocationPage />} />
+          <Route path="/stories" element={<StoriesPage />} />
+          <Route path="/stories/:storyId" element={<StoryDetailPage />} />
+          <Route path="/characters" element={<CharactersPage />} />
+          <Route
+            path="/characters/:characterId"
+            element={<CharacterDetailPage />}
+          />
+          <Route path="/worlds" element={<WorldsPage />} />
+          <Route path="/worlds/:worldId" element={<WorldDetailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   );
 }

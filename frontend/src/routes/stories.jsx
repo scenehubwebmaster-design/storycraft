@@ -140,7 +140,8 @@ function StoriesComponent() {
             My Stories
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            {filteredStories.length} stor{filteredStories.length !== 1 ? "ies" : "y"}
+            {filteredStories.length} stor
+            {filteredStories.length !== 1 ? "ies" : "y"}
             {searchQuery && ` (filtered from ${stories.length})`}
           </Typography>
         </Box>

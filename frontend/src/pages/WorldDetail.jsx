@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -19,15 +19,11 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import StructuredWorldDisplay from "../../components/StructuredWorldDisplay";
-import { API_URL } from "../../config/api";
+import StructuredWorldDisplay from "../components/StructuredWorldDisplay";
+import { API_URL } from "../config/api";
 
-export const Route = createFileRoute("/worlds/$worldId")({
-  component: WorldDetailComponent,
-});
-
-function WorldDetailComponent() {
-  const { worldId } = Route.useParams();
+export default function WorldDetailPage() {
+  const { worldId } = useParams();
   const navigate = useNavigate();
   const [world, setWorld] = useState(null);
   const [loading, setLoading] = useState(true);

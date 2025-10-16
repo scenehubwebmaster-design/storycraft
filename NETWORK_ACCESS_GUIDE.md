@@ -9,20 +9,23 @@ StoryCraft is now configured for network access, allowing you to test the app on
 ## ✅ What's Configured
 
 ### Backend (FastAPI)
+
 - **Binding**: `0.0.0.0:8000` (all network interfaces)
 - **CORS**: Allows all origins in development mode
-- **Accessible via**: 
+- **Accessible via**:
   - `http://localhost:8000` (local)
   - `http://192.168.x.x:8000` (network)
 
 ### Frontend (Vite)
+
 - **Binding**: `0.0.0.0:3000` (all network interfaces)
 - **API Detection**: Automatically uses current hostname
-- **Accessible via**: 
+- **Accessible via**:
   - `http://localhost:3000` (local)
   - `http://192.168.x.x:3000` (network)
 
 ### API Configuration
+
 - **Location**: `frontend/src/config/api.js`
 - **Logic**: `API_URL = http://${window.location.hostname}:8000`
 - **Result**: Frontend always connects to backend on same IP
@@ -32,6 +35,7 @@ StoryCraft is now configured for network access, allowing you to test the app on
 ### Step 1: Find Your PC's IP Address
 
 **Windows (PowerShell):**
+
 ```powershell
 ipconfig | Select-String "IPv4"
 ```
@@ -39,6 +43,7 @@ ipconfig | Select-String "IPv4"
 Look for your WiFi adapter's IPv4 address (e.g., `192.168.1.100`)
 
 **Alternative Method:**
+
 ```powershell
 (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -like "*Wi-Fi*"}).IPAddress
 ```
@@ -53,12 +58,14 @@ npm run dev:all
 Or start them separately:
 
 **Backend:**
+
 ```powershell
 cd backend
 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Frontend:**
+
 ```powershell
 cd frontend
 npm run dev
@@ -68,6 +75,7 @@ npm run dev
 ### Step 3: Note the Network URLs
 
 When Vite starts, you'll see output like:
+
 ```
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://192.168.1.100:3000/
@@ -103,12 +111,14 @@ The **Network** URL is what you'll use on your mobile device.
 ### Issue: "Cannot connect to backend"
 
 **Possible Causes:**
+
 1. **Backend not running** - Start it with `npm run dev:backend`
 2. **Wrong IP address** - Run `ipconfig` again to verify
 3. **Firewall blocking** - Allow Python and Node.js through Windows Firewall
 4. **Different WiFi networks** - Ensure PC and phone on same network
 
 **Check Firewall:**
+
 ```powershell
 # Check if Python is allowed
 Get-NetFirewallRule | Where-Object {$_.DisplayName -like "*Python*"}
@@ -118,6 +128,7 @@ Get-NetFirewallRule | Where-Object {$_.DisplayName -like "*Node*"}
 ```
 
 **Add Firewall Rules (if needed):**
+
 ```powershell
 # Allow Python (backend)
 New-NetFirewallRule -DisplayName "Python Backend" -Direction Inbound -Program "C:\Python310\python.exe" -Action Allow
@@ -129,10 +140,12 @@ New-NetFirewallRule -DisplayName "Node.js Frontend" -Direction Inbound -Program 
 ### Issue: "Frontend loads but no data"
 
 **Check Console:**
+
 - Look for CORS errors
 - Verify API URL is correct (not localhost on mobile)
 
 **Verify Backend CORS:**
+
 ```python
 # backend/main.py should have:
 allow_origins=["*"]  # In development mode
@@ -143,11 +156,13 @@ allow_origins=["*"]  # In development mode
 **Reason:** DHCP assigned a new IP to your PC
 
 **Solution:**
+
 1. Find new IP: `ipconfig`
 2. No code changes needed - API URL auto-detects
 3. Just use new network URL: `http://<new-ip>:3000`
 
 **Optional - Reserve IP:**
+
 - Configure static IP in router settings
 - Or use router's DHCP reservation feature
 
@@ -179,6 +194,7 @@ For advanced debugging, connect phone via USB:
 ### Development Mode
 
 The current configuration is for **development only**:
+
 - `allow_origins=["*"]` allows all CORS requests
 - `--host 0.0.0.0` exposes servers to network
 - **Not suitable for production**
@@ -186,6 +202,7 @@ The current configuration is for **development only**:
 ### Production Considerations
 
 For production deployment:
+
 1. **Restrict CORS** to specific domains
 2. **Use HTTPS** for encryption
 3. **Add authentication** for API access
@@ -264,16 +281,19 @@ Use this checklist when testing network access:
 ### Common Scenarios
 
 **Scenario 1**: Testing on couch with phone
+
 - Start servers on PC
 - Access via network URL
 - Test mobile UX hands-on
 
 **Scenario 2**: Demo to friend
+
 - Friend's phone on your WiFi
 - Give them the network URL
 - They can test the app
 
 **Scenario 3**: Multiple devices
+
 - Test on phone AND tablet
 - All connect to same backend
 - Shared database state
@@ -289,6 +309,7 @@ Use this checklist when testing network access:
 ## ✅ Success Criteria
 
 You'll know it's working when:
+
 - ✅ Mobile browser loads the app
 - ✅ Console shows correct API URL (network IP, not localhost)
 - ✅ You can create a character on mobile

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -9,6 +9,7 @@ import {
   Card,
   CardContent,
   CardActions,
+  CardMedia,
   CircularProgress,
   Alert,
   Chip,
@@ -21,84 +22,73 @@ import {
   DialogActions,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import PublicIcon from "@mui/icons-material/Public";
+import PersonIcon from "@mui/icons-material/Person";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ClearIcon from "@mui/icons-material/Clear";
 import { API_URL } from "../config/api";
 
-export const Route = createFileRoute("/worlds")({
-  component: WorldsComponent,
-});
-
-function WorldsComponent() {
-  const [worlds, setWorlds] = useState([]);
-  const [filteredWorlds, setFilteredWorlds] = useState([]);
+export default function CharactersPage() {
+  const [characters, setCharacters] = useState([]);
+  const [filteredCharacters, setFilteredCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [worldToDelete, setWorldToDelete] = useState(null);
+  const [characterToDelete, setCharacterToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    loadWorlds();
+    const loadCharacters = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${API_URL}/api/characters`);
+        setCharacters(response.data);
+        setError(null);
+      } catch (err) {
+        setError(err.response?.data?.detail || "Failed to load characters");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCharacters();
   }, []);
 
+  // Filter characters based on search query
   useEffect(() => {
-    filterWorlds();
-  }, [searchQuery, worlds]);
-
-  const loadWorlds = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_URL}/api/worlds`);
-      setWorlds(response.data);
-      setError(null);
-    } catch (err) {
-      setError(err.response?.data?.detail || "Failed to load worlds");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterWorlds = () => {
     if (!searchQuery.trim()) {
-      setFilteredWorlds(worlds);
+      setFilteredCharacters(characters);
       return;
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = worlds.filter(
-      (world) =>
-        world.name?.toLowerCase().includes(query) ||
-        world.description?.toLowerCase().includes(query) ||
-        world.history?.toLowerCase().includes(query) ||
-        world.geography?.toLowerCase().includes(query) ||
-        world.culture?.toLowerCase().includes(query) ||
-        world.magic_system?.toLowerCase().includes(query) ||
-        world.technology_level?.toLowerCase().includes(query)
+    const filtered = characters.filter(
+      (char) =>
+        char.name?.toLowerCase().includes(query) ||
+        char.description?.toLowerCase().includes(query) ||
+        char.personality?.toLowerCase().includes(query) ||
+        char.background?.toLowerCase().includes(query)
     );
-    setFilteredWorlds(filtered);
-  };
+    setFilteredCharacters(filtered);
+  }, [searchQuery, characters]);
 
-  const handleDeleteClick = (world) => {
-    setWorldToDelete(world);
+  const handleDeleteClick = (character) => {
+    setCharacterToDelete(character);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!worldToDelete) return;
+    if (!characterToDelete) return;
 
     try {
       setDeleting(true);
-      await axios.delete(`${API_URL}/api/worlds/${worldToDelete.id}`);
-      setWorlds(worlds.filter((w) => w.id !== worldToDelete.id));
+      await axios.delete(`${API_URL}/api/characters/${characterToDelete.id}`);
+      setCharacters(characters.filter((c) => c.id !== characterToDelete.id));
       setDeleteDialogOpen(false);
-      setWorldToDelete(null);
+      setCharacterToDelete(null);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete world");
+      setError(err.response?.data?.detail || "Failed to delete character");
     } finally {
       setDeleting(false);
     }
@@ -140,21 +130,21 @@ function WorldsComponent() {
       >
         <Box>
           <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
-            Worlds & Lore
+            Characters
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            {filteredWorlds.length} world
-            {filteredWorlds.length !== 1 ? "s" : ""}
-            {searchQuery && ` (filtered from ${worlds.length})`}
+            {filteredCharacters.length} character
+            {filteredCharacters.length !== 1 ? "s" : ""}
+            {searchQuery && ` (filtered from ${characters.length})`}
           </Typography>
         </Box>
         <Button
           component={Link}
-          to="/create/world"
+          to="/create/character"
           variant="contained"
           startIcon={<AddIcon />}
         >
-          New World
+          New Character
         </Button>
       </Box>
 
@@ -162,7 +152,7 @@ function WorldsComponent() {
       <TextField
         fullWidth
         variant="outlined"
-        placeholder="Search worlds by name, description, history, culture, magic system, or technology level..."
+        placeholder="Search characters by name, description, personality, or background..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         sx={{ mb: 3 }}
@@ -192,7 +182,7 @@ function WorldsComponent() {
         </Alert>
       )}
 
-      {filteredWorlds.length === 0 ? (
+      {filteredCharacters.length === 0 ? (
         <Card
           sx={{
             p: 4,
@@ -200,30 +190,30 @@ function WorldsComponent() {
             backgroundColor: "background.default",
           }}
         >
-          <PublicIcon sx={{ fontSize: 80, color: "text.secondary", mb: 2 }} />
+          <PersonIcon sx={{ fontSize: 80, color: "text.secondary", mb: 2 }} />
           <Typography variant="h5" gutterBottom>
-            {searchQuery ? "No Worlds Found" : "No Worlds Yet"}
+            {searchQuery ? "No Characters Found" : "No Characters Yet"}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             {searchQuery
               ? "Try a different search term"
-              : "Build immersive worlds with detailed lore, locations, and histories"}
+              : "Create your first character to get started"}
           </Typography>
           {!searchQuery && (
             <Button
               component={Link}
-              to="/create/world"
+              to="/create/character"
               variant="contained"
               startIcon={<AddIcon />}
             >
-              Create World
+              Create Character
             </Button>
           )}
         </Card>
       ) : (
         <Grid container spacing={3}>
-          {filteredWorlds.map((world) => (
-            <Grid key={world.id} size={{ xs: 12, sm: 6, md: 4 }}>
+          {filteredCharacters.map((character) => (
+            <Grid key={character.id} size={{ xs: 12, sm: 6, md: 4 }}>
               <Card
                 sx={{
                   height: "100%",
@@ -236,34 +226,98 @@ function WorldsComponent() {
                   },
                 }}
               >
+                {character.portrait_image ? (
+                  <CardMedia
+                    component="img"
+                    height="240"
+                    image={`data:image/png;base64,${character.portrait_image}`}
+                    alt={character.name}
+                    sx={{ objectFit: "cover" }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      height: 240,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "background.default",
+                    }}
+                  >
+                    <PersonIcon
+                      sx={{ fontSize: 80, color: "text.secondary" }}
+                    />
+                  </Box>
+                )}
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography variant="h6" gutterBottom>
-                    {world.name}
+                    {character.name}
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{ mb: 2 }}
                   >
-                    {truncateText(world.description)}
+                    {(() => {
+                      // For structured characters, show a summary from structured_data
+                      if (character.structured_data) {
+                        try {
+                          const data =
+                            typeof character.structured_data === "string"
+                              ? JSON.parse(character.structured_data)
+                              : character.structured_data;
+
+                          // Build a summary from key fields
+                          const parts = [];
+                          if (data.age) parts.push(`Age: ${data.age}`);
+
+                          // Add personality traits (first 3 for brevity)
+                          if (data.personality_traits?.length) {
+                            const traits = Array.isArray(
+                              data.personality_traits
+                            )
+                              ? data.personality_traits.slice(0, 3).join(", ")
+                              : data.personality_traits;
+                            parts.push(traits);
+                          } else if (data.personality_description) {
+                            // Use personality description if no traits array
+                            parts.push(data.personality_description);
+                          }
+
+                          // Add brief backstory if space permits
+                          if (
+                            data.backstory &&
+                            parts.join(" • ").length < 120
+                          ) {
+                            parts.push(data.backstory);
+                          } else if (
+                            data.upbringing &&
+                            parts.join(" • ").length < 120
+                          ) {
+                            parts.push(data.upbringing);
+                          }
+
+                          return truncateText(
+                            parts.join(" • ") ||
+                              character.description ||
+                              "No description",
+                            180
+                          );
+                        } catch (e) {
+                          return truncateText(
+                            character.description || "No description"
+                          );
+                        }
+                      }
+                      // For legacy characters, show description
+                      return truncateText(
+                        character.description || "No description"
+                      );
+                    })()}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    {world.magic_system && (
-                      <Chip
-                        label={`Magic: ${world.magic_system}`}
-                        size="small"
-                        color="secondary"
-                      />
-                    )}
-                    {world.technology_level && (
-                      <Chip
-                        label={`Tech: ${world.technology_level}`}
-                        size="small"
-                        color="primary"
-                      />
-                    )}
                     <Chip
-                      label={formatDate(world.created_at)}
+                      label={formatDate(character.created_at)}
                       size="small"
                       variant="outlined"
                     />
@@ -273,7 +327,7 @@ function WorldsComponent() {
                   <Button
                     size="small"
                     component={Link}
-                    to={`/worlds/${world.id}`}
+                    to={`/characters/${character.id}`}
                   >
                     View Details
                   </Button>
@@ -281,7 +335,7 @@ function WorldsComponent() {
                     size="small"
                     color="secondary"
                     component={Link}
-                    to={`/create/world?edit=${world.id}`}
+                    to={`/create/character?edit=${character.id}`}
                   >
                     Edit
                   </Button>
@@ -290,7 +344,7 @@ function WorldsComponent() {
                     color="error"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteClick(world);
+                      handleDeleteClick(character);
                     }}
                     sx={{ ml: "auto" }}
                   >
@@ -308,12 +362,12 @@ function WorldsComponent() {
         open={deleteDialogOpen}
         onClose={() => !deleting && setDeleteDialogOpen(false)}
       >
-        <DialogTitle>Delete World?</DialogTitle>
+        <DialogTitle>Delete Character?</DialogTitle>
         <DialogContent>
           <Typography>
             Are you sure you want to delete{" "}
-            <strong>{worldToDelete?.name}</strong>? This action cannot be undone
-            and will also delete all associated locations.
+            <strong>{characterToDelete?.name}</strong>? This action cannot be
+            undone.
           </Typography>
         </DialogContent>
         <DialogActions>

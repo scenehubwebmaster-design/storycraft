@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -27,11 +27,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ClearIcon from "@mui/icons-material/Clear";
 import { API_URL } from "../config/api";
 
-export const Route = createFileRoute("/worlds")({
-  component: WorldsComponent,
-});
-
-function WorldsComponent() {
+export default function WorldsPage() {
   const [worlds, setWorlds] = useState([]);
   const [filteredWorlds, setFilteredWorlds] = useState([]);
   const [loading, setLoading] = useState(true);

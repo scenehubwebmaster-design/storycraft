@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -19,14 +19,10 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { API_URL } from "../../config/api";
+import { API_URL } from "../config/api";
 
-export const Route = createFileRoute("/stories/$storyId")({
-  component: StoryDetailComponent,
-});
-
-function StoryDetailComponent() {
-  const { storyId } = Route.useParams();
+export default function StoryDetailPage() {
+  const { storyId } = useParams();
   const navigate = useNavigate();
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);

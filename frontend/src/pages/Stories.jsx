@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -21,84 +21,77 @@ import {
   DialogActions,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import PublicIcon from "@mui/icons-material/Public";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ClearIcon from "@mui/icons-material/Clear";
 import { API_URL } from "../config/api";
 
-export const Route = createFileRoute("/worlds")({
-  component: WorldsComponent,
-});
-
-function WorldsComponent() {
-  const [worlds, setWorlds] = useState([]);
-  const [filteredWorlds, setFilteredWorlds] = useState([]);
+export default function StoriesPage() {
+  const [stories, setStories] = useState([]);
+  const [filteredStories, setFilteredStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [worldToDelete, setWorldToDelete] = useState(null);
+  const [storyToDelete, setStoryToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    loadWorlds();
+    loadStories();
   }, []);
 
   useEffect(() => {
-    filterWorlds();
-  }, [searchQuery, worlds]);
+    filterStories();
+  }, [searchQuery, stories]);
 
-  const loadWorlds = async () => {
+  const loadStories = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/worlds`);
-      setWorlds(response.data);
+      const response = await axios.get(`${API_URL}/api/stories`);
+      setStories(response.data);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to load worlds");
+      setError(err.response?.data?.detail || "Failed to load stories");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterWorlds = () => {
+  const filterStories = () => {
     if (!searchQuery.trim()) {
-      setFilteredWorlds(worlds);
+      setFilteredStories(stories);
       return;
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = worlds.filter(
-      (world) =>
-        world.name?.toLowerCase().includes(query) ||
-        world.description?.toLowerCase().includes(query) ||
-        world.history?.toLowerCase().includes(query) ||
-        world.geography?.toLowerCase().includes(query) ||
-        world.culture?.toLowerCase().includes(query) ||
-        world.magic_system?.toLowerCase().includes(query) ||
-        world.technology_level?.toLowerCase().includes(query)
+    const filtered = stories.filter(
+      (story) =>
+        story.title?.toLowerCase().includes(query) ||
+        story.description?.toLowerCase().includes(query) ||
+        story.genre?.toLowerCase().includes(query) ||
+        story.content?.toLowerCase().includes(query)
     );
-    setFilteredWorlds(filtered);
+    setFilteredStories(filtered);
   };
 
-  const handleDeleteClick = (world) => {
-    setWorldToDelete(world);
+  const handleDeleteClick = (story) => {
+    setStoryToDelete(story);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!worldToDelete) return;
+    if (!storyToDelete) return;
 
     try {
       setDeleting(true);
-      await axios.delete(`${API_URL}/api/worlds/${worldToDelete.id}`);
-      setWorlds(worlds.filter((w) => w.id !== worldToDelete.id));
+      await axios.delete(`${API_URL}/api/stories/${storyToDelete.id}`);
+      setStories(stories.filter((s) => s.id !== storyToDelete.id));
       setDeleteDialogOpen(false);
-      setWorldToDelete(null);
+      setStoryToDelete(null);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete world");
+      setError(err.response?.data?.detail || "Failed to delete story");
     } finally {
       setDeleting(false);
     }
@@ -140,21 +133,21 @@ function WorldsComponent() {
       >
         <Box>
           <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
-            Worlds & Lore
+            My Stories
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            {filteredWorlds.length} world
-            {filteredWorlds.length !== 1 ? "s" : ""}
-            {searchQuery && ` (filtered from ${worlds.length})`}
+            {filteredStories.length} stor
+            {filteredStories.length !== 1 ? "ies" : "y"}
+            {searchQuery && ` (filtered from ${stories.length})`}
           </Typography>
         </Box>
         <Button
           component={Link}
-          to="/create/world"
+          to="/create/story"
           variant="contained"
           startIcon={<AddIcon />}
         >
-          New World
+          New Story
         </Button>
       </Box>
 
@@ -162,7 +155,7 @@ function WorldsComponent() {
       <TextField
         fullWidth
         variant="outlined"
-        placeholder="Search worlds by name, description, history, culture, magic system, or technology level..."
+        placeholder="Search stories by title, description, genre, or content..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         sx={{ mb: 3 }}
@@ -192,7 +185,7 @@ function WorldsComponent() {
         </Alert>
       )}
 
-      {filteredWorlds.length === 0 ? (
+      {filteredStories.length === 0 ? (
         <Card
           sx={{
             p: 4,
@@ -200,30 +193,30 @@ function WorldsComponent() {
             backgroundColor: "background.default",
           }}
         >
-          <PublicIcon sx={{ fontSize: 80, color: "text.secondary", mb: 2 }} />
+          <MenuBookIcon sx={{ fontSize: 80, color: "text.secondary", mb: 2 }} />
           <Typography variant="h5" gutterBottom>
-            {searchQuery ? "No Worlds Found" : "No Worlds Yet"}
+            {searchQuery ? "No Stories Found" : "No Stories Yet"}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             {searchQuery
               ? "Try a different search term"
-              : "Build immersive worlds with detailed lore, locations, and histories"}
+              : "Create your first story to get started"}
           </Typography>
           {!searchQuery && (
             <Button
               component={Link}
-              to="/create/world"
+              to="/create/story"
               variant="contained"
               startIcon={<AddIcon />}
             >
-              Create World
+              Create Story
             </Button>
           )}
         </Card>
       ) : (
         <Grid container spacing={3}>
-          {filteredWorlds.map((world) => (
-            <Grid key={world.id} size={{ xs: 12, sm: 6, md: 4 }}>
+          {filteredStories.map((story) => (
+            <Grid key={story.id} size={{ xs: 12, sm: 6, md: 4 }}>
               <Card
                 sx={{
                   height: "100%",
@@ -238,32 +231,21 @@ function WorldsComponent() {
               >
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography variant="h6" gutterBottom>
-                    {world.name}
+                    {story.title}
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{ mb: 2 }}
                   >
-                    {truncateText(world.description)}
+                    {truncateText(story.description)}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    {world.magic_system && (
-                      <Chip
-                        label={`Magic: ${world.magic_system}`}
-                        size="small"
-                        color="secondary"
-                      />
-                    )}
-                    {world.technology_level && (
-                      <Chip
-                        label={`Tech: ${world.technology_level}`}
-                        size="small"
-                        color="primary"
-                      />
+                    {story.genre && (
+                      <Chip label={story.genre} size="small" color="primary" />
                     )}
                     <Chip
-                      label={formatDate(world.created_at)}
+                      label={formatDate(story.created_at)}
                       size="small"
                       variant="outlined"
                     />
@@ -273,7 +255,7 @@ function WorldsComponent() {
                   <Button
                     size="small"
                     component={Link}
-                    to={`/worlds/${world.id}`}
+                    to={`/stories/${story.id}`}
                   >
                     View Details
                   </Button>
@@ -281,7 +263,7 @@ function WorldsComponent() {
                     size="small"
                     color="secondary"
                     component={Link}
-                    to={`/create/world?edit=${world.id}`}
+                    to={`/create/story?edit=${story.id}`}
                   >
                     Edit
                   </Button>
@@ -290,7 +272,7 @@ function WorldsComponent() {
                     color="error"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteClick(world);
+                      handleDeleteClick(story);
                     }}
                     sx={{ ml: "auto" }}
                   >
@@ -308,12 +290,12 @@ function WorldsComponent() {
         open={deleteDialogOpen}
         onClose={() => !deleting && setDeleteDialogOpen(false)}
       >
-        <DialogTitle>Delete World?</DialogTitle>
+        <DialogTitle>Delete Story?</DialogTitle>
         <DialogContent>
           <Typography>
             Are you sure you want to delete{" "}
-            <strong>{worldToDelete?.name}</strong>? This action cannot be undone
-            and will also delete all associated locations.
+            <strong>{storyToDelete?.title}</strong>? This action cannot be
+            undone and will also delete all associated chapters.
           </Typography>
         </DialogContent>
         <DialogActions>
