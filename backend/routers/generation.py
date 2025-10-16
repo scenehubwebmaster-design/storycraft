@@ -658,14 +658,17 @@ async def call_llm_structured(
                 )
                 metadata = {"model": model or "gemini-2.0-flash", "provider": "google", "structured": True}
             elif provider.lower() == "groq":
+                # Use Llama 4 Scout which supports structured outputs (json_schema)
+                # Supported models: meta-llama/llama-4-scout-17b-16e-instruct, meta-llama/llama-4-maverick-17b-128e-instruct
+                # See: https://console.groq.com/docs/structured-outputs#supported-models
                 response_text = await LLMProvider.generate_groq(
                     prompt,
-                    model or "llama-3.3-70b-versatile",
+                    model or "meta-llama/llama-4-scout-17b-16e-instruct",
                     max_tokens=max_tokens,
                     temperature=0.7,
                     response_format=schema
                 )
-                metadata = {"model": model or "llama-3.3-70b-versatile", "provider": "groq", "structured": True}
+                metadata = {"model": model or "meta-llama/llama-4-scout-17b-16e-instruct", "provider": "groq", "structured": True}
             else:
                 raise ValueError(f"Unsupported provider: {provider}")
         else:

@@ -114,7 +114,10 @@ export const getRecommendedModel = (provider, complexity = "medium") => {
     },
     groq: {
       simple: "llama-3.1-8b-instant",
-      medium: "llama-3.3-70b-versatile",
+      // Updated: Use Llama 4 Scout for medium/complex tasks - supports structured outputs
+      // Only these models support json_schema: llama-4-scout, llama-4-maverick, gpt-oss, kimi-k2
+      // See: https://console.groq.com/docs/structured-outputs#supported-models
+      medium: "meta-llama/llama-4-scout-17b-16e-instruct",
       complex: "meta-llama/llama-4-scout-17b-16e-instruct",
     },
   };

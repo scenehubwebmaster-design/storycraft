@@ -1,7 +1,7 @@
 """
 Pydantic schemas for API request/response validation.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -189,6 +189,30 @@ class CharacterProfile(BaseModel):
         ..., 
         description="Notable quirks, habits, or mannerisms (2-4 items)"
     )
+    
+    # Validators to handle LLM sometimes returning strings instead of lists
+    @field_validator('distinctive_features', 'personality_traits', 'formative_events', 'goals', 
+                     'values', 'emotional_weaknesses', 'physical_weaknesses', 'skills', 
+                     'special_abilities', 'unique_qualities', 'quirks_and_habits', mode='before')
+    @classmethod
+    def convert_string_to_list(cls, v):
+        """Convert string to list if LLM returns string instead of array"""
+        if isinstance(v, str):
+            # If it's a string, wrap it in a list
+            return [v]
+        return v
+    
+    @field_validator('key_relationships', mode='before')
+    @classmethod
+    def ensure_relationships_list(cls, v):
+        """Ensure relationships is a list of dicts"""
+        if isinstance(v, str):
+            # If it's a string, return empty list
+            return []
+        if isinstance(v, dict):
+            # If it's a single dict, wrap in list
+            return [v]
+        return v
 
 
 # Structured Output Schema for World Profiles
@@ -249,6 +273,28 @@ class WorldProfile(BaseModel):
     )
     central_themes: List[str] = Field(..., description="Core themes explored in this world (3-5 themes)")
     current_threats: List[str] = Field(..., description="Present dangers or challenges (2-4 threats)")
+    
+    # Validators to handle LLM sometimes returning strings instead of lists
+    @field_validator('climate_zones', 'natural_wonders', 'dominant_species', 'languages', 
+                     'cultural_norms', 'limitations', 'notable_artifacts', 'central_themes', 
+                     'current_threats', mode='before')
+    @classmethod
+    def convert_string_to_list(cls, v):
+        """Convert string to list if LLM returns string instead of array"""
+        if isinstance(v, str):
+            return [v]
+        return v
+    
+    @field_validator('major_historical_events', 'major_regions', 'major_civilizations', 
+                     'religions_and_beliefs', 'major_conflicts', mode='before')
+    @classmethod
+    def ensure_dict_list(cls, v):
+        """Ensure field is a list of dicts"""
+        if isinstance(v, str):
+            return []
+        if isinstance(v, dict):
+            return [v]
+        return v
     
     # Lore and Mysteries
     legends_and_myths: List[Dict[str, str]] = Field(
