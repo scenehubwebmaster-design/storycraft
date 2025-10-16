@@ -701,7 +701,20 @@ REQUIRED OUTPUT STRUCTURE (D&D 5E Character Sheet Format)
 ═══════════════════════════════════════════════════════════════════════════
 
 1. CHARACTER INFORMATION
-   ├─ character_name: Full name following {species} naming conventions
+   ├─ character_name: UNIQUE fantasy name following {species} naming conventions
+   │   ⚠️ CRITICAL: Generate a COMPLETELY UNIQUE name each time!
+   │   • DO NOT reuse names like "Eira Shadowglow" or similar patterns
+   │   • Use diverse syllables, sounds, and combinations
+   │   • Consider species-specific naming patterns:
+   │     - Dragonborn: Strong consonants + clan names (Balasar, Ghesh, Heskan, Akra, Tarhun)
+   │     - Elf: Flowing, melodic (Aelar, Heian, Peren, Adran, Theren, Galinndan)
+   │     - Dwarf: Hard consonants + clan surnames (Thorin, Baern, Rurik, Darrak, Torbin)
+   │     - Halfling: Friendly, earthy (Alton, Roscoe, Lindal, Cade, Eldon)
+   │     - Tiefling: Infernal or virtue names (Akmenios, Damakos, Iados, Kairon, Art, Glory)
+   │     - Human: Varied by culture (use diverse real-world inspirations)
+   │   • Mix and match syllables creatively for originality
+   │   • Add surnames that reflect background, profession, or lineage
+   │
    ├─ age: Age appropriate for {species} (with context like "young", "seasoned", "elder")
    ├─ height: {species}-appropriate height
    ├─ weight: Weight matching build and species

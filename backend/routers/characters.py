@@ -265,12 +265,14 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
                 
                 if request.use_structured:
                     # Use structured output for consistent narrative format
+                    # Use higher temperature (0.95) for more creative/unique name generation
                     narrative_data, metadata = await call_llm_structured(
                         prompt=narrative_prompt,
                         provider=request.narrative_provider,
                         schema_model=DnDCharacterNarrative,
                         model=request.narrative_model,
-                        max_tokens=3000
+                        max_tokens=3000,
+                        temperature=0.95
                     )
                     
                     # Convert to dict for storage

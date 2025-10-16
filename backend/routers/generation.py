@@ -674,7 +674,8 @@ async def call_llm_structured(
     provider: str,
     schema_model: Type[BaseModel],
     model: str = None,
-    max_tokens: int = 3000
+    max_tokens: int = 3000,
+    temperature: float = 0.9
 ) -> tuple[BaseModel, Dict[str, Any]]:
     """
     Call the specified LLM provider with structured output support.
@@ -686,6 +687,7 @@ async def call_llm_structured(
         schema_model: Pydantic model class for structured output (CharacterProfile or WorldProfile)
         model: Optional specific model name
         max_tokens: Maximum tokens for response (default 3000 for structured outputs)
+        temperature: Temperature for generation (default 0.9 for creativity)
     
     Returns:
         Tuple of (validated Pydantic model instance, metadata dict)
@@ -717,7 +719,7 @@ async def call_llm_structured(
                     prompt, 
                     model or "gpt-4", 
                     max_tokens=max_tokens,
-                    temperature=0.7,
+                    temperature=temperature,
                     response_format=schema
                 )
                 metadata = {"model": model or "gpt-4", "provider": "openai", "structured": True}
@@ -726,7 +728,7 @@ async def call_llm_structured(
                     prompt,
                     model or "gemini-2.0-flash",
                     max_tokens=max_tokens,
-                    temperature=0.7,
+                    temperature=temperature,
                     response_schema=schema
                 )
                 metadata = {"model": model or "gemini-2.0-flash", "provider": "google", "structured": True}
@@ -738,7 +740,7 @@ async def call_llm_structured(
                     prompt,
                     model or "meta-llama/llama-4-scout-17b-16e-instruct",
                     max_tokens=max_tokens,
-                    temperature=0.7,
+                    temperature=temperature,
                     response_format=schema
                 )
                 metadata = {"model": model or "meta-llama/llama-4-scout-17b-16e-instruct", "provider": "groq", "structured": True}
@@ -754,7 +756,7 @@ async def call_llm_structured(
                     enhanced_prompt,
                     model or "claude-3-5-sonnet-20241022",
                     max_tokens=max_tokens,
-                    temperature=0.7
+                    temperature=temperature
                 )
                 metadata = {"model": model or "claude-3-5-sonnet-20241022", "provider": "anthropic", "structured": False}
             else:
