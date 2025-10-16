@@ -7,6 +7,7 @@ import logging
 from rate_limiter import rate_limiter
 from gemini_models import fetch_available_models
 from groq_models import fetch_available_models as fetch_groq_models
+from claude_models import fetch_available_models as fetch_claude_models
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -89,7 +90,28 @@ class LLMProvider:
         return response.choices[0].message.content
     
     @staticmethod
-    async def generate_anthropic(prompt: str, model: str = "claude-3-5-sonnet-20241022", max_tokens: int = 1000, temperature: float = 0.7):
+    async def generate_anthropic(
+        prompt: str,
+        model: str = "claude-sonnet-4-5",  # Updated to latest Sonnet 4.5
+        max_tokens: int = 1000,
+        temperature: float = 0.7,
+        system: str = None,
+        enable_thinking: bool = False
+    ):
+        """
+        Generate text using Claude (Anthropic) models.
+        
+        Args:
+            prompt: The user prompt
+            model: Model ID (e.g., "claude-sonnet-4-5", "claude-haiku-4-5")
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature (0.0 to 1.0)
+            system: Optional system prompt for context
+            enable_thinking: Enable extended thinking (for supported models)
+        
+        Returns:
+            Generated text content
+        """
         if not ANTHROPIC_AVAILABLE:
             raise HTTPException(status_code=500, detail="Anthropic client not installed")
         
@@ -99,14 +121,44 @@ class LLMProvider:
         
         client = anthropic.Anthropic(api_key=api_key)
         
-        message = client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            messages=[{"role": "user", "content": prompt}]
-        )
+        # Build request parameters
+        request_params = {
+            "model": model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "messages": [{"role": "user", "content": prompt}]
+        }
         
-        return message.content[0].text
+        # Add system prompt if provided
+        if system:
+            request_params["system"] = system
+        
+        # Enable extended thinking if requested and model supports it
+        # Thinking-enabled models: Sonnet 4.5, 4, 3.7, Opus 4.1, 4, Haiku 4.5
+        if enable_thinking:
+            request_params["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": 2000  # Default thinking budget
+            }
+        
+        message = client.messages.create(**request_params)
+        
+        # Extract text content from response
+        # Claude returns content as a list of blocks
+        content = ""
+        for block in message.content:
+            if hasattr(block, 'type'):
+                if block.type == "text":
+                    content += block.text
+                elif block.type == "thinking":
+                    # Optionally include thinking blocks in response
+                    # (they're not shown to end users by default)
+                    pass
+            else:
+                # Fallback for direct text
+                content += str(block)
+        
+        return content
     
     @staticmethod
     async def generate_google(
@@ -442,4 +494,28 @@ async def get_groq_models():
         }
     except Exception as e:
         logger.error(f"Failed to fetch Groq models: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
+
+
+@router.get("/claude/models")
+async def get_claude_models():
+    """
+    Get list of available Claude (Anthropic) models with their capabilities.
+    Returns models with pricing, features, and use case recommendations.
+    """
+    try:
+        models = fetch_claude_models()
+        return {
+            "models": models,
+            "count": len(models),
+            "provider": "anthropic",
+            "features": {
+                "vision": "All Claude 4+ models support vision",
+                "thinking": "Extended thinking available on Claude 4.5, 4, 3.7, Opus 4.1, Opus 4, and Haiku 4.5",
+                "caching": "Prompt caching available on all models (5-min and 1-hour TTL)",
+                "streaming": "All models support streaming responses"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch Claude models: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
