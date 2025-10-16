@@ -703,17 +703,23 @@ REQUIRED OUTPUT STRUCTURE (D&D 5E Character Sheet Format)
 1. CHARACTER INFORMATION
    ├─ character_name: UNIQUE fantasy name following {species} naming conventions
    │   ⚠️ CRITICAL: Generate a COMPLETELY UNIQUE name each time!
-   │   • DO NOT reuse names like "Eira Shadowglow" or similar patterns
    │   • Use diverse syllables, sounds, and combinations
    │   • Consider species-specific naming patterns:
-   │     - Dragonborn: Strong consonants + clan names (Balasar, Ghesh, Heskan, Akra, Tarhun)
-   │     - Elf: Flowing, melodic (Aelar, Heian, Peren, Adran, Theren, Galinndan)
-   │     - Dwarf: Hard consonants + clan surnames (Thorin, Baern, Rurik, Darrak, Torbin)
-   │     - Halfling: Friendly, earthy (Alton, Roscoe, Lindal, Cade, Eldon)
-   │     - Tiefling: Infernal or virtue names (Akmenios, Damakos, Iados, Kairon, Art, Glory)
+   │     - Dragonborn: Strong consonants + clan names (Balasar, Ghesh, Heskan, Akra, Tarhun, Nadarr)
+   │     - Elf: Flowing, melodic (Aelar, Heian, Peren, Adran, Theren, Galinndan, Ivellios, Quarion)
+   │     - Dwarf: Hard consonants + clan surnames (Thorin, Baern, Rurik, Darrak, Torbin, Vondal)
+   │     - Halfling: Friendly, earthy (Alton, Roscoe, Lindal, Cade, Eldon, Corrin, Garret)
+   │     - Tiefling: Infernal or virtue names (Akmenios, Damakos, Iados, Kairon, Art, Glory, Hope)
    │     - Human: Varied by culture (use diverse real-world inspirations)
-   │   • Mix and match syllables creatively for originality
-   │   • Add surnames that reflect background, profession, or lineage
+   │   • Fantasy surname examples to combine with first names:
+   │     Korvis, Thaleon, Zareth, Morak, Valdris, Kaelen, Zephrin, Loreth, Astrin, Vex,
+   │     Talon, Kasalan, Velaris, Draxen, Norin, Silvain, Mordain, Bryn, Kestrel, Zaldor,
+   │     Ashwyn, Ravenor, Theron, Galadorn, Vorin, Lyrian, Zereth, Branok, Solwyn, Vyrus,
+   │     Aldric, Corvus, Nethyr, Torin, Galvorn, Merrick, Valdor, Arlon, Kestren, Dravos,
+   │     Alvar, Faelen, Riven, Myros, Galan, Elian, Taris, Zoren, Keldon, Varyn
+   │   • Create unique combinations (e.g., "Tharen Kasalan", "Akra Valdris", "Peren Ravenor")
+   │   • Mix and match or create variations inspired by these examples
+   │   • DO NOT reuse combinations - be creative with syllable patterns
    │
    ├─ age: Age appropriate for {species} (with context like "young", "seasoned", "elder")
    ├─ height: {species}-appropriate height
