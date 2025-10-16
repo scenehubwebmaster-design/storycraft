@@ -4,7 +4,7 @@ AI Generation Router - Endpoints for intelligent story element creation.
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import Dict, Any, Type
+from typing import Dict, Any, Type, Optional
 import json
 from pydantic import BaseModel
 
@@ -794,12 +794,17 @@ async def generate_world_structured(request: WorldGenerationRequest):
     return world_profile
 
 
+class CharacterSaveRequest(BaseModel):
+    """Request model for saving a structured character with optional portrait"""
+    character_profile: CharacterProfile
+    portrait_image: Optional[str] = None
+    image_prompt: Optional[str] = None
+    story_id: Optional[int] = None
+
+
 @router.post("/character/structured/save")
 async def save_structured_character(
-    character_profile: CharacterProfile,
-    portrait_image: str = None,
-    image_prompt: str = None,
-    story_id: int = None,
+    request: CharacterSaveRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -809,15 +814,17 @@ async def save_structured_character(
     with both legacy fields (for backward compatibility) and the full structured_data JSON.
     
     Args:
-        character_profile: Validated CharacterProfile from structured generation
-        portrait_image: Optional base64 encoded portrait image
-        image_prompt: Optional prompt used to generate the portrait
-        story_id: Optional story ID to link the character to
+        request: CharacterSaveRequest containing character_profile and optional portrait data
         db: Database session
     
     Returns:
         Dictionary with character ID and success message
     """
+    character_profile = request.character_profile
+    portrait_image = request.portrait_image
+    image_prompt = request.image_prompt
+    story_id = request.story_id
+    
     try:
         logger.info(f"Saving structured character: {character_profile.name}")
         

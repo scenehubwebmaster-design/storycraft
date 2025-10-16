@@ -1,4 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useMatches,
+} from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -34,6 +39,9 @@ export const Route = createFileRoute("/characters")({
 const API_URL = "http://localhost:8000";
 
 function CharactersComponent() {
+  const matches = useMatches();
+  const isChildRouteActive = matches.length > 2; // Root + /characters + child route
+
   const [characters, setCharacters] = useState([]);
   const [filteredCharacters, setFilteredCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,13 +51,23 @@ function CharactersComponent() {
   const [characterToDelete, setCharacterToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  // All hooks must be called before any conditional returns
   useEffect(() => {
-    loadCharacters();
-  }, []);
+    if (!isChildRouteActive) {
+      loadCharacters();
+    }
+  }, [isChildRouteActive]);
 
   useEffect(() => {
-    filterCharacters();
-  }, [searchQuery, characters]);
+    if (!isChildRouteActive) {
+      filterCharacters();
+    }
+  }, [searchQuery, characters, isChildRouteActive]);
+
+  // If a child route is active (like character detail), render the outlet
+  if (isChildRouteActive) {
+    return <Outlet />;
+  }
 
   const loadCharacters = async () => {
     try {

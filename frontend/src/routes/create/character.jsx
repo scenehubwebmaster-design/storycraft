@@ -127,12 +127,39 @@ function CreateCharacterComponent() {
 
       // Pre-populate form with existing data
       setCharacterName(character.name || "");
-      setGeneratedContent(character.description || "");
+
+      // Check if character has structured data (from structured generation)
+      if (character.structured_data) {
+        // Parse structured data if it's a JSON string
+        let structuredData = character.structured_data;
+        if (typeof structuredData === "string") {
+          try {
+            structuredData = JSON.parse(structuredData);
+          } catch (e) {
+            console.error("Failed to parse structured_data:", e);
+          }
+        }
+
+        // Use structured data for editing
+        if (typeof structuredData === "object") {
+          setGeneratedContent(structuredData);
+          setUseStructured(true);
+        } else {
+          // Fallback to description
+          setGeneratedContent(character.description || "");
+          setUseStructured(false);
+        }
+      } else {
+        // Legacy character without structured data
+        setGeneratedContent(character.description || "");
+        setUseStructured(false);
+      }
+
       setPortraitImage(character.portrait_image || null);
       setImagePrompt(character.image_prompt || null);
 
       // Skip to review step if we have generated content
-      if (character.description) {
+      if (character.structured_data || character.description) {
         setActiveStep(2);
       }
 
@@ -204,9 +231,7 @@ function CreateCharacterComponent() {
                 ? selectedPersonalityTraits
                 : null,
             physical_traits:
-              selectedPhysicalTraits.length > 0
-                ? selectedPhysicalTraits
-                : null,
+              selectedPhysicalTraits.length > 0 ? selectedPhysicalTraits : null,
             emotional_traits:
               selectedEmotionalTraits.length > 0
                 ? selectedEmotionalTraits
@@ -249,13 +274,30 @@ function CreateCharacterComponent() {
     try {
       if (isEditMode && editId) {
         // Update existing character
-        await axios.put(`${API_URL}/api/characters/${editId}`, {
+        const updateData = {
           name: characterName,
-          description: useStructured
-            ? JSON.stringify(finalContent || generatedContent)
-            : finalContent || generatedContent,
           portrait_image: portraitImage,
-        });
+          image_prompt: imagePrompt,
+        };
+
+        // Add structured data or plain description based on mode
+        // Only include if we have content to update (user regenerated or modified)
+        if (useStructured) {
+          const contentToSave = finalContent || generatedContent;
+          if (contentToSave) {
+            updateData.structured_data = JSON.stringify(contentToSave);
+            // Also update description field with the character's name for backwards compatibility
+            updateData.description = characterName;
+          }
+        } else {
+          const contentToSave = finalContent || generatedContent;
+          if (contentToSave) {
+            updateData.description = contentToSave;
+          }
+        }
+
+        console.log("Updating character with data:", updateData);
+        await axios.put(`${API_URL}/api/characters/${editId}`, updateData);
         setSuccess("Character updated successfully!");
 
         // Navigate back to detail view after 1.5 seconds
@@ -867,7 +909,11 @@ function CreateCharacterComponent() {
                   disabled={saving || generating || !characterName.trim()}
                   startIcon={saving ? <CircularProgress size={20} /> : null}
                 >
-                  {saving ? "Saving..." : isEditMode ? "Update" : "Save Character"}
+                  {saving
+                    ? "Saving..."
+                    : isEditMode
+                      ? "Update"
+                      : "Save Character"}
                 </Button>
               </Box>
             </Box>

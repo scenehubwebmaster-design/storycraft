@@ -50,7 +50,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Paper>
 
       {/* Section 1: Physical Appearance */}
-      <Card sx={{ mb: 3 }}>
+      <Card id="physical" sx={{ mb: 3, scrollMarginTop: "20px" }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <PersonIcon sx={{ mr: 1, color: "primary.main" }} />
@@ -117,7 +117,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 2: Personality */}
-      <Card sx={{ mb: 3 }}>
+      <Card id="personality" sx={{ mb: 3, scrollMarginTop: "20px" }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <PsychologyIcon sx={{ mr: 1, color: "secondary.main" }} />
@@ -174,7 +174,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 3: Background */}
-      <Card sx={{ mb: 3 }}>
+      <Card id="background" sx={{ mb: 3, scrollMarginTop: "20px" }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <HistoryIcon sx={{ mr: 1, color: "info.main" }} />
@@ -227,7 +227,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 4: Motivations */}
-      <Card sx={{ mb: 3 }}>
+      <Card id="motivations" sx={{ mb: 3, scrollMarginTop: "20px" }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <FavoriteIcon sx={{ mr: 1, color: "error.main" }} />
@@ -278,7 +278,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 5: Fears & Weaknesses */}
-      <Card sx={{ mb: 3 }}>
+      <Card id="fears" sx={{ mb: 3, scrollMarginTop: "20px" }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <WarningIcon sx={{ mr: 1, color: "warning.main" }} />
@@ -338,7 +338,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 6: Strengths & Abilities */}
-      <Card sx={{ mb: 3 }}>
+      <Card id="strengths" sx={{ mb: 3, scrollMarginTop: "20px" }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <FlashOnIcon sx={{ mr: 1, color: "success.main" }} />
@@ -388,7 +388,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 7: Relationships */}
-      <Card sx={{ mb: 3 }}>
+      <Card id="relationships" sx={{ mb: 3, scrollMarginTop: "20px" }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <PeopleIcon sx={{ mr: 1, color: "primary.main" }} />
@@ -423,7 +423,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 8: Character Arc */}
-      <Card sx={{ mb: 3 }}>
+      <Card id="arc" sx={{ mb: 3, scrollMarginTop: "20px" }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <TrendingUpIcon sx={{ mr: 1, color: "secondary.main" }} />
@@ -438,7 +438,7 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 9: Unique Qualities */}
-      <Card sx={{ mb: 3 }}>
+      <Card id="unique" sx={{ mb: 3, scrollMarginTop: "20px" }}>
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
             <StarsIcon sx={{ mr: 1, color: "info.main" }} />

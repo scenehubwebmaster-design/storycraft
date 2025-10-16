@@ -49,7 +49,24 @@ function CharacterDetailComponent() {
       const response = await axios.get(
         `${API_URL}/api/characters/${characterId}`
       );
-      setCharacter(response.data);
+      const characterData = response.data;
+
+      // Parse structured_data if it's a JSON string
+      if (
+        characterData.structured_data &&
+        typeof characterData.structured_data === "string"
+      ) {
+        try {
+          characterData.structured_data = JSON.parse(
+            characterData.structured_data
+          );
+        } catch (e) {
+          console.error("Failed to parse structured_data:", e);
+          // Leave it as string if parsing fails
+        }
+      }
+
+      setCharacter(characterData);
       setError(null);
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to load character");
@@ -97,11 +114,7 @@ function CharacterDetailComponent() {
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
-        <Button
-          component={Link}
-          to="/characters"
-          startIcon={<ArrowBackIcon />}
-        >
+        <Button component={Link} to="/characters" startIcon={<ArrowBackIcon />}>
           Back to Characters
         </Button>
       </Box>
@@ -114,11 +127,7 @@ function CharacterDetailComponent() {
         <Alert severity="warning" sx={{ mb: 3 }}>
           Character not found
         </Alert>
-        <Button
-          component={Link}
-          to="/characters"
-          startIcon={<ArrowBackIcon />}
-        >
+        <Button component={Link} to="/characters" startIcon={<ArrowBackIcon />}>
           Back to Characters
         </Button>
       </Box>
@@ -167,7 +176,7 @@ function CharacterDetailComponent() {
               variant="outlined"
               startIcon={<EditIcon />}
               component={Link}
-              to={`/character?edit=${characterId}`}
+              to={`/create/character?edit=${characterId}`}
             >
               Edit
             </Button>
@@ -185,7 +194,7 @@ function CharacterDetailComponent() {
 
       <Grid container spacing={3}>
         {/* Portrait Card */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Card>
             {character.portrait_image ? (
               <CardMedia
@@ -219,160 +228,282 @@ function CharacterDetailComponent() {
           </Card>
         </Grid>
 
-        {/* Details Card */}
-        <Grid size={{ xs: 12, md: 8 }}>
-          {/* Check if character has structured data */}
-          {character.structured_data ? (
-            // Display structured character profile
-            <Box>
-              <Box
-                sx={{
-                  mb: 2,
-                  p: 2,
-                  bgcolor: "primary.main",
-                  color: "white",
-                  borderRadius: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                }}
-              >
-                <Chip
-                  label="Structured Profile"
-                  size="small"
-                  sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
-                />
-                <Typography variant="body2">
-                  This character uses the new structured format with organized
-                  sections
+        {/* Navigation Sidebar - Only show for structured characters */}
+        {character.structured_data && (
+          <Grid
+            size={{ xs: 12, md: 2 }}
+            sx={{ display: { xs: "none", md: "block" } }}
+          >
+            <Card
+              sx={{
+                position: "sticky",
+                top: 16,
+                maxHeight: "calc(100vh - 250px)",
+                overflowY: "auto",
+              }}
+            >
+              <CardContent sx={{ py: 2, px: 1.5 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    color: "text.secondary",
+                    mb: 1,
+                    display: "block",
+                  }}
+                >
+                  Sections
                 </Typography>
+                <Box
+                  component="nav"
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.5,
+                  }}
+                >
+                  {[
+                    { id: "physical", label: "Physical" },
+                    { id: "personality", label: "Personality" },
+                    { id: "background", label: "Background" },
+                    { id: "motivations", label: "Motivations" },
+                    { id: "fears", label: "Fears" },
+                    { id: "strengths", label: "Strengths" },
+                    { id: "relationships", label: "Relationships" },
+                    { id: "arc", label: "Character Arc" },
+                    { id: "unique", label: "Unique Qualities" },
+                  ].map((section) => (
+                    <Button
+                      key={section.id}
+                      size="small"
+                      onClick={() => {
+                        const element = document.getElementById(section.id);
+                        if (element) {
+                          element.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                          });
+                        }
+                      }}
+                      sx={{
+                        justifyContent: "flex-start",
+                        textAlign: "left",
+                        py: 0.75,
+                        px: 1.5,
+                        fontSize: "0.8rem",
+                        color: "text.secondary",
+                        textTransform: "none",
+                        "&:hover": {
+                          backgroundColor: "action.hover",
+                          color: "primary.main",
+                        },
+                      }}
+                    >
+                      {section.label}
+                    </Button>
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+
+        {/* Details Card - Scrollable */}
+        <Grid size={{ xs: 12, md: character.structured_data ? 7 : 9 }}>
+          <Box
+            sx={{
+              maxHeight: { md: "calc(100vh - 250px)" },
+              overflowY: "auto",
+              overflowX: "hidden",
+              pr: 1,
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                backgroundColor: "background.default",
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "divider",
+                borderRadius: "4px",
+                "&:hover": {
+                  backgroundColor: "text.secondary",
+                },
+              },
+            }}
+          >
+            {/* Check if character has structured data */}
+            {character.structured_data ? (
+              // Display structured character profile
+              <Box>
+                <Box
+                  sx={{
+                    mb: 2,
+                    p: 2,
+                    bgcolor: "primary.main",
+                    color: "white",
+                    borderRadius: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <Chip
+                    label="Structured Profile"
+                    size="small"
+                    sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
+                  />
+                  <Typography variant="body2">
+                    This character uses the new structured format with organized
+                    sections
+                  </Typography>
+                </Box>
+                <StructuredCharacterDisplay
+                  characterProfile={character.structured_data}
+                />
               </Box>
-              <StructuredCharacterDisplay
-                characterProfile={character.structured_data}
-              />
-            </Box>
-          ) : (
-            // Display legacy character format
-            <Card>
-              <CardContent>
-              {/* Description */}
-              {character.description && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{ fontWeight: 600 }}
-                  >
-                    Description
-                  </Typography>
-                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {character.description}
-                  </Typography>
-                </Box>
-              )}
+            ) : (
+              // Display legacy character format
+              <Card>
+                <CardContent>
+                  {/* Description */}
+                  {character.description && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Description
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {character.description}
+                      </Typography>
+                    </Box>
+                  )}
 
-              <Divider sx={{ my: 3 }} />
+                  <Divider sx={{ my: 3 }} />
 
-              {/* Appearance */}
-              {character.appearance && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{ fontWeight: 600 }}
-                  >
-                    Appearance
-                  </Typography>
-                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {character.appearance}
-                  </Typography>
-                </Box>
-              )}
+                  {/* Appearance */}
+                  {character.appearance && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Appearance
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {character.appearance}
+                      </Typography>
+                    </Box>
+                  )}
 
-              {character.appearance && character.personality && (
-                <Divider sx={{ my: 3 }} />
-              )}
+                  {character.appearance && character.personality && (
+                    <Divider sx={{ my: 3 }} />
+                  )}
 
-              {/* Personality */}
-              {character.personality && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{ fontWeight: 600 }}
-                  >
-                    Personality
-                  </Typography>
-                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {character.personality}
-                  </Typography>
-                </Box>
-              )}
+                  {/* Personality */}
+                  {character.personality && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Personality
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {character.personality}
+                      </Typography>
+                    </Box>
+                  )}
 
-              {character.personality && character.background && (
-                <Divider sx={{ my: 3 }} />
-              )}
+                  {character.personality && character.background && (
+                    <Divider sx={{ my: 3 }} />
+                  )}
 
-              {/* Background */}
-              {character.background && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{ fontWeight: 600 }}
-                  >
-                    Background
-                  </Typography>
-                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {character.background}
-                  </Typography>
-                </Box>
-              )}
+                  {/* Background */}
+                  {character.background && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Background
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {character.background}
+                      </Typography>
+                    </Box>
+                  )}
 
-              {character.background && character.motivations && (
-                <Divider sx={{ my: 3 }} />
-              )}
+                  {character.background && character.motivations && (
+                    <Divider sx={{ my: 3 }} />
+                  )}
 
-              {/* Motivations */}
-              {character.motivations && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{ fontWeight: 600 }}
-                  >
-                    Motivations
-                  </Typography>
-                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {character.motivations}
-                  </Typography>
-                </Box>
-              )}
+                  {/* Motivations */}
+                  {character.motivations && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Motivations
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {character.motivations}
+                      </Typography>
+                    </Box>
+                  )}
 
-              {character.motivations && character.relationships && (
-                <Divider sx={{ my: 3 }} />
-              )}
+                  {character.motivations && character.relationships && (
+                    <Divider sx={{ my: 3 }} />
+                  )}
 
-              {/* Relationships */}
-              {character.relationships && (
-                <Box>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{ fontWeight: 600 }}
-                  >
-                    Relationships
-                  </Typography>
-                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {typeof character.relationships === "string"
-                      ? character.relationships
-                      : JSON.stringify(character.relationships, null, 2)}
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-          )}
+                  {/* Relationships */}
+                  {character.relationships && (
+                    <Box>
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Relationships
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {typeof character.relationships === "string"
+                          ? character.relationships
+                          : JSON.stringify(character.relationships, null, 2)}
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </Box>
         </Grid>
       </Grid>
 

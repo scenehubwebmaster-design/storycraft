@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any
 from database import get_db
 from models import Character
 from pydantic import BaseModel
@@ -16,16 +16,30 @@ class CharacterBase(BaseModel):
     personality: str | None = None
     appearance: str | None = None
     motivations: str | None = None
-    relationships: dict | None = None
+    relationships: Dict[str, Any] | list | None = None
 
 class CharacterCreate(CharacterBase):
     pass
+
+class CharacterUpdate(BaseModel):
+    """Schema for updating a character"""
+    name: str | None = None
+    description: str | None = None
+    background: str | None = None
+    personality: str | None = None
+    appearance: str | None = None
+    motivations: str | None = None
+    relationships: Dict[str, Any] | list | None = None
+    portrait_image: str | None = None
+    image_prompt: str | None = None
+    structured_data: Dict[str, Any] | str | None = None
 
 class CharacterResponse(CharacterBase):
     id: int
     portrait_image: str | None = None
     image_prompt: str | None = None
-    generation_log: str | None = None
+    generation_log: Dict[str, Any] | list | str | None = None
+    structured_data: Dict[str, Any] | str | None = None
     created_at: datetime
     updated_at: datetime
     
@@ -56,13 +70,15 @@ def create_character(character: CharacterCreate, db: Session = Depends(get_db)):
     return db_character
 
 @router.put("/{character_id}", response_model=CharacterResponse)
-def update_character(character_id: int, character: CharacterCreate, db: Session = Depends(get_db)):
+def update_character(character_id: int, character: CharacterUpdate, db: Session = Depends(get_db)):
     """Update an existing character"""
     db_character = db.query(Character).filter(Character.id == character_id).first()
     if db_character is None:
         raise HTTPException(status_code=404, detail="Character not found")
     
-    for key, value in character.dict().items():
+    # Only update fields that are provided (not None)
+    update_data = character.dict(exclude_unset=True)
+    for key, value in update_data.items():
         setattr(db_character, key, value)
     
     db.commit()

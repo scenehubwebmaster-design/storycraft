@@ -10,8 +10,6 @@ class Story(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text)
     genre = Column(String(100))
-    content = Column(Text)  # Full story content
-    generation_log = Column(JSON)  # Track AI generation history
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -29,8 +27,6 @@ class Chapter(Base):
     title = Column(String(255), nullable=False)
     content = Column(Text)
     chapter_number = Column(Integer)
-    order = Column(Integer, default=0)  # For ordering chapters
-    generation_log = Column(JSON)  # Track AI generation history
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -47,9 +43,7 @@ class Scene(Base):
     title = Column(String(255))
     content = Column(Text)
     scene_number = Column(Integer)
-    order = Column(Integer, default=0)  # For ordering scenes
     location = Column(String(255))
-    generation_log = Column(JSON)  # Track AI generation history
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -85,14 +79,12 @@ class World(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
-    lore = Column(Text)  # Full world lore/content
     history = Column(Text)
     geography = Column(Text)
     culture = Column(Text)
     magic_system = Column(Text)
     technology_level = Column(String(100))
-    generation_log = Column(JSON)  # Track AI generation history
-    structured_data = Column(JSON)  # Store full WorldProfile from structured generation
+    structured_data = Column(Text)  # Store full WorldProfile from structured generation (stored as JSON string)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
