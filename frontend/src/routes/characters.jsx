@@ -31,12 +31,11 @@ import PersonIcon from "@mui/icons-material/Person";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ClearIcon from "@mui/icons-material/Clear";
+import { API_URL } from "../config/api";
 
 export const Route = createFileRoute("/characters")({
   component: CharactersComponent,
 });
-
-const API_URL = "http://localhost:8000";
 
 function CharactersComponent() {
   const matches = useMatches();

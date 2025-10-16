@@ -23,6 +23,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:3001",  # Vite alternate port
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "*",  # Allow all origins for development (network access)
     ],
     allow_credentials=True,
     allow_methods=["*"],

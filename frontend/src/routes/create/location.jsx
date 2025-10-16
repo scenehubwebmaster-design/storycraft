@@ -25,12 +25,12 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import PromptSelector from "../../components/PromptSelector";
 import GenerationResult from "../../components/GenerationResult";
 import ModelSelector from "../../components/ModelSelector";
+import { API_URL } from "../../config/api";
 
 export const Route = createFileRoute("/create/location")({
   component: CreateLocationComponent,
 });
 
-const API_URL = "http://localhost:8000";
 const steps = ["Location Setup", "Generate", "Review & Save"];
 
 const LOCATION_TYPES = [

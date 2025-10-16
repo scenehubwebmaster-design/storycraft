@@ -20,12 +20,11 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import StructuredWorldDisplay from "../../components/StructuredWorldDisplay";
+import { API_URL } from "../../config/api";
 
 export const Route = createFileRoute("/worlds/$worldId")({
   component: WorldDetailComponent,
 });
-
-const API_URL = "http://localhost:8000";
 
 function WorldDetailComponent() {
   const { worldId } = Route.useParams();

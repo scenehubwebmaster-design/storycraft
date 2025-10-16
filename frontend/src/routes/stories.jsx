@@ -25,12 +25,11 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ClearIcon from "@mui/icons-material/Clear";
+import { API_URL } from "../config/api";
 
 export const Route = createFileRoute("/stories")({
   component: StoriesComponent,
 });
-
-const API_URL = "http://localhost:8000";
 
 function StoriesComponent() {
   const [stories, setStories] = useState([]);

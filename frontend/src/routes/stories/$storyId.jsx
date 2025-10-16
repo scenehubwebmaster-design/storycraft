@@ -19,12 +19,11 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { API_URL } from "../../config/api";
 
 export const Route = createFileRoute("/stories/$storyId")({
   component: StoryDetailComponent,
 });
-
-const API_URL = "http://localhost:8000";
 
 function StoryDetailComponent() {
   const { storyId } = Route.useParams();

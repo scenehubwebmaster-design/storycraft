@@ -33,12 +33,12 @@ import PromptSelector from "../../components/PromptSelector";
 import GenerationResult from "../../components/GenerationResult";
 import ModelSelector from "../../components/ModelSelector";
 import StructuredWorldDisplay from "../../components/StructuredWorldDisplay";
+import { API_URL } from "../../config/api";
 
 export const Route = createFileRoute("/create/world")({
   component: CreateWorldComponent,
 });
 
-const API_URL = "http://localhost:8000";
 const steps = ["Select Parameters", "Generate", "Review & Save"];
 
 function CreateWorldComponent() {

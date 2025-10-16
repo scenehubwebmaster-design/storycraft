@@ -133,9 +133,13 @@ npm run dev:all
 ```
 
 This will start:
-- Frontend at http://localhost:3000
-- Backend at http://localhost:8000
+- Frontend at http://localhost:3000 (also accessible via network IP)
+- Backend at http://localhost:8000 (also accessible via network IP)
 - API docs at http://localhost:8000/docs
+
+**Network Access**: Both services are configured to be accessible from other devices on your network:
+- Frontend: `http://<your-ip>:3000` (e.g., `http://192.168.1.100:3000`)
+- Backend: `http://<your-ip>:8000` (e.g., `http://192.168.1.100:8000`)
 
 ### Run Frontend Only
 
@@ -152,8 +156,10 @@ npm run dev
 npm run dev:backend
 # or
 cd backend
-python -m uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+**Note**: The backend now binds to `0.0.0.0` to allow network access from mobile devices on the same network. You can access it from other devices using your computer's IP address (e.g., `http://192.168.1.100:8000`).
 
 ## 📚 API Documentation
 

@@ -25,12 +25,11 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import InfoIcon from "@mui/icons-material/Info";
+import { API_URL } from "../config/api";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsComponent,
 });
-
-const API_URL = "http://localhost:8000";
 
 function SettingsComponent() {
   const [openaiKey, setOpenaiKey] = useState("");

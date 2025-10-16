@@ -49,12 +49,11 @@ import ModelSelector from "../../components/ModelSelector";
 import StructuredCharacterDisplay from "../../components/StructuredCharacterDisplay";
 import DnDCharacterCreator from "../../components/DnDCharacterCreator";
 import DnDCharacterSheet from "../../components/DnDCharacterSheet";
+import { API_URL } from "../../config/api";
 
 export const Route = createFileRoute("/create/character")({
   component: CreateCharacterComponent,
 });
-
-const API_URL = "http://localhost:8000";
 
 const steps = ["Select Traits", "Generate", "Review & Save"];
 

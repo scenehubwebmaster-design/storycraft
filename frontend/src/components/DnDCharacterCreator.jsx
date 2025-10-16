@@ -31,8 +31,7 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ShuffleIcon from "@mui/icons-material/Shuffle";
 import axios from "axios";
 import ModelSelector from "./ModelSelector";
-
-const API_URL = "http://localhost:8000";
+import { API_URL } from "../config/api";
 
 /**
  * DnDCharacterCreator Component

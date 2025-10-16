@@ -25,12 +25,11 @@ import PublicIcon from "@mui/icons-material/Public";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ClearIcon from "@mui/icons-material/Clear";
+import { API_URL } from "../config/api";
 
 export const Route = createFileRoute("/worlds")({
   component: WorldsComponent,
 });
-
-const API_URL = "http://localhost:8000";
 
 function WorldsComponent() {
   const [worlds, setWorlds] = useState([]);

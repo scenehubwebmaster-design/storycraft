@@ -23,12 +23,11 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PersonIcon from "@mui/icons-material/Person";
 import StructuredCharacterDisplay from "../../components/StructuredCharacterDisplay";
+import { API_URL } from "../../config/api";
 
 export const Route = createFileRoute("/characters/$characterId")({
   component: CharacterDetailComponent,
 });
-
-const API_URL = "http://localhost:8000";
 
 function CharacterDetailComponent() {
   const { characterId } = Route.useParams();
