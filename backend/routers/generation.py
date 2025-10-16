@@ -38,6 +38,10 @@ from prompts import (
     CHARACTER_ARCHETYPES,
     CONFLICT_TYPES
 )
+from prompt_variations import (
+    list_all_variation_names,
+    build_enhanced_character_prompt,
+)
 from routers.llm import LLMProvider
 from rate_limiter import rate_limiter
 from structured_output_utils import (
@@ -117,9 +121,30 @@ async def get_prompt_options():
     )
 
 
+@router.get("/variations")
+async def get_prompt_variations():
+    """Get all available prompt variations organized by genre.
+    
+    Returns 30 variations total:
+    - 10 Fantasy variations (High Fantasy, Dark Fantasy, Urban Fantasy, etc.)
+    - 10 Sci-Fi variations (Space Opera, Cyberpunk, Hard Sci-Fi, etc.)
+    - 10 Historical variations (Ancient, Medieval, Renaissance, etc.)
+    """
+    logger.info("GET /api/generate/variations - Fetching prompt variations")
+    return list_all_variation_names()
+
+
 @router.post("/character", response_model=GenerationResponse)
 async def generate_character(request: CharacterGenerationRequest):
-    """Generate a character using AI"""
+    """Generate a character using AI with optional genre-specific variations.
+    
+    Supports 30 prompt variations across 3 genres:
+    - Fantasy: high_fantasy, dark_fantasy, urban_fantasy, cozy_fantasy, sword_and_sorcery, etc.
+    - Sci-Fi: space_opera, cyberpunk, hard_sci_fi, post_apocalyptic_sci_fi, etc.
+    - Historical: ancient_civilizations, medieval_period, renaissance, victorian_era, etc.
+    
+    Use GET /api/generate/variations to see all available options.
+    """
     # Build prompt
     if request.base_content and request.refinement_instructions:
         prompt = PromptTemplates.refinement_prompt(
@@ -127,16 +152,29 @@ async def generate_character(request: CharacterGenerationRequest):
             request.refinement_instructions
         )
     else:
-        prompt = PromptTemplates.character_prompt(
+        # Build base prompt
+        base_prompt = PromptTemplates.character_prompt(
             themes=request.themes,
             personality_traits=request.personality_traits,
             physical_traits=request.physical_traits,
             archetype=request.archetype,
             custom_details=request.custom_details
         )
+        
+        # Enhance with genre variation if specified
+        if request.genre and request.variation:
+            logger.info(f"Enhancing prompt with {request.genre}/{request.variation}")
+            prompt = build_enhanced_character_prompt(base_prompt, request.genre, request.variation)
+        else:
+            prompt = base_prompt
     
     # Generate with LLM
     content, metadata = await call_llm(prompt, request.provider, request.model)
+    
+    # Add variation info to metadata
+    if request.genre and request.variation:
+        metadata["genre"] = request.genre
+        metadata["variation"] = request.variation
     
     return GenerationResponse(
         content=content,

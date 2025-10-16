@@ -1,6 +1,7 @@
 # Character Generation Enhancement Plan
 
 ## Overview
+
 Transform the character generation system into a robust, modular framework that creates unique, diverse, and authentic characters with rich cultural backgrounds, abilities, and optional D&D 5E integration.
 
 ---
@@ -8,9 +9,11 @@ Transform the character generation system into a robust, modular framework that 
 ## Phase 1: Modular Prompt System Architecture
 
 ### 1.1 Core Prompt Modules
+
 Create reusable, composable prompt components:
 
 **Cultural Background Module**
+
 - Geographic origins (50+ diverse regions)
 - Cultural traditions and values
 - Language and dialects
@@ -19,6 +22,7 @@ Create reusable, composable prompt components:
 - Historical context
 
 **Personality Archetype Module**
+
 - 20+ base archetypes (Hero, Trickster, Sage, Rebel, etc.)
 - Psychological depth (motivations, fears, desires)
 - Moral alignment spectrums
@@ -26,6 +30,7 @@ Create reusable, composable prompt components:
 - Internal conflicts
 
 **Physical Diversity Module**
+
 - Body types and builds (athletic, stocky, willowy, etc.)
 - Ethnic features and variations
 - Age representation (child, teen, adult, elder)
@@ -33,6 +38,7 @@ Create reusable, composable prompt components:
 - Disability representation
 
 **Professional/Class Module**
+
 - 50+ occupations and roles
 - Skill sets and expertise
 - Career progression paths
@@ -40,6 +46,7 @@ Create reusable, composable prompt components:
 - Tools and equipment
 
 **Backstory Generator Module**
+
 - Family dynamics (orphan, noble house, commoner, etc.)
 - Formative events (trauma, triumph, revelation)
 - Relationships and connections
@@ -47,6 +54,7 @@ Create reusable, composable prompt components:
 - Life-changing moments
 
 ### 1.2 Diversity & Authenticity Guidelines
+
 - Cultural consultation references
 - Avoiding stereotypes checklist
 - Representation best practices
@@ -66,14 +74,14 @@ class EnhancedCharacterProfile(BaseModel):
     age: int
     pronouns: str  # NEW
     species_race: str  # NEW (human, elf, dwarf, custom)
-    
+
     # Cultural Background (NEW SECTION)
     cultural_origin: str
     primary_language: str
     additional_languages: List[str]
     cultural_traditions: List[str]
     religious_beliefs: Optional[str]
-    
+
     # Physical Attributes (ENHANCED)
     height: str
     build: str
@@ -84,7 +92,7 @@ class EnhancedCharacterProfile(BaseModel):
     distinctive_features: List[str]
     disabilities_conditions: Optional[List[str]]  # NEW
     physical_description: str
-    
+
     # Personality (ENHANCED)
     personality_archetype: str  # NEW
     core_traits: List[str]
@@ -92,7 +100,7 @@ class EnhancedCharacterProfile(BaseModel):
     communication_style: str  # NEW
     sense_of_humor: str
     personality_description: str
-    
+
     # Background (ENHANCED)
     birthplace: str
     socioeconomic_background: str  # NEW
@@ -101,14 +109,14 @@ class EnhancedCharacterProfile(BaseModel):
     education_training: List[str]  # NEW
     formative_events: List[str]
     backstory: str
-    
+
     # Abilities & Skills (NEW SECTION)
     professional_skills: List[str]
     combat_abilities: Optional[List[str]]
     magical_abilities: Optional[List[str]]
     special_talents: List[str]
     weaknesses_limitations: List[str]
-    
+
     # Motivations & Psychology
     primary_motivation: str
     secondary_motivations: List[str]  # NEW
@@ -116,23 +124,23 @@ class EnhancedCharacterProfile(BaseModel):
     values: List[str]
     greatest_fear: str
     internal_conflicts: List[str]  # NEW
-    
+
     # Relationships (ENHANCED)
     relationship_style: str  # NEW
     key_relationships: List[Dict]  # ENHANCED with more structure
     allies_enemies: Dict[str, List[str]]  # NEW
-    
+
     # Character Arc
     starting_point: str
     potential_growth: str
     arc_trajectory: str
-    
+
     # Unique Elements
     quirks_habits: List[str]
     speech_patterns: List[str]  # NEW
     mannerisms: List[str]  # NEW
     what_makes_unique: str
-    
+
     # Optional D&D 5E Data
     dnd_data: Optional[DnDCharacterData]  # NEW
 ```
@@ -148,7 +156,7 @@ class DnDCharacterData(BaseModel):
     race: str  # As per PHB
     subrace: Optional[str]
     background: str  # Acolyte, Criminal, Folk Hero, etc.
-    
+
     # Ability Scores
     strength: int  # 3-20 (base + racial modifiers)
     dexterity: int
@@ -156,10 +164,10 @@ class DnDCharacterData(BaseModel):
     intelligence: int
     wisdom: int
     charisma: int
-    
+
     # Modifiers (calculated)
     ability_modifiers: Dict[str, int]
-    
+
     # Combat Stats
     armor_class: int
     hit_points: int
@@ -167,7 +175,7 @@ class DnDCharacterData(BaseModel):
     speed: int
     initiative: int
     proficiency_bonus: int
-    
+
     # Proficiencies
     saving_throw_proficiencies: List[str]
     skill_proficiencies: List[str]
@@ -175,12 +183,12 @@ class DnDCharacterData(BaseModel):
     weapon_proficiencies: List[str]
     armor_proficiencies: List[str]
     language_proficiencies: List[str]
-    
+
     # Features & Traits
     racial_traits: List[Dict]  # name, description
     class_features: List[Dict]
     feats: List[Dict]
-    
+
     # Spellcasting (if applicable)
     spellcasting_ability: Optional[str]
     spell_save_dc: Optional[int]
@@ -189,21 +197,21 @@ class DnDCharacterData(BaseModel):
     cantrips_known: List[str]
     spells_known: List[str]
     spells_prepared: List[str]
-    
+
     # Equipment
     starting_equipment: List[str]
     armor: Optional[str]
     weapons: List[str]
     tools: List[str]
     treasure: str
-    
+
     # Background Features
     background_feature: Dict  # name, description
     personality_traits: List[str]  # From background
     ideal: str
     bond: str
     flaw: str
-    
+
     # Alignment
     alignment: str  # LG, NG, CG, LN, N, CN, LE, NE, CE
 ```
@@ -217,6 +225,7 @@ class DnDCharacterData(BaseModel):
 Create 10+ variations for each category:
 
 **Fantasy Prompts** (10 variations)
+
 - High Fantasy (classic Tolkien-inspired)
 - Dark Fantasy (gritty, morally grey)
 - Urban Fantasy (modern world with magic)
@@ -229,6 +238,7 @@ Create 10+ variations for each category:
 - Portal Fantasy
 
 **Sci-Fi Prompts** (10 variations)
+
 - Space Opera
 - Cyberpunk
 - Hard Science Fiction
@@ -241,6 +251,7 @@ Create 10+ variations for each category:
 - Space Western
 
 **Historical Prompts** (10 variations)
+
 - Ancient Civilizations
 - Medieval Period
 - Renaissance
@@ -253,6 +264,7 @@ Create 10+ variations for each category:
 - Pre-Colonial Americas
 
 **Contemporary Prompts** (10 variations)
+
 - Modern Urban
 - Rural/Small Town
 - Professional/Corporate
@@ -265,6 +277,7 @@ Create 10+ variations for each category:
 - Tech Industry
 
 **Genre Blends** (10 variations)
+
 - Western Fantasy
 - Horror Sci-Fi
 - Mystery Fantasy
@@ -279,6 +292,7 @@ Create 10+ variations for each category:
 ### 3.2 Diversity Enhancement Prompts
 
 **Geographic Diversity**
+
 - African cultures (North, West, East, South, Central)
 - Asian cultures (East, South, Southeast, Central, West)
 - European cultures (Nordic, Celtic, Mediterranean, Slavic, Germanic)
@@ -289,6 +303,7 @@ Create 10+ variations for each category:
 - Mixed/Diaspora backgrounds
 
 **Neurodiversity & Disability**
+
 - Autism spectrum
 - ADHD/Executive function
 - Physical disabilities
@@ -298,6 +313,7 @@ Create 10+ variations for each category:
 - Learning differences
 
 **Identity Diversity**
+
 - Gender identities (cis, trans, non-binary, agender, genderfluid)
 - Sexual orientations
 - Age diversity (children, teens, adults, elderly)
@@ -311,6 +327,7 @@ Create 10+ variations for each category:
 ### 4.1 Implementation Strategy
 
 **Step 1: Core Rules Database**
+
 - Create JSON files for all PHB content:
   - `dnd_classes.json` - All 13 classes with subclasses
   - `dnd_races.json` - All races and subraces
@@ -320,6 +337,7 @@ Create 10+ variations for each category:
   - `dnd_feats.json` - All feats
 
 **Step 2: Character Creation Pipeline**
+
 1. Generate base character profile (narrative)
 2. Map narrative to D&D mechanics:
    - Personality → Class selection
@@ -331,6 +349,7 @@ Create 10+ variations for each category:
 5. Generate character sheet
 
 **Step 3: AI-Assisted Class Selection**
+
 ```python
 def suggest_dnd_class(character_profile: EnhancedCharacterProfile) -> List[str]:
     """
@@ -339,12 +358,12 @@ def suggest_dnd_class(character_profile: EnhancedCharacterProfile) -> List[str]:
     """
     prompt = f"""
     Based on this character profile, suggest the 3 most appropriate D&D 5E classes:
-    
+
     Personality: {character_profile.personality_description}
     Skills: {character_profile.professional_skills}
     Backstory: {character_profile.backstory}
     Motivations: {character_profile.primary_motivation}
-    
+
     For each class, explain why it fits the character's narrative.
     """
     # Return: [(class_name, subclass, reasoning, confidence_score)]
@@ -353,6 +372,7 @@ def suggest_dnd_class(character_profile: EnhancedCharacterProfile) -> List[str]:
 ### 4.2 Integration Points
 
 **New Endpoints:**
+
 - `POST /api/generate/character/dnd` - Generate D&D character
 - `POST /api/generate/character/convert-to-dnd` - Convert existing character
 - `GET /api/dnd/classes` - Get all classes/subclasses
@@ -361,6 +381,7 @@ def suggest_dnd_class(character_profile: EnhancedCharacterProfile) -> List[str]:
 - `POST /api/dnd/character-sheet/export` - Export to PDF/JSON
 
 **Frontend Components:**
+
 - `DnDCharacterSheet.jsx` - Full character sheet display
 - `DnDStatBlock.jsx` - Combat stat block
 - `DnDSpellbook.jsx` - Spellcasting component
@@ -372,36 +393,42 @@ def suggest_dnd_class(character_profile: EnhancedCharacterProfile) -> List[str]:
 ## Phase 5: Implementation Roadmap
 
 ### Sprint 1: Foundation (Week 1)
+
 - [ ] Create modular prompt system architecture
 - [ ] Design extended character schema
 - [ ] Update database migrations for new fields
 - [ ] Create prompt variation library (10 per category)
 
 ### Sprint 2: Enhanced Generation (Week 2)
+
 - [ ] Implement cultural background module
 - [ ] Implement diversity enhancement prompts
 - [ ] Add ability/skill generation
 - [ ] Test and refine prompt variations
 
 ### Sprint 3: D&D Rules Engine (Week 3)
+
 - [ ] Create D&D data JSON files (classes, races, etc.)
 - [ ] Implement stat calculation system
 - [ ] Build class/race suggestion AI
 - [ ] Create equipment selection logic
 
 ### Sprint 4: D&D Integration (Week 4)
+
 - [ ] Implement D&D character generation endpoint
 - [ ] Create character sheet component
 - [ ] Add stat block display
 - [ ] Implement character conversion tool
 
 ### Sprint 5: UI/UX Enhancement (Week 5)
+
 - [ ] Update character creation flow
 - [ ] Add prompt selection interface
 - [ ] Implement D&D toggle feature
 - [ ] Create character sheet export functionality
 
 ### Sprint 6: Testing & Refinement (Week 6)
+
 - [ ] Generate 100+ test characters
 - [ ] Evaluate diversity and quality
 - [ ] Refine prompts based on results
@@ -413,6 +440,7 @@ def suggest_dnd_class(character_profile: EnhancedCharacterProfile) -> List[str]:
 ## Technical Considerations
 
 ### Database Schema Updates
+
 ```sql
 -- Add new columns to characters table
 ALTER TABLE characters ADD COLUMN pronouns VARCHAR(50);
@@ -452,6 +480,7 @@ CREATE TABLE dnd_character_data (
 ```
 
 ### API Structure
+
 ```
 backend/
 ├── routers/
@@ -485,17 +514,20 @@ backend/
 ## Success Metrics
 
 ### Character Quality
+
 - **Diversity Score**: % of characters with non-default cultural backgrounds (Target: >70%)
 - **Uniqueness Score**: Character similarity index (Target: <30% overlap)
 - **Authenticity Score**: Cultural/disability representation accuracy (Target: >85%)
 - **Completeness Score**: % of fields populated meaningfully (Target: >95%)
 
 ### D&D Integration
+
 - **Mechanical Validity**: % of D&D characters that follow all rules (Target: 100%)
 - **Narrative-Mechanical Fit**: How well mechanics match narrative (Target: >90%)
 - **Balance Score**: Character power level appropriateness (Target: Within 10% of standard)
 
 ### User Experience
+
 - **Generation Time**: Time to create full character (Target: <15 seconds)
 - **User Satisfaction**: Feedback rating (Target: >4.5/5)
 - **Regeneration Rate**: % of users who regenerate (Target: <20%)

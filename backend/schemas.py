@@ -18,6 +18,9 @@ class CharacterGenerationRequest(BaseModel):
     model: Optional[str] = None
     base_content: Optional[str] = None
     refinement_instructions: Optional[str] = None
+    # NEW: Genre-specific prompt variations
+    genre: Optional[str] = Field(None, description="Genre category: fantasy, sci_fi, or historical")
+    variation: Optional[str] = Field(None, description="Specific variation within genre (e.g., 'high_fantasy', 'cyberpunk')")
 
 
 class ImageGenerationRequest(BaseModel):
