@@ -483,3 +483,196 @@ if __name__ == "__main__":
         print(f"\n{aspect.upper()}:")
         print("-" * 80)
         print(prompt[:300], "...\n")
+
+
+def build_dnd_narrative_prompt(
+    dnd_character: Dict[str, Any],
+    style: str = "detailed",
+    additional_context: Optional[str] = None
+) -> str:
+    """
+    Build a comprehensive prompt for structured D&D character narrative generation.
+    
+    This function creates a single prompt that will generate all narrative aspects
+    using the DnDCharacterNarrative schema structure.
+    
+    Args:
+        dnd_character: Complete D&D character data from generator
+        style: Narrative style (concise, detailed, dramatic)
+        additional_context: Optional additional context from user
+        
+    Returns:
+        Comprehensive prompt string for structured narrative generation
+    """
+    builder = DnDNarrativePromptBuilder(dnd_character)
+    
+    # Convert style string to enum
+    try:
+        style_enum = NarrativeStyle(style)
+    except ValueError:
+        style_enum = NarrativeStyle.DETAILED
+    
+    # Get base context
+    base_context = builder.get_base_context()
+    
+    # Build comprehensive prompt for all narrative aspects
+    prompt = f"""{base_context}
+
+Generate a comprehensive, structured narrative profile for this D&D 5E character.
+The narrative should fully integrate their mechanical stats, species traits, class features, 
+and background into cohesive storytelling elements.
+
+NARRATIVE STYLE: {style_enum.value}
+
+IMPORTANT SPECIES-SPECIFIC CONSIDERATIONS:
+"""
+
+    # Add species-specific guidance
+    species = dnd_character.get("species", "").lower()
+    
+    if "dragonborn" in species:
+        prompt += """
+- DRAGONBORN: This character is a wingless, bipedal dragon with draconic features
+- Describe their scale coloration matching their draconic ancestry
+- Mention their horns, thick-boned structure, bright eyes, and imposing presence
+- Include how their breath weapon (Cone or Line attack) manifests in combat
+- Reference their damage resistance to their ancestry's element
+- At level 5+: Describe how they manifest spectral draconic wings for flight
+- Consider draconic behaviors: formal speech, territorial instincts, honor-bound nature
+- Connection to dragon progenitors (Bahamut/Tiamat legends)
+"""
+    elif "elf" in species:
+        prompt += """
+- ELF: Emphasize grace, longevity perspective, keen senses, and connection to nature/magic
+- Describe their elegant features, pointed ears, and ageless appearance
+"""
+    elif "dwarf" in species:
+        prompt += """
+- DWARF: Emphasize stout build, resilience, craftsmanship appreciation, and clan connections
+- Describe their robust frame, distinctive beard/facial features, and sturdy presence
+"""
+    elif "halfling" in species:
+        prompt += """
+- HALFLING: Emphasize small stature, lucky nature, courage, and community bonds
+- Describe their diminutive but nimble form, cheerful demeanor, and practical nature
+"""
+    else:
+        prompt += f"""
+- {species.upper()}: Incorporate appropriate species traits and characteristics
+- Reflect their unique racial abilities and cultural background
+"""
+    
+    # Add class-specific guidance
+    char_class = dnd_character.get("class", "").lower()
+    if char_class in ["wizard", "sorcerer", "warlock"]:
+        prompt += f"""
+- {char_class.upper()}: Weave their magical abilities into combat style and personality
+- Describe how they channel magical energy and their relationship with arcane forces
+"""
+    elif char_class in ["fighter", "barbarian", "paladin"]:
+        prompt += f"""
+- {char_class.upper()}: Emphasize martial prowess, combat training, and physical conditioning
+- Describe their fighting technique and warrior bearing
+"""
+    elif char_class in ["rogue", "ranger"]:
+        prompt += f"""
+- {char_class.upper()}: Highlight stealth, skill expertise, and tactical thinking
+- Describe their cautious approach and sharp observational skills
+"""
+    elif char_class == "cleric":
+        prompt += """
+- CLERIC: Balance divine faith with practical healing/combat abilities
+- Describe their spiritual connection and how their deity influences them
+"""
+    elif char_class == "bard":
+        prompt += """
+- BARD: Showcase their charisma, artistic talents, and Jack-of-all-trades versatility
+- Describe their performance style and how they inspire others
+"""
+    elif char_class == "monk":
+        prompt += """
+- MONK: Emphasize discipline, ki energy manipulation, and martial arts philosophy
+- Describe their centered demeanor and fluid combat movements
+"""
+    elif char_class == "druid":
+        prompt += """
+- DRUID: Highlight connection to nature, Wild Shape abilities, and primal magic
+- Describe their attunement to natural cycles and wild places
+"""
+    
+    prompt += f"""
+
+ABILITY SCORE INTERPRETATION:
+{builder._get_ability_summary()}
+
+Physical: {builder._get_physical_traits()}
+Mental: {builder._get_mental_traits()}
+Social: {builder._get_social_traits()}
+
+REQUIRED NARRATIVE ELEMENTS:
+
+1. PHYSICAL APPEARANCE (3-5 sentences):
+   - Full physical description incorporating species traits
+   - Build reflecting ability scores (STR, DEX, CON, CHA)
+   - Distinctive features unique to this character
+   - Clothing/armor style appropriate to class and background
+   - Overall presence and first impression they make
+
+2. PERSONALITY & DEMEANOR:
+   - Core personality traits (3-5 traits) reflecting alignment and background
+   - Ideals shaped by background and alignment
+   - Bonds (relationships, connections, loyalties)
+   - Flaws (weaknesses that create drama and depth)
+   - Overall behavioral patterns and social tendencies
+
+3. BACKSTORY (4-7 sentences):
+   - Origins and upbringing reflecting background
+   - How they gained their class training
+   - Formative events (2-4 specific events) that shaped them
+   - Key relationships from their past
+   - Path that led them to become an adventurer
+   - Connection to species culture/society
+
+4. MOTIVATIONS & GOALS:
+   - Primary motivation for adventuring
+   - Short-term goals (2-3 immediate objectives)
+   - Long-term goals (1-2 overarching ambitions)
+   - Fears and concerns
+
+5. QUIRKS & MANNERISMS (2-4 items):
+   - Unique habits reflecting species and background
+   - Speech patterns and communication style
+   - Memorable behavioral quirks
+
+6. COMBAT STYLE & SIGNATURE ABILITIES:
+   - Narrative description of fighting approach
+   - Signature abilities in story form (MUST include racial abilities like breath weapon)
+   - How they use class features creatively
+
+7. SOCIAL IDENTITY:
+   - How others perceive them
+   - Reputation and social standing
+   - Key allies, rivals, or enemies
+
+8. CHARACTER DEVELOPMENT:
+   - Potential for growth and change
+   - Internal conflicts
+   - Story arc opportunities
+"""
+    
+    if additional_context:
+        prompt += f"""
+
+ADDITIONAL CONTEXT:
+{additional_context}
+"""
+    
+    prompt += """
+
+Generate a complete, cohesive narrative profile that brings this character to life as a 
+fully-realized individual, not just a collection of stats. Make them memorable, complex, 
+and ready for epic adventures!
+"""
+    
+    return prompt
+

@@ -195,7 +195,7 @@ D&D Columns:
 #### 📡 Core D&D Endpoints
 
 1. **GET /api/characters/dnd/classes** - List all D&D classes
-2. **GET /api/characters/dnd/species** - List all species/races  
+2. **GET /api/characters/dnd/species** - List all species/races
 3. **GET /api/characters/dnd/backgrounds** - List all backgrounds
 4. **GET /api/characters/dnd/alignments** - List all 9 alignments
 5. **POST /api/characters/dnd/generate** - Generate complete D&D character
@@ -228,8 +228,9 @@ D&D Columns:
 #### 🤖 AI-Assisted Narrative Enhancement
 
 **12 Granular Narrative Aspects:**
+
 - ✅ Appearance - Physical description
-- ✅ Personality - Core traits and behaviors  
+- ✅ Personality - Core traits and behaviors
 - ✅ Backstory - Character history
 - ✅ Motivations - Goals and drives
 - ✅ Quirks - Unique mannerisms
@@ -242,6 +243,7 @@ D&D Columns:
 - ✅ Name - AI-suggested name
 
 **5 Narrative Styles:**
+
 - Concise - Brief, essential details
 - Detailed - Rich, comprehensive narratives
 - Dramatic - Epic, cinematic descriptions
@@ -249,6 +251,7 @@ D&D Columns:
 - Gritty - Dark, realistic tone
 
 **AI Controls:**
+
 - Enable/Disable AI narrative generation
 - Narrative style selector dropdown
 - Individual aspect toggles (granular control)
@@ -264,6 +267,7 @@ D&D Columns:
 #### 🔧 Technical Implementation
 
 **State Management (30+ Variables):**
+
 ```javascript
 // D&D Reference Data
 const [classes, setClasses] = useState([]);
@@ -296,6 +300,7 @@ const [portraitStyle, setPortraitStyle] = useState("fantasy");
 ```
 
 **Generation Workflow:**
+
 1. Validate all selections
 2. Call `/api/characters/dnd/generate` for D&D stats
 3. If AI enabled: Generate narrative aspects in parallel
@@ -304,14 +309,15 @@ const [portraitStyle, setPortraitStyle] = useState("fantasy");
 6. Navigate to review step
 
 **Parallel Narrative Generation:**
+
 ```javascript
 const generateNarrativeEnhancements = async (character) => {
   const promises = [];
-  
+
   if (generateAppearance) promises.push(generateNarrativeAspect(..., "appearance"));
   if (generatePersonality) promises.push(generateNarrativeAspect(..., "personality"));
   // ... for each enabled aspect
-  
+
   const results = await Promise.allSettled(promises);
   // Process results
 };
@@ -330,13 +336,15 @@ const generateNarrativeEnhancements = async (character) => {
 #### 📊 Comprehensive Character Sheet Display
 
 **Ability Scores Section:**
+
 - 6 cards in responsive grid layout
 - Displays score and calculated modifier (+/-N)
 - Beautiful styling with MUI Card components
 
 **Combat Stats Section:**
+
 - Hit Points (HP)
-- Armor Class (AC)  
+- Armor Class (AC)
 - Initiative
 - Speed
 - Proficiency Bonus
@@ -380,6 +388,7 @@ const generateNarrativeEnhancements = async (character) => {
 **4 Export Formats:**
 
 1. **JSON Export** - Download character as .json file
+
    ```javascript
    const exportToJSON = () => {
      const dataStr = JSON.stringify(character, null, 2);
@@ -388,6 +397,7 @@ const generateNarrativeEnhancements = async (character) => {
    ```
 
 2. **Text Export** - Download formatted ASCII character sheet
+
    ```javascript
    const exportToText = () => {
      const text = formatCharacterAsText(character);
@@ -396,6 +406,7 @@ const generateNarrativeEnhancements = async (character) => {
    ```
 
 3. **Clipboard Copy** - Copy formatted text to clipboard
+
    ```javascript
    const copyToClipboard = async () => {
      await navigator.clipboard.writeText(formatCharacterAsText(character));
@@ -410,6 +421,7 @@ const generateNarrativeEnhancements = async (character) => {
    ```
 
 **ASCII Character Sheet Format:**
+
 ```
 ═══════════════════════════════════════════════════════════════
                     D&D 5E CHARACTER SHEET
@@ -462,6 +474,7 @@ Proficiency Bonus: [+N]
 #### 🧠 Context-Aware Prompt Generation
 
 **Class Structure:**
+
 ```python
 class NarrativeStyle(str, Enum):
     CONCISE = "concise"
@@ -488,8 +501,8 @@ class DnDNarrativePromptBuilder:
     def __init__(self, character_data: Dict[str, Any]):
         self.character = character_data
         self.abilities = character_data.get("dnd_ability_scores", {})
-    
-    def build_prompt(self, aspect: NarrativeAspect, style: NarrativeStyle, 
+
+    def build_prompt(self, aspect: NarrativeAspect, style: NarrativeStyle,
                      custom_context: Optional[str] = None) -> str:
         # Orchestrates prompt building for any aspect/style combination
 dnd_species = Column(String)
@@ -853,7 +866,6 @@ The backend D&D 5E system is now **fully functional**:
 **Last Updated:** January 20, 2025  
 **Next Action:** Begin Step 5 - Frontend D&D Creator Component
 
-
 ---
 
 ## 🔄 Step 7: System Integration
@@ -865,12 +877,14 @@ The backend D&D 5E system is now **fully functional**:
 ### Features Implemented
 
 **D&D Mode Toggle UI:**
+
 - 🎲 Dice emoji icon for visual recognition
 - "Active" chip indicator when D&D mode enabled
 - Border highlight on toggle box when active
 - Help text explaining feature
 
 **Conditional Component Rendering:**
+
 ```javascript
 // Form Step (Step 1)
 {isDnDMode ? (
@@ -897,11 +911,13 @@ The backend D&D 5E system is now **fully functional**:
 ```
 
 **State Management:**
+
 - `isDnDMode` - Toggle state
 - `dndCharacter` - Stores generated D&D character
 - Integration with existing `generatedContent` state
 
 **✅ Completed:**
+
 - Component imports functional
 - State variables added
 - Toggle UI implemented
@@ -910,6 +926,7 @@ The backend D&D 5E system is now **fully functional**:
 - No JSX/linting errors
 
 **⚠️ Pending Testing:**
+
 - End-to-end workflow (generate → review → save)
 - Portrait generation with D&D characters
 - Narrative enhancement integration
@@ -924,6 +941,7 @@ The backend D&D 5E system is now **fully functional**:
 **Total Code:** 4,462+ lines across 10 files
 
 ### Backend Code: 2,902+ lines
+
 - `dnd_data.py`: 893 lines
 - `dnd_generator.py`: 617 lines
 - `migrate_add_dnd_stats.py`: 251 lines
@@ -932,11 +950,13 @@ The backend D&D 5E system is now **fully functional**:
 - `routers/generation.py`: ~300 lines (narrative endpoints)
 
 ### Frontend Code: 1,560+ lines
+
 - `DnDCharacterCreator.jsx`: 829 lines
 - `DnDCharacterSheet.jsx`: 682 lines
 - `character.jsx`: 89 lines added (integration)
 
 ### Commits & Endpoints
+
 - **Git Commits:** 8 commits
   - 33d6d38: Step 1 (dnd_data.py)
   - 9d99dcf: Step 2 (dnd_generator.py)
@@ -952,6 +972,7 @@ The backend D&D 5E system is now **fully functional**:
 - **Database:** 18 new D&D-specific columns
 
 ### Content Support
+
 - **Character Classes:** 13 (Barbarian, Bard, Cleric, Druid, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock, Wizard, Artificer)
 - **Species:** 12+ (Dragonborn, Dwarf, Elf, Gnome, Half-Elf, Halfling, Half-Orc, Human, Tiefling, Aasimar, Goliath, Tabaxi, etc.)
 - **Backgrounds:** 12 (Acolyte, Criminal, Folk Hero, Noble, Sage, Soldier, etc.)
@@ -966,6 +987,7 @@ The backend D&D 5E system is now **fully functional**:
 ### ✅ Fully Operational Systems
 
 **Backend Architecture (100% Complete):**
+
 1. ✅ **Data Layer** - Comprehensive D&D 5E reference data module
 2. ✅ **Logic Layer** - Character generator with accurate stat calculation
 3. ✅ **Persistence Layer** - Database schema with 18 D&D fields
@@ -974,6 +996,7 @@ The backend D&D 5E system is now **fully functional**:
 6. ✅ **Generation Layer** - Parallel narrative generation API
 
 **Frontend Architecture (95% Complete):**
+
 1. ✅ **Creation Component** - Complete D&D character creator with all options
 2. ✅ **Display Component** - Comprehensive character sheet with export
 3. ✅ **AI Controls** - Granular narrative aspect toggles
@@ -989,6 +1012,7 @@ The system generates **stat-informed** narratives that match character mechanics
 **Example:** Wizard (STR 8, DEX 14, CON 12, INT 15, WIS 13, CHA 10)
 
 Generated Context:
+
 ```
 Physical Traits: Slight build, Nimble
 Mental Traits: Clever, Insightful
@@ -996,6 +1020,7 @@ Social Traits: Unremarkable
 ```
 
 Appearance Prompt includes:
+
 - "Reflect STR, DEX, CON in body build (slight, nimble frame)"
 - "Include CHA in overall attractiveness (average presence)"
 - "Consider species-specific traits (elven features)"
@@ -1017,6 +1042,7 @@ Appearance Prompt includes:
 **3. Parallel Generation Performance**
 
 Bulk narrative endpoint uses `asyncio.gather()`:
+
 ```python
 tasks = [generate_aspect(aspect, prompt) for aspect, prompt in prompts.items()]
 results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -1031,6 +1057,7 @@ results = await asyncio.gather(*tasks, return_exceptions=True)
 ### For Players
 
 **Character Creation Workflow:**
+
 1. Toggle D&D mode in character creation
 2. Select class, species, background, alignment from dropdowns
 3. Click "Randomize" for instant inspiration (optional)
@@ -1044,6 +1071,7 @@ results = await asyncio.gather(*tasks, return_exceptions=True)
 8. Export in preferred format (JSON/Text/Clipboard/Print)
 
 **Key Benefits:**
+
 - One-click generation with optional enhancements
 - Granular control over AI assistance
 - Professional character sheet display
@@ -1052,12 +1080,14 @@ results = await asyncio.gather(*tasks, return_exceptions=True)
 ### For Dungeon Masters
 
 **NPC Generation:**
+
 1. Quick toggle to D&D mode
 2. Randomize for instant NPCs
 3. Add narrative depth with AI enhancement
 4. Export for campaign notes or VTT import
 
 **Use Cases:**
+
 - Generate complete NPCs in seconds
 - Create memorable characters with rich narratives
 - Export to Roll20, FoundryVTT (JSON)
@@ -1070,6 +1100,7 @@ results = await asyncio.gather(*tasks, return_exceptions=True)
 ### Step 7 Completion (15% remaining)
 
 **Testing Phase:**
+
 1. ⚠️ **End-to-end workflow validation**
    - Test full generate → review → save flow
    - Verify mode switching works correctly
@@ -1117,12 +1148,14 @@ results = await asyncio.gather(*tasks, return_exceptions=True)
 ### Phase 5 (Post-Core System)
 
 **Character Management:**
+
 - Character editing interface
 - Stat updates (HP, equipment)
 - Level-up system (expand beyond level 5)
 - Character progression tracking
 
 **Advanced Features:**
+
 - Multiclassing support
 - Custom ability score allocation
 - Feats system
@@ -1130,12 +1163,14 @@ results = await asyncio.gather(*tasks, return_exceptions=True)
 - Equipment management interface
 
 **Gameplay Tools:**
+
 - Initiative tracker
 - Combat manager
 - Spell slot tracking
 - Rest mechanics (short/long rest)
 
 **Social Features:**
+
 - Character sharing
 - Party management
 - Character comparison tool
@@ -1148,12 +1183,14 @@ results = await asyncio.gather(*tasks, return_exceptions=True)
 ### Architecture Highlights
 
 **Modular Design:**
+
 - Each component is standalone and reusable
 - Clear separation of concerns (data/logic/display)
 - Easy to extend with new features
 - Consistent with existing codebase patterns
 
 **Data Flow:**
+
 ```
 User Input (Frontend)
   ↓
@@ -1173,6 +1210,7 @@ Character Sheet Display (Frontend)
 ```
 
 **Key Technologies:**
+
 - **Backend:** FastAPI, SQLAlchemy, Pydantic, asyncio
 - **Frontend:** React, Material-UI, axios, React Router
 - **LLMs:** Groq (llama-3.3-70b), OpenAI (gpt-4o-mini), Google (gemini-2.0-flash)
@@ -1181,6 +1219,7 @@ Character Sheet Display (Frontend)
 ### Code Quality
 
 **Standards Followed:**
+
 - PEP 8 for Python (all linting errors resolved)
 - ESLint for JavaScript
 - JSX best practices
@@ -1189,6 +1228,7 @@ Character Sheet Display (Frontend)
 - Clear function/variable naming
 
 **Testing Status:**
+
 - ✅ Backend modules tested individually
 - ✅ API endpoints functional
 - ✅ Database migration verified
@@ -1216,11 +1256,13 @@ Character Sheet Display (Frontend)
 ### Qualitative Achievements
 
 **User Requirements Met:**
+
 - ✅ "Let's proceed with these next steps!" → Steps 5 & 6 implemented
 - ✅ "Provide ways to assist granular generation for all character facets" → 12 narrative aspects with individual toggles
 - ✅ "Develop a robust modular prompt system" → Context-aware prompt builder with stat inference
 
 **Technical Excellence:**
+
 - Clean, maintainable code
 - Follows project patterns
 - Well-documented
@@ -1228,6 +1270,7 @@ Character Sheet Display (Frontend)
 - Performance optimized (parallel generation)
 
 **User Experience:**
+
 - Intuitive UI/UX
 - Beautiful Material-UI design
 - Responsive layout
@@ -1239,6 +1282,7 @@ Character Sheet Display (Frontend)
 ## 📖 Documentation References
 
 **Related Documentation:**
+
 - `DND_INTEGRATION_PLAN.md` - Original Phase 4 plan
 - `CHARACTER_GENERATION_ENHANCEMENT_PLAN.md` - AI assistance specs
 - `IMPLEMENTATION_SUMMARY.md` - Overall project progress
@@ -1246,6 +1290,7 @@ Character Sheet Display (Frontend)
 - `QUICKSTART.md` - User guide
 
 **Code Files:**
+
 - Backend: `backend/dnd_*.py`, `backend/routers/characters.py`, `backend/routers/generation.py`
 - Frontend: `frontend/src/components/DnD*.jsx`, `frontend/src/routes/create/character.jsx`
 - Database: `backend/models.py`, `backend/migrate_add_dnd_stats.py`
@@ -1257,7 +1302,7 @@ Character Sheet Display (Frontend)
 **Current Status:** 85.7% complete (6 of 7 steps)  
 **Code Written:** 4,462+ lines across 10 files  
 **Git Commits:** 8 commits with clear messages  
-**Testing Status:** Backend verified, frontend e2e pending  
+**Testing Status:** Backend verified, frontend e2e pending
 
 **Next Milestone:** Complete Step 7 testing → Phase 4 100% complete! 🎉
 

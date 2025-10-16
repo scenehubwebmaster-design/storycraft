@@ -91,7 +91,7 @@ function CreateCharacterComponent() {
 
   // Structured generation toggle
   const [useStructured, setUseStructured] = useState(true);
-  
+
   // D&D Mode toggle
   const [isDnDMode, setIsDnDMode] = useState(false);
   const [dndCharacter, setDndCharacter] = useState(null);
@@ -559,7 +559,7 @@ function CreateCharacterComponent() {
               labelPlacement="start"
             />
           </Box>
-          
+
           {/* D&D Mode Toggle */}
           <Box
             sx={{
@@ -574,7 +574,11 @@ function CreateCharacterComponent() {
             }}
           >
             <Box>
-              <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
                 🎲 D&D 5E Mode
                 {isDnDMode && (
                   <Chip
@@ -625,481 +629,494 @@ function CreateCharacterComponent() {
           ) : (
             // Original character creation form
             <div>
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12 }}>
+                  <PromptSelector
+                    label="Themes/Genre"
+                    options={options.themes}
+                    selectedValues={selectedThemes}
+                    onChange={setSelectedThemes}
+                    helperText="Select themes that fit your story's genre"
+                  />
+                </Grid>
 
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12 }}>
-              <PromptSelector
-                label="Themes/Genre"
-                options={options.themes}
-                selectedValues={selectedThemes}
-                onChange={setSelectedThemes}
-                helperText="Select themes that fit your story's genre"
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <FormControl fullWidth>
-                <InputLabel>Character Archetype</InputLabel>
-                <Select
-                  value={selectedArchetype}
-                  onChange={(e) => setSelectedArchetype(e.target.value)}
-                  label="Character Archetype"
-                >
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  {options.character_archetypes.map((archetype) => (
-                    <MenuItem key={archetype} value={archetype}>
-                      {archetype}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Phase 1 & 2: Genre Variations and Cultural Origins */}
-            {variations && (
-              <Grid size={{ xs: 12 }}>
-                <Accordion>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <AutoAwesomeIcon color="primary" />
-                      <Typography variant="subtitle1">
-                        Genre Variation (Optional)
-                      </Typography>
-                      <Chip
-                        label="Enhanced"
-                        size="small"
-                        color="primary"
-                        sx={{ fontSize: "0.7rem" }}
-                      />
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      paragraph
+                <Grid size={{ xs: 12 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Character Archetype</InputLabel>
+                    <Select
+                      value={selectedArchetype}
+                      onChange={(e) => setSelectedArchetype(e.target.value)}
+                      label="Character Archetype"
                     >
-                      Select a genre and variation to add specific
-                      world-building, character archetypes, and thematic
-                      elements to your character.
-                    </Typography>
-
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                      <InputLabel>Genre</InputLabel>
-                      <Select
-                        value={selectedGenre}
-                        onChange={(e) => {
-                          setSelectedGenre(e.target.value);
-                          setSelectedVariation(""); // Reset variation when genre changes
-                        }}
-                        label="Genre"
-                      >
-                        <MenuItem value="">
-                          <em>None</em>
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {options.character_archetypes.map((archetype) => (
+                        <MenuItem key={archetype} value={archetype}>
+                          {archetype}
                         </MenuItem>
-                        <MenuItem value="fantasy">🧙‍♂️ Fantasy</MenuItem>
-                        <MenuItem value="sci_fi">🚀 Sci-Fi</MenuItem>
-                        <MenuItem value="historical">📜 Historical</MenuItem>
-                        <MenuItem value="horror">👻 Horror</MenuItem>
-                        <MenuItem value="mystery_thriller">
-                          🔍 Mystery/Thriller
-                        </MenuItem>
-                        <MenuItem value="romance">💕 Romance</MenuItem>
-                        <MenuItem value="adventure">🗺️ Adventure</MenuItem>
-                        <MenuItem value="western">🤠 Western</MenuItem>
-                        <MenuItem value="dystopian">🏚️ Dystopian</MenuItem>
-                        <MenuItem value="superhero">🦸 Superhero</MenuItem>
-                      </Select>
-                    </FormControl>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
 
-                    {selectedGenre && variations[selectedGenre] && (
-                      <FormControl fullWidth>
-                        <InputLabel>Variation</InputLabel>
-                        <Select
-                          value={selectedVariation}
-                          onChange={(e) => setSelectedVariation(e.target.value)}
-                          label="Variation"
+                {/* Phase 1 & 2: Genre Variations and Cultural Origins */}
+                {variations && (
+                  <Grid size={{ xs: 12 }}>
+                    <Accordion>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
-                          <MenuItem value="">
-                            <em>None</em>
-                          </MenuItem>
-                          {variations[selectedGenre].map((variation) => (
-                            <MenuItem key={variation.key} value={variation.key}>
-                              <Box>
-                                <Typography variant="body2">
-                                  {variation.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {variation.description}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-
-                    {selectedGenre && selectedVariation && (
-                      <Button
-                        size="small"
-                        startIcon={<ShuffleIcon />}
-                        onClick={() => {
-                          const variationsList = variations[selectedGenre];
-                          const randomVariation =
-                            variationsList[
-                              Math.floor(Math.random() * variationsList.length)
-                            ];
-                          setSelectedVariation(randomVariation.key);
-                        }}
-                        sx={{ mt: 1 }}
-                      >
-                        Random Variation
-                      </Button>
-                    )}
-                  </AccordionDetails>
-                </Accordion>
-              </Grid>
-            )}
-
-            {culturalOrigins && (
-              <Grid size={{ xs: 12 }}>
-                <Accordion>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <PublicIcon color="secondary" />
-                      <Typography variant="subtitle1">
-                        Cultural Origin (Optional)
-                      </Typography>
-                      <Chip
-                        label="Authentic"
-                        size="small"
-                        color="secondary"
-                        sx={{ fontSize: "0.7rem" }}
-                      />
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      paragraph
-                    >
-                      Choose a cultural background to add authentic traditions,
-                      values, and cultural context to your character.
-                    </Typography>
-
-                    <FormControl fullWidth>
-                      <InputLabel>Cultural Origin</InputLabel>
-                      <Select
-                        value={selectedCulturalOrigin}
-                        onChange={(e) =>
-                          setSelectedCulturalOrigin(e.target.value)
-                        }
-                        label="Cultural Origin"
-                        renderValue={(selected) => {
-                          const origin = culturalOrigins.find(
-                            (o) => o.key === selected
-                          );
-                          return origin ? origin.name : "";
-                        }}
-                      >
-                        <MenuItem value="">
-                          <em>None</em>
-                        </MenuItem>
-
-                        {/* Group origins by region */}
-                        <MenuItem disabled>
-                          <Typography
-                            variant="caption"
-                            fontWeight="bold"
-                            color="primary"
-                          >
-                            AFRICAN CULTURES
+                          <AutoAwesomeIcon color="primary" />
+                          <Typography variant="subtitle1">
+                            Genre Variation (Optional)
                           </Typography>
-                        </MenuItem>
-                        {culturalOrigins
-                          .filter((o) =>
-                            [
-                              "north_african",
-                              "west_african",
-                              "east_african",
-                              "southern_african",
-                              "central_african",
-                            ].includes(o.key)
-                          )
-                          .map((origin) => (
-                            <MenuItem key={origin.key} value={origin.key}>
-                              <Box sx={{ pl: 2 }}>
-                                <Typography variant="body2">
-                                  {origin.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {origin.regions.slice(0, 3).join(", ")}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-
-                        <MenuItem disabled>
-                          <Typography
-                            variant="caption"
-                            fontWeight="bold"
+                          <Chip
+                            label="Enhanced"
+                            size="small"
                             color="primary"
-                          >
-                            ASIAN CULTURES
-                          </Typography>
-                        </MenuItem>
-                        {culturalOrigins
-                          .filter(
-                            (o) =>
-                              o.key.startsWith("east_asian") ||
-                              o.key.startsWith("southeast_asian") ||
-                              o.key.startsWith("south_asian") ||
-                              [
-                                "central_asian",
-                                "himalayan",
-                                "mongolian",
-                              ].includes(o.key)
-                          )
-                          .map((origin) => (
-                            <MenuItem key={origin.key} value={origin.key}>
-                              <Box sx={{ pl: 2 }}>
-                                <Typography variant="body2">
-                                  {origin.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {origin.regions.slice(0, 3).join(", ")}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-
-                        <MenuItem disabled>
-                          <Typography
-                            variant="caption"
-                            fontWeight="bold"
-                            color="primary"
-                          >
-                            MIDDLE EASTERN CULTURES
-                          </Typography>
-                        </MenuItem>
-                        {culturalOrigins
-                          .filter((o) => o.key.startsWith("middle_eastern"))
-                          .map((origin) => (
-                            <MenuItem key={origin.key} value={origin.key}>
-                              <Box sx={{ pl: 2 }}>
-                                <Typography variant="body2">
-                                  {origin.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {origin.regions.slice(0, 3).join(", ")}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-
-                        <MenuItem disabled>
-                          <Typography
-                            variant="caption"
-                            fontWeight="bold"
-                            color="primary"
-                          >
-                            EUROPEAN CULTURES
-                          </Typography>
-                        </MenuItem>
-                        {culturalOrigins
-                          .filter(
-                            (o) =>
-                              o.key.startsWith("western_european") ||
-                              o.key.startsWith("southern_european") ||
-                              o.key.startsWith("eastern_european") ||
-                              o.key === "nordic"
-                          )
-                          .map((origin) => (
-                            <MenuItem key={origin.key} value={origin.key}>
-                              <Box sx={{ pl: 2 }}>
-                                <Typography variant="body2">
-                                  {origin.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {origin.regions.slice(0, 3).join(", ")}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-
-                        <MenuItem disabled>
-                          <Typography
-                            variant="caption"
-                            fontWeight="bold"
-                            color="primary"
-                          >
-                            AMERICAS CULTURES
-                          </Typography>
-                        </MenuItem>
-                        {culturalOrigins
-                          .filter(
-                            (o) =>
-                              o.key.startsWith("north_american") ||
-                              o.key.startsWith("latin_american") ||
-                              o.key.startsWith("indigenous")
-                          )
-                          .map((origin) => (
-                            <MenuItem key={origin.key} value={origin.key}>
-                              <Box sx={{ pl: 2 }}>
-                                <Typography variant="body2">
-                                  {origin.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {origin.regions.slice(0, 3).join(", ")}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-
-                        <MenuItem disabled>
-                          <Typography
-                            variant="caption"
-                            fontWeight="bold"
-                            color="primary"
-                          >
-                            PACIFIC CULTURES
-                          </Typography>
-                        </MenuItem>
-                        {culturalOrigins
-                          .filter((o) =>
-                            [
-                              "polynesian",
-                              "australian_aboriginal",
-                              "melanesian_micronesian",
-                            ].includes(o.key)
-                          )
-                          .map((origin) => (
-                            <MenuItem key={origin.key} value={origin.key}>
-                              <Box sx={{ pl: 2 }}>
-                                <Typography variant="body2">
-                                  {origin.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {origin.regions.slice(0, 3).join(", ")}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-                      </Select>
-                    </FormControl>
-
-                    {selectedCulturalOrigin && (
-                      <Box sx={{ mt: 2 }}>
-                        <Button
-                          size="small"
-                          startIcon={<ShuffleIcon />}
-                          onClick={() => {
-                            const randomOrigin =
-                              culturalOrigins[
-                                Math.floor(
-                                  Math.random() * culturalOrigins.length
-                                )
-                              ];
-                            setSelectedCulturalOrigin(randomOrigin.key);
-                          }}
+                            sx={{ fontSize: "0.7rem" }}
+                          />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          paragraph
                         >
-                          Random Culture
-                        </Button>
-                        <Tooltip title="All content is in English while maintaining cultural authenticity">
-                          <IconButton size="small" sx={{ ml: 1 }}>
-                            <InfoOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    )}
-                  </AccordionDetails>
-                </Accordion>
+                          Select a genre and variation to add specific
+                          world-building, character archetypes, and thematic
+                          elements to your character.
+                        </Typography>
+
+                        <FormControl fullWidth sx={{ mb: 2 }}>
+                          <InputLabel>Genre</InputLabel>
+                          <Select
+                            value={selectedGenre}
+                            onChange={(e) => {
+                              setSelectedGenre(e.target.value);
+                              setSelectedVariation(""); // Reset variation when genre changes
+                            }}
+                            label="Genre"
+                          >
+                            <MenuItem value="">
+                              <em>None</em>
+                            </MenuItem>
+                            <MenuItem value="fantasy">🧙‍♂️ Fantasy</MenuItem>
+                            <MenuItem value="sci_fi">🚀 Sci-Fi</MenuItem>
+                            <MenuItem value="historical">
+                              📜 Historical
+                            </MenuItem>
+                            <MenuItem value="horror">👻 Horror</MenuItem>
+                            <MenuItem value="mystery_thriller">
+                              🔍 Mystery/Thriller
+                            </MenuItem>
+                            <MenuItem value="romance">💕 Romance</MenuItem>
+                            <MenuItem value="adventure">🗺️ Adventure</MenuItem>
+                            <MenuItem value="western">🤠 Western</MenuItem>
+                            <MenuItem value="dystopian">🏚️ Dystopian</MenuItem>
+                            <MenuItem value="superhero">🦸 Superhero</MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        {selectedGenre && variations[selectedGenre] && (
+                          <FormControl fullWidth>
+                            <InputLabel>Variation</InputLabel>
+                            <Select
+                              value={selectedVariation}
+                              onChange={(e) =>
+                                setSelectedVariation(e.target.value)
+                              }
+                              label="Variation"
+                            >
+                              <MenuItem value="">
+                                <em>None</em>
+                              </MenuItem>
+                              {variations[selectedGenre].map((variation) => (
+                                <MenuItem
+                                  key={variation.key}
+                                  value={variation.key}
+                                >
+                                  <Box>
+                                    <Typography variant="body2">
+                                      {variation.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {variation.description}
+                                    </Typography>
+                                  </Box>
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        )}
+
+                        {selectedGenre && selectedVariation && (
+                          <Button
+                            size="small"
+                            startIcon={<ShuffleIcon />}
+                            onClick={() => {
+                              const variationsList = variations[selectedGenre];
+                              const randomVariation =
+                                variationsList[
+                                  Math.floor(
+                                    Math.random() * variationsList.length
+                                  )
+                                ];
+                              setSelectedVariation(randomVariation.key);
+                            }}
+                            sx={{ mt: 1 }}
+                          >
+                            Random Variation
+                          </Button>
+                        )}
+                      </AccordionDetails>
+                    </Accordion>
+                  </Grid>
+                )}
+
+                {culturalOrigins && (
+                  <Grid size={{ xs: 12 }}>
+                    <Accordion>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <PublicIcon color="secondary" />
+                          <Typography variant="subtitle1">
+                            Cultural Origin (Optional)
+                          </Typography>
+                          <Chip
+                            label="Authentic"
+                            size="small"
+                            color="secondary"
+                            sx={{ fontSize: "0.7rem" }}
+                          />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          paragraph
+                        >
+                          Choose a cultural background to add authentic
+                          traditions, values, and cultural context to your
+                          character.
+                        </Typography>
+
+                        <FormControl fullWidth>
+                          <InputLabel>Cultural Origin</InputLabel>
+                          <Select
+                            value={selectedCulturalOrigin}
+                            onChange={(e) =>
+                              setSelectedCulturalOrigin(e.target.value)
+                            }
+                            label="Cultural Origin"
+                            renderValue={(selected) => {
+                              const origin = culturalOrigins.find(
+                                (o) => o.key === selected
+                              );
+                              return origin ? origin.name : "";
+                            }}
+                          >
+                            <MenuItem value="">
+                              <em>None</em>
+                            </MenuItem>
+
+                            {/* Group origins by region */}
+                            <MenuItem disabled>
+                              <Typography
+                                variant="caption"
+                                fontWeight="bold"
+                                color="primary"
+                              >
+                                AFRICAN CULTURES
+                              </Typography>
+                            </MenuItem>
+                            {culturalOrigins
+                              .filter((o) =>
+                                [
+                                  "north_african",
+                                  "west_african",
+                                  "east_african",
+                                  "southern_african",
+                                  "central_african",
+                                ].includes(o.key)
+                              )
+                              .map((origin) => (
+                                <MenuItem key={origin.key} value={origin.key}>
+                                  <Box sx={{ pl: 2 }}>
+                                    <Typography variant="body2">
+                                      {origin.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {origin.regions.slice(0, 3).join(", ")}
+                                    </Typography>
+                                  </Box>
+                                </MenuItem>
+                              ))}
+
+                            <MenuItem disabled>
+                              <Typography
+                                variant="caption"
+                                fontWeight="bold"
+                                color="primary"
+                              >
+                                ASIAN CULTURES
+                              </Typography>
+                            </MenuItem>
+                            {culturalOrigins
+                              .filter(
+                                (o) =>
+                                  o.key.startsWith("east_asian") ||
+                                  o.key.startsWith("southeast_asian") ||
+                                  o.key.startsWith("south_asian") ||
+                                  [
+                                    "central_asian",
+                                    "himalayan",
+                                    "mongolian",
+                                  ].includes(o.key)
+                              )
+                              .map((origin) => (
+                                <MenuItem key={origin.key} value={origin.key}>
+                                  <Box sx={{ pl: 2 }}>
+                                    <Typography variant="body2">
+                                      {origin.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {origin.regions.slice(0, 3).join(", ")}
+                                    </Typography>
+                                  </Box>
+                                </MenuItem>
+                              ))}
+
+                            <MenuItem disabled>
+                              <Typography
+                                variant="caption"
+                                fontWeight="bold"
+                                color="primary"
+                              >
+                                MIDDLE EASTERN CULTURES
+                              </Typography>
+                            </MenuItem>
+                            {culturalOrigins
+                              .filter((o) => o.key.startsWith("middle_eastern"))
+                              .map((origin) => (
+                                <MenuItem key={origin.key} value={origin.key}>
+                                  <Box sx={{ pl: 2 }}>
+                                    <Typography variant="body2">
+                                      {origin.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {origin.regions.slice(0, 3).join(", ")}
+                                    </Typography>
+                                  </Box>
+                                </MenuItem>
+                              ))}
+
+                            <MenuItem disabled>
+                              <Typography
+                                variant="caption"
+                                fontWeight="bold"
+                                color="primary"
+                              >
+                                EUROPEAN CULTURES
+                              </Typography>
+                            </MenuItem>
+                            {culturalOrigins
+                              .filter(
+                                (o) =>
+                                  o.key.startsWith("western_european") ||
+                                  o.key.startsWith("southern_european") ||
+                                  o.key.startsWith("eastern_european") ||
+                                  o.key === "nordic"
+                              )
+                              .map((origin) => (
+                                <MenuItem key={origin.key} value={origin.key}>
+                                  <Box sx={{ pl: 2 }}>
+                                    <Typography variant="body2">
+                                      {origin.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {origin.regions.slice(0, 3).join(", ")}
+                                    </Typography>
+                                  </Box>
+                                </MenuItem>
+                              ))}
+
+                            <MenuItem disabled>
+                              <Typography
+                                variant="caption"
+                                fontWeight="bold"
+                                color="primary"
+                              >
+                                AMERICAS CULTURES
+                              </Typography>
+                            </MenuItem>
+                            {culturalOrigins
+                              .filter(
+                                (o) =>
+                                  o.key.startsWith("north_american") ||
+                                  o.key.startsWith("latin_american") ||
+                                  o.key.startsWith("indigenous")
+                              )
+                              .map((origin) => (
+                                <MenuItem key={origin.key} value={origin.key}>
+                                  <Box sx={{ pl: 2 }}>
+                                    <Typography variant="body2">
+                                      {origin.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {origin.regions.slice(0, 3).join(", ")}
+                                    </Typography>
+                                  </Box>
+                                </MenuItem>
+                              ))}
+
+                            <MenuItem disabled>
+                              <Typography
+                                variant="caption"
+                                fontWeight="bold"
+                                color="primary"
+                              >
+                                PACIFIC CULTURES
+                              </Typography>
+                            </MenuItem>
+                            {culturalOrigins
+                              .filter((o) =>
+                                [
+                                  "polynesian",
+                                  "australian_aboriginal",
+                                  "melanesian_micronesian",
+                                ].includes(o.key)
+                              )
+                              .map((origin) => (
+                                <MenuItem key={origin.key} value={origin.key}>
+                                  <Box sx={{ pl: 2 }}>
+                                    <Typography variant="body2">
+                                      {origin.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {origin.regions.slice(0, 3).join(", ")}
+                                    </Typography>
+                                  </Box>
+                                </MenuItem>
+                              ))}
+                          </Select>
+                        </FormControl>
+
+                        {selectedCulturalOrigin && (
+                          <Box sx={{ mt: 2 }}>
+                            <Button
+                              size="small"
+                              startIcon={<ShuffleIcon />}
+                              onClick={() => {
+                                const randomOrigin =
+                                  culturalOrigins[
+                                    Math.floor(
+                                      Math.random() * culturalOrigins.length
+                                    )
+                                  ];
+                                setSelectedCulturalOrigin(randomOrigin.key);
+                              }}
+                            >
+                              Random Culture
+                            </Button>
+                            <Tooltip title="All content is in English while maintaining cultural authenticity">
+                              <IconButton size="small" sx={{ ml: 1 }}>
+                                <InfoOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        )}
+                      </AccordionDetails>
+                    </Accordion>
+                  </Grid>
+                )}
+
+                <Grid size={{ xs: 12 }}>
+                  <PromptSelector
+                    label="Personality Traits"
+                    options={options.personality_traits}
+                    selectedValues={selectedPersonalityTraits}
+                    onChange={setSelectedPersonalityTraits}
+                    helperText="Choose personality characteristics"
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <PromptSelector
+                    label="Physical Traits"
+                    options={options.physical_traits}
+                    selectedValues={selectedPhysicalTraits}
+                    onChange={setSelectedPhysicalTraits}
+                    helperText="Select physical characteristics"
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <PromptSelector
+                    label="Emotional Traits"
+                    options={options.emotional_traits}
+                    selectedValues={selectedEmotionalTraits}
+                    onChange={setSelectedEmotionalTraits}
+                    helperText="Choose emotional characteristics"
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <Divider sx={{ my: 2 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      CUSTOM DETAILS
+                    </Typography>
+                  </Divider>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    label="Additional Custom Details"
+                    value={customDetails}
+                    onChange={(e) => setCustomDetails(e.target.value)}
+                    placeholder="Add any specific requirements, backstory elements, or unique characteristics you want the AI to include..."
+                    helperText="Optional: Provide specific instructions for the AI"
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <ModelSelector
+                    provider={provider}
+                    model={model}
+                    onProviderChange={setProvider}
+                    onModelChange={setModel}
+                    contentType="character"
+                  />
+                </Grid>
               </Grid>
-            )}
-
-            <Grid size={{ xs: 12 }}>
-              <PromptSelector
-                label="Personality Traits"
-                options={options.personality_traits}
-                selectedValues={selectedPersonalityTraits}
-                onChange={setSelectedPersonalityTraits}
-                helperText="Choose personality characteristics"
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <PromptSelector
-                label="Physical Traits"
-                options={options.physical_traits}
-                selectedValues={selectedPhysicalTraits}
-                onChange={setSelectedPhysicalTraits}
-                helperText="Select physical characteristics"
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <PromptSelector
-                label="Emotional Traits"
-                options={options.emotional_traits}
-                selectedValues={selectedEmotionalTraits}
-                onChange={setSelectedEmotionalTraits}
-                helperText="Choose emotional characteristics"
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <Divider sx={{ my: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  CUSTOM DETAILS
-                </Typography>
-              </Divider>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Additional Custom Details"
-                value={customDetails}
-                onChange={(e) => setCustomDetails(e.target.value)}
-                placeholder="Add any specific requirements, backstory elements, or unique characteristics you want the AI to include..."
-                helperText="Optional: Provide specific instructions for the AI"
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <ModelSelector
-                provider={provider}
-                model={model}
-                onProviderChange={setProvider}
-                onModelChange={setModel}
-                contentType="character"
-              />
-            </Grid>
-          </Grid>
-          </div>
+            </div>
           )}
         </Paper>
       )}

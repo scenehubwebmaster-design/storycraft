@@ -15,6 +15,7 @@ Expanded character generation from **30 variations** across 3 genres to **63 var
 ## Genre Breakdown
 
 ### Original Genres (30 variations)
+
 1. **Fantasy** - 10 variations
    - High Fantasy, Dark Fantasy, Urban Fantasy, Cozy Fantasy, Sword & Sorcery, Mythological, Steampunk, Fairy Tale, Post-Apocalyptic, Portal
 
@@ -52,11 +53,13 @@ Expanded character generation from **30 variations** across 3 genres to **63 var
 ## Statistics
 
 **Previous System**:
+
 - 3 genres
 - 30 variations total
 - 10 variations per genre
 
 **New System**:
+
 - 10 genres (+233% increase)
 - 63 variations total (+110% increase)
 - 3-10 variations per genre
@@ -67,6 +70,7 @@ Expanded character generation from **30 variations** across 3 genres to **63 var
 ## Example Variations
 
 ### Horror Genre
+
 - **Gothic Horror**: Fog-shrouded estates, cursed bloodlines, Victorian terror
 - **Cosmic Horror**: Lovecraftian entities, sanity erosion, existential dread
 - **Survival Horror**: Resource scarcity, constant danger, desperate survival
@@ -74,6 +78,7 @@ Expanded character generation from **30 variations** across 3 genres to **63 var
 - **Body Horror**: Physical transformation, visceral grotesquery, identity loss
 
 ### Superhero Genre
+
 - **Classic Superhero**: Silver Age heroes, colorful costumes, clear morality
 - **Dark Vigilante**: Gritty street-level, brutal methods, trauma-driven
 - **Team Hero**: Avengers/X-Men style, team dynamics, coordinated action
@@ -81,6 +86,7 @@ Expanded character generation from **30 variations** across 3 genres to **63 var
 - **Cosmic Hero**: God-like abilities, universal threats, epic scale
 
 ### Dystopian Genre
+
 - **Totalitarian Dystopia**: 1984-style surveillance, thought control, propaganda
 - **Environmental Dystopia**: Climate collapse, resource wars, eco-survival
 - **Corporate Dystopia**: Mega-corp rule, commodified existence, brand slavery
@@ -92,6 +98,7 @@ Expanded character generation from **30 variations** across 3 genres to **63 var
 ## Frontend Integration
 
 ### Genre Selector Enhancement
+
 - Added emoji icons for visual appeal:
   - 🧙‍♂️ Fantasy
   - 🚀 Sci-Fi
@@ -105,6 +112,7 @@ Expanded character generation from **30 variations** across 3 genres to **63 var
   - 🦸 Superhero
 
 ### UI Improvements
+
 - Clear genre categorization
 - Improved genre name formatting in preview
 - Better visual hierarchy
@@ -116,16 +124,36 @@ Expanded character generation from **30 variations** across 3 genres to **63 var
 
 ```json
 {
-  "fantasy": [ /* 10 variations */ ],
-  "sci_fi": [ /* 10 variations */ ],
-  "historical": [ /* 10 variations */ ],
-  "horror": [ /* 5 variations */ ],
-  "mystery_thriller": [ /* 5 variations */ ],
-  "romance": [ /* 5 variations */ ],
-  "adventure": [ /* 5 variations */ ],
-  "western": [ /* 3 variations */ ],
-  "dystopian": [ /* 5 variations */ ],
-  "superhero": [ /* 5 variations */ ]
+  "fantasy": [
+    /* 10 variations */
+  ],
+  "sci_fi": [
+    /* 10 variations */
+  ],
+  "historical": [
+    /* 10 variations */
+  ],
+  "horror": [
+    /* 5 variations */
+  ],
+  "mystery_thriller": [
+    /* 5 variations */
+  ],
+  "romance": [
+    /* 5 variations */
+  ],
+  "adventure": [
+    /* 5 variations */
+  ],
+  "western": [
+    /* 3 variations */
+  ],
+  "dystopian": [
+    /* 5 variations */
+  ],
+  "superhero": [
+    /* 5 variations */
+  ]
 }
 ```
 
@@ -138,6 +166,7 @@ With 63 genre variations + 31 cultural origins, users can now create:
 **63 × 31 = 1,953 unique genre/culture combinations!**
 
 Example combinations:
+
 - Gothic Horror + Victorian British = Classic ghost story detective
 - Cosmic Horror + Japanese = Cosmic Shinto shrine guardian gone mad
 - Cyberpunk + West African = Afrofuturist hacker with ancestral tech
@@ -154,6 +183,7 @@ Example combinations:
 ## Technical Implementation
 
 ### Backend (prompt_variations.py)
+
 - Added 7 new genre dictionaries
 - Each variation includes:
   - Name
@@ -162,6 +192,7 @@ Example combinations:
 - Updated `get_all_variations()` to return all 10 genres
 
 ### Frontend (character.jsx)
+
 - Added 7 new genre options to dropdown
 - Emoji icons for all genres
 - Better genre name formatting
@@ -174,6 +205,7 @@ Example combinations:
 Now that we have comprehensive genre variations, we're ready for **Phase 4: D&D 5E Integration**!
 
 ### Planned D&D Features:
+
 - D&D 5E stat block generation (STR, DEX, CON, INT, WIS, CHA)
 - Class selection (Barbarian, Bard, Cleric, Druid, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock, Wizard)
 - Race selection (Human, Elf, Dwarf, Halfling, Dragonborn, Gnome, Half-Elf, Half-Orc, Tiefling)
@@ -187,6 +219,7 @@ Now that we have comprehensive genre variations, we're ready for **Phase 4: D&D 
 - Character sheet export
 
 ### Integration Approach:
+
 - Add D&D toggle to character creation
 - New schema fields for D&D stats
 - D&D-specific prompt enhancements
@@ -215,4 +248,3 @@ The genre system is now robust and comprehensive. We have:
 ✅ Frontend UI fully integrated
 
 **Next**: D&D 5E Integration Phase 🎲
-

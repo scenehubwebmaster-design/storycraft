@@ -5,7 +5,9 @@ from database import get_db
 from models import Character
 from pydantic import BaseModel
 from datetime import datetime
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Pydantic schemas
@@ -193,20 +195,30 @@ class DnDCharacterGenerateRequest(BaseModel):
     dnd_level: int = 1
     ability_score_method: str = "standard_array"  # or "random"
     
-    # Optional: Generate narrative description as well
+    # Optional: Generate narrative description with AI
     generate_narrative: bool = False
+    narrative_provider: str = "groq"  # LLM provider for narrative generation
+    narrative_model: str | None = None  # Optional specific model
+    use_structured: bool = True  # Use structured output schema
+    narrative_style: str = "detailed"  # concise, detailed, dramatic
+    narrative_context: str | None = None  # Additional context for narrative generation
+    
+    # Optional genre/culture context
     genre: str | None = None
     variation: str | None = None
     cultural_origin: str | None = None
 
 
 @router.post("/dnd/generate", response_model=CharacterResponse)
-def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Session = Depends(get_db)):
+async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Session = Depends(get_db)):
     """
     Generate a complete D&D 5E character with stats, equipment, and features.
-    Optionally generate narrative description as well.
+    Optionally generate narrative description using structured AI output.
     """
     from dnd_generator import generate_dnd_character, format_character_sheet
+    from dnd_narrative_prompts import build_dnd_narrative_prompt
+    from schemas import DnDCharacterNarrative
+    from structured_output_utils import generate_structured_content
     
     try:
         # Generate D&D character using our generator
@@ -220,13 +232,63 @@ def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Session = D
             level=request.dnd_level
         )
         
+        # Generate AI narrative if requested
+        narrative_data = None
+        if request.generate_narrative:
+            try:
+                # Build narrative prompt based on D&D stats
+                narrative_prompt = build_dnd_narrative_prompt(
+                    dnd_character=dnd_char,
+                    style=request.narrative_style,
+                    additional_context=request.narrative_context
+                )
+                
+                if request.use_structured:
+                    # Use structured output for consistent narrative format
+                    narrative_data = await generate_structured_content(
+                        prompt=narrative_prompt,
+                        schema_class=DnDCharacterNarrative,
+                        provider=request.narrative_provider,
+                        model=request.narrative_model
+                    )
+                    
+                    # Convert to dict for storage
+                    narrative_dict = narrative_data.model_dump() if hasattr(narrative_data, 'model_dump') else narrative_data.dict()
+                else:
+                    # Use simple text generation (fallback)
+                    from routers.llm import LLMProvider
+                    narrative_text = await LLMProvider.generate_text(
+                        prompt=narrative_prompt,
+                        provider=request.narrative_provider,
+                        model=request.narrative_model,
+                        max_tokens=1500
+                    )
+                    narrative_dict = {"narrative_text": narrative_text}
+                    
+            except Exception as narrative_error:
+                logger.error(f"Narrative generation failed: {narrative_error}")
+                # Continue without narrative rather than failing entire request
+                narrative_dict = {"error": str(narrative_error)}
+        
+        # Prepare description fields (use narrative if available, otherwise defaults)
+        if narrative_data:
+            description = narrative_dict.get("physical_appearance", dnd_char["class_description"])
+            personality = narrative_dict.get("personality_summary", f"Alignment: {dnd_char['alignment']}")
+            appearance = narrative_dict.get("physical_appearance", dnd_char["species_description"])
+            background_text = narrative_dict.get("backstory", dnd_char["background_description"])
+        else:
+            description = dnd_char["class_description"]
+            personality = f"Alignment: {dnd_char['alignment']}"
+            appearance = dnd_char["species_description"]
+            background_text = dnd_char["background_description"]
+        
         # Create database character record
         db_character = Character(
             name=dnd_char["name"],
-            description=dnd_char["class_description"],
-            background=dnd_char["background_description"],
-            personality=f"Alignment: {dnd_char['alignment']}",
-            appearance=dnd_char["species_description"],
+            description=description,
+            background=background_text,
+            personality=personality,
+            appearance=appearance,
             
             # D&D specific fields
             is_dnd=True,
@@ -260,13 +322,17 @@ def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Session = D
             dnd_spellcasting=dnd_char["spellcasting"],
             dnd_languages=dnd_char["languages"],
             
-            # Store complete character sheet in generation_log
+            # Store complete character sheet and narrative in generation_log
             generation_log={
                 "type": "dnd_5e_character",
                 "generator": "dnd_generator",
                 "method": request.ability_score_method,
+                "narrative_generated": request.generate_narrative,
+                "narrative_provider": request.narrative_provider if request.generate_narrative else None,
+                "structured_output": request.use_structured if request.generate_narrative else None,
                 "timestamp": datetime.utcnow().isoformat(),
-                "character_sheet": format_character_sheet(dnd_char)
+                "character_sheet": format_character_sheet(dnd_char),
+                "ai_narrative": narrative_dict if narrative_data else None
             }
         )
         
@@ -277,6 +343,7 @@ def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Session = D
         return db_character
         
     except Exception as e:
+        logger.error(f"D&D character generation failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate D&D character: {str(e)}")
 
 

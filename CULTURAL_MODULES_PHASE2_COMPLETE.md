@@ -19,6 +19,7 @@ Phase 2 of the CHARACTER_GENERATION_ENHANCEMENT_PLAN has been successfully imple
 Created comprehensive cultural origin definitions covering:
 
 #### **African Cultures (5 origins)**
+
 - North African (Maghreb) - Morocco, Algeria, Tunisia, Libya, Egypt
 - West African (Sahel & Coast) - Nigeria, Ghana, Senegal, Mali, Ivory Coast
 - East African (Great Lakes & Horn) - Kenya, Tanzania, Ethiopia, Uganda, Somalia
@@ -26,6 +27,7 @@ Created comprehensive cultural origin definitions covering:
 - Central African (Congo Basin) - DRC, Congo, Cameroon, Gabon, CAR
 
 #### **Asian Cultures (9 origins)**
+
 - East Asian (Chinese) - China, Taiwan, Singapore Chinese
 - East Asian (Japanese) - Japan, Japanese diaspora
 - East Asian (Korean) - South Korea, North Korea, Korean diaspora
@@ -37,11 +39,13 @@ Created comprehensive cultural origin definitions covering:
 - Mongolian - Mongolia, Inner Mongolia
 
 #### **Middle Eastern Cultures (3 origins)**
+
 - Middle Eastern (Levant) - Syria, Lebanon, Jordan, Palestine
 - Middle Eastern (Arabian Peninsula) - Saudi Arabia, UAE, Kuwait, Yemen, Oman
 - Middle Eastern (Persian/Iranian) - Iran, Afghan Persian, Tajik
 
 #### **European Cultures (6 origins)**
+
 - Western European (British Isles) - England, Scotland, Wales, Ireland
 - Western European (French) - France, Belgium, Switzerland
 - Western European (Germanic) - Germany, Austria, Switzerland
@@ -50,6 +54,7 @@ Created comprehensive cultural origin definitions covering:
 - Nordic (Scandinavian) - Sweden, Norway, Denmark, Finland, Iceland
 
 #### **Americas Cultures (8 origins)**
+
 - North American (United States) - Diverse regional variations
 - Latin American (Mexican) - Mexico, Mexican-American
 - Latin American (Caribbean) - Cuba, Puerto Rico, Dominican Republic, Jamaica
@@ -60,6 +65,7 @@ Created comprehensive cultural origin definitions covering:
 - Indigenous North American - Native American, First Nations, Alaska Native
 
 #### **Pacific Cultures (3 origins)**
+
 - Polynesian (Pacific Islander) - Hawaii, Samoa, Tonga, Tahiti, Maori NZ
 - Australian Aboriginal - Aboriginal Australians, Torres Strait Islanders
 - Melanesian/Micronesian - Papua New Guinea, Fiji, Solomon Islands, Palau, Guam
@@ -90,6 +96,7 @@ Each cultural origin includes:
 ### 3. API Enhancements
 
 #### **New Endpoint: GET /api/generate/cultural-origins**
+
 Returns all 31 cultural origins for UI selection:
 
 ```json
@@ -109,6 +116,7 @@ Returns all 31 cultural origins for UI selection:
 ```
 
 #### **Enhanced Endpoint: POST /api/generate/character**
+
 Now accepts `cultural_origin` parameter:
 
 ```json
@@ -131,11 +139,11 @@ class CharacterGenerationRequest(BaseModel):
     themes: Optional[List[str]] = None
     personality_traits: Optional[List[str]] = None
     # ... existing fields ...
-    
+
     # Phase 1: Genre variations
     genre: Optional[str] = Field(None, description="Genre: fantasy, sci_fi, or historical")
     variation: Optional[str] = Field(None, description="Variation: high_fantasy, cyberpunk, etc.")
-    
+
     # Phase 2: Cultural diversity
     cultural_origin: Optional[str] = Field(None, description="Cultural origin: east_asian_japanese, west_african, etc.")
 ```
@@ -169,10 +177,13 @@ character = await call_llm(prompt, provider, model)
 ## Design Principles
 
 ### ✅ **English-First Accessibility**
+
 All cultural content is written in English to ensure accessibility for our predominantly English-speaking user base. Characters can be multilingual, but narration and descriptions remain in English.
 
 ### ✅ **Authentic Cultural Details**
+
 Each origin includes:
+
 - Real geographic and historical context
 - Genuine cultural practices and values
 - Traditional foods, clothing, music
@@ -180,6 +191,7 @@ Each origin includes:
 - Modern cultural evolution and adaptation
 
 ### ✅ **Respectful Representation**
+
 - Avoids stereotypes and caricatures
 - Highlights diversity within each cultural group
 - Acknowledges historical challenges without trauma focus
@@ -187,6 +199,7 @@ Each origin includes:
 - Recognizes diaspora and multicultural identities
 
 ### ✅ **Modular & Backwards Compatible**
+
 - Cultural enhancement is **optional**
 - Characters can be generated without cultural_origin (Phase 1 still applies)
 - Existing API calls continue to work without modification
@@ -197,6 +210,7 @@ Each origin includes:
 ## Testing
 
 ### Test 1: Cultural Origins Endpoint
+
 ```bash
 curl http://localhost:8001/api/generate/cultural-origins
 ```
@@ -204,6 +218,7 @@ curl http://localhost:8001/api/generate/cultural-origins
 **Result**: ✅ Returns all 31 cultural origins with keys, names, and regions
 
 ### Test 2: Character Generation with Cultural Enhancement
+
 ```json
 {
   "archetype": "warrior",
@@ -214,6 +229,7 @@ curl http://localhost:8001/api/generate/cultural-origins
 ```
 
 **Expected Output**: Character with:
+
 - Japanese naming conventions
 - Cultural values (honor, duty, harmony)
 - References to bushido, samurai traditions
@@ -221,6 +237,7 @@ curl http://localhost:8001/api/generate/cultural-origins
 - Cultural philosophies (wabi-sabi, mono no aware)
 
 ### Test 3: Multi-Layer Enhancement
+
 ```json
 {
   "archetype": "warrior",
@@ -232,6 +249,7 @@ curl http://localhost:8001/api/generate/cultural-origins
 ```
 
 **Expected Output**: Character with:
+
 - High Fantasy elements (magic, quests, epic destiny)
 - West African cultural context (griots, djembe, oral traditions)
 - Authentic cultural practices (kente cloth, ancestral honor)
@@ -242,6 +260,7 @@ curl http://localhost:8001/api/generate/cultural-origins
 ## API Usage Examples
 
 ### Example 1: List All Cultural Origins
+
 ```python
 import requests
 
@@ -254,6 +273,7 @@ for origin in origins:
 ```
 
 ### Example 2: Generate Character with Cultural Background
+
 ```python
 import requests
 
@@ -275,6 +295,7 @@ print(f"Cultural Origin: {character['generation_metadata']['cultural_origin']}")
 ```
 
 ### Example 3: Combine Genre + Culture
+
 ```python
 payload = {
     "archetype": "mage",
@@ -300,6 +321,7 @@ response = requests.post(
 ## What's Next (Phase 3+)
 
 ### Immediate Next Steps:
+
 1. **Frontend UI Integration**
    - Add cultural origin selector to character creation form
    - Organize origins by region (collapsible sections)
@@ -319,6 +341,7 @@ response = requests.post(
    - Cultural sensitivity guidelines
 
 ### Future Phases (Per Plan):
+
 - **Phase 3**: Extended Character Schema (abilities, disabilities, traits)
 - **Phase 4**: D&D 5E Integration (stat blocks, classes, races)
 - **Phase 5**: UI/UX Improvements (visual selectors, previews)
@@ -329,9 +352,11 @@ response = requests.post(
 ## File Changes Summary
 
 ### New Files:
+
 - `backend/cultural_modules.py` (839 lines)
 
 ### Modified Files:
+
 - `backend/routers/generation.py` (+20 lines)
   - Added `cultural_modules` import
   - Added GET `/cultural-origins` endpoint
@@ -353,9 +378,10 @@ Phase 2 is **complete and functional**! We now have:
 ✅ **API endpoint** to list all cultural origins  
 ✅ **Integrated prompt enhancement** for richer character generation  
 ✅ **Backwards compatible** with existing system  
-✅ **Tested and working** on port 8001  
+✅ **Tested and working** on port 8001
 
 Characters generated with cultural origins will have:
+
 - Authentic cultural context and values
 - Appropriate naming conventions
 - Relevant historical and social background
@@ -367,6 +393,7 @@ Characters generated with cultural origins will have:
 ---
 
 **Commits**:
+
 - Phase 1: `7befe36` - 30 Prompt Variations
 - Phase 2: `2cf0c76` - 31 Cultural Origins
 

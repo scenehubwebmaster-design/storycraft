@@ -12,11 +12,13 @@
 ## ✅ What Was Accomplished
 
 ### Step 5: Frontend D&D Creator Component
+
 **File:** `frontend/src/components/DnDCharacterCreator.jsx`  
 **Lines:** 829 lines  
 **Commit:** b38fb98
 
 **Features:**
+
 - Complete character creation UI with dropdowns for all D&D options
 - **AI-Assisted Narrative Enhancement** with 12 granular aspects:
   - Appearance, Personality, Backstory, Motivations, Quirks
@@ -30,11 +32,13 @@
 - Beautiful Material-UI design
 
 ### Step 6: Frontend D&D Sheet Display
+
 **File:** `frontend/src/components/DnDCharacterSheet.jsx`  
 **Lines:** 682 lines  
 **Commit:** b38fb98
 
 **Features:**
+
 - Comprehensive D&D character sheet layout
 - Ability scores in card format with calculated modifiers
 - Combat stats display (HP, AC, Initiative, Speed, Proficiency)
@@ -52,6 +56,7 @@
 - Responsive design for mobile/tablet/desktop
 
 ### Bonus: Modular AI Narrative Prompt System
+
 **File:** `backend/dnd_narrative_prompts.py`  
 **Lines:** 570+ lines  
 **Commit:** b38fb98
@@ -59,6 +64,7 @@
 **Key Innovation:** Context-aware prompts informed by D&D stats!
 
 **Features:**
+
 - `NarrativeAspect` enum (12 aspects)
 - `NarrativeStyle` enum (5 styles)
 - `DnDNarrativePromptBuilder` class
@@ -74,17 +80,20 @@
 - Batch prompt generation
 
 ### Bonus: D&D Narrative Generation API
+
 **File:** `backend/routers/generation.py`  
 **Lines:** ~300 lines added  
 **Commit:** b38fb98
 
 **4 New Endpoints:**
+
 1. `POST /api/generation/dnd/narrative` - Generate single aspect
 2. `POST /api/generation/dnd/narrative/bulk` - Generate multiple aspects in parallel
 3. `GET /api/generation/dnd/narrative/aspects` - List 12 available aspects
 4. `GET /api/generation/dnd/narrative/styles` - List 5 available styles
 
 **Technical Highlights:**
+
 - Async parallel generation using `asyncio.gather()`
 - Character validation (must be D&D character)
 - Enum validation for aspects and styles
@@ -92,11 +101,13 @@
 - Comprehensive error handling
 
 ### Step 7: System Integration (Partial)
+
 **File:** `frontend/src/routes/create/character.jsx`  
 **Lines:** 89 insertions, 5 deletions  
 **Commit:** ae54ca7
 
 **Features:**
+
 - D&D mode toggle with visual indicators (🎲 icon, "Active" chip)
 - Conditional component rendering
 - State management for D&D characters
@@ -110,6 +121,7 @@
 ## 📊 Code Statistics
 
 ### Backend: 2,902+ lines
+
 - `dnd_data.py`: 893 lines (Step 1)
 - `dnd_generator.py`: 617 lines (Step 2)
 - `migrate_add_dnd_stats.py`: 251 lines (Step 3)
@@ -118,6 +130,7 @@
 - `routers/generation.py`: ~300 lines (Bonus)
 
 ### Frontend: 1,560+ lines
+
 - `DnDCharacterCreator.jsx`: 829 lines (Step 5)
 - `DnDCharacterSheet.jsx`: 682 lines (Step 6)
 - `character.jsx`: 89 lines added (Step 7 partial)
@@ -125,12 +138,14 @@
 ### Total: 4,462+ lines across 10 files
 
 ### API Endpoints: 11 total
+
 - 7 D&D character endpoints (Steps 1-4)
 - 4 narrative generation endpoints (Bonus)
 
 ### Database: 18 new D&D-specific columns (Step 3)
 
 ### Content Support:
+
 - **13 Character Classes** (Barbarian → Wizard)
 - **12+ Species** (Dragonborn → Tiefling)
 - **12 Backgrounds** (Acolyte → Soldier)
@@ -149,6 +164,7 @@ The system generates narratives that **match character mechanics**:
 **Example:** Wizard with STR 8, DEX 14, INT 15, CHA 10
 
 **Generated Context:**
+
 - Physical Traits: "Slight build, Nimble" (from low STR, high DEX)
 - Mental Traits: "Clever, Insightful" (from high INT, WIS)
 - Social Traits: "Unremarkable" (from average CHA)
@@ -168,6 +184,7 @@ The system generates narratives that **match character mechanics**:
 ### 3. Parallel Generation Performance
 
 Bulk narrative generation uses `asyncio.gather()` to generate multiple aspects simultaneously:
+
 - Generate 5 aspects in ~same time as 1
 - Efficient use of LLM API calls
 - Better user experience
@@ -177,13 +194,16 @@ Bulk narrative generation uses `asyncio.gather()` to generate multiple aspects s
 ## 🎯 User Requirements: Fully Met!
 
 ✅ **"Let's proceed with these next steps!"**
+
 - Steps 5 & 6 implemented and complete
 
 ✅ **"Provide ways to assist granular generation for all character facets"**
+
 - 12 narrative aspects with individual toggles
 - Granular control over what gets AI-enhanced
 
 ✅ **"Develop a robust modular prompt system"**
+
 - Context-aware prompt builder
 - Stat-informed trait inference
 - Alignment personality mapping
@@ -196,6 +216,7 @@ Bulk narrative generation uses `asyncio.gather()` to generate multiple aspects s
 ### For Players
 
 **Workflow:**
+
 1. Toggle D&D mode
 2. Select class, species, background, alignment
 3. Optional: Click "Randomize" for inspiration
@@ -211,6 +232,7 @@ Bulk narrative generation uses `asyncio.gather()` to generate multiple aspects s
 ### For Dungeon Masters
 
 **NPC Generation:**
+
 - One-click randomization
 - Quick narrative enhancement
 - Multiple export options
@@ -223,6 +245,7 @@ Bulk narrative generation uses `asyncio.gather()` to generate multiple aspects s
 ### Step 7 Completion (15%)
 
 **Testing Needed:**
+
 1. ⚠️ End-to-end workflow (generate → review → save)
 2. ⚠️ Portrait generation with D&D characters
 3. ⚠️ Narrative enhancement integration
@@ -238,6 +261,7 @@ Bulk narrative generation uses `asyncio.gather()` to generate multiple aspects s
 ## 🚀 Future Enhancements
 
 **Post-Phase 4:**
+
 - Level-up system (expand beyond level 5)
 - Character editing interface
 - Multiclassing support
@@ -251,6 +275,7 @@ Bulk narrative generation uses `asyncio.gather()` to generate multiple aspects s
 ## 📚 Documentation Updates
 
 **Updated Files:**
+
 - `DND_PHASE4_PROGRESS.md` - Complete progress documentation (commit ddd0678)
   - Progress: 57.1% → 85.7%
   - Code: 2,032 → 4,462+ lines
@@ -267,6 +292,7 @@ Bulk narrative generation uses `asyncio.gather()` to generate multiple aspects s
 **Phase 4: 85.7% Complete**
 
 **Completed:**
+
 - ✅ Step 1: D&D Data Module (893 lines)
 - ✅ Step 2: Character Generator (617 lines)
 - ✅ Step 3: Database Migration (251 lines)
@@ -276,6 +302,7 @@ Bulk narrative generation uses `asyncio.gather()` to generate multiple aspects s
 - 🔄 Step 7: System Integration (85% complete)
 
 **Bonus Systems:**
+
 - ✅ Modular narrative prompt system (570+ lines)
 - ✅ Narrative generation API (300+ lines)
 

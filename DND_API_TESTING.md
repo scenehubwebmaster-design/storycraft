@@ -24,6 +24,7 @@ curl http://localhost:8000/api/characters/dnd/classes
 ```
 
 **Expected Response:**
+
 ```json
 {
   "classes": [
@@ -49,6 +50,7 @@ curl http://localhost:8000/api/characters/dnd/species
 ```
 
 **Expected Response:**
+
 ```json
 {
   "species": [
@@ -73,6 +75,7 @@ curl http://localhost:8000/api/characters/dnd/backgrounds
 ```
 
 **Expected Response:**
+
 ```json
 {
   "backgrounds": [
@@ -97,12 +100,19 @@ curl http://localhost:8000/api/characters/dnd/alignments
 ```
 
 **Expected Response:**
+
 ```json
 {
   "alignments": [
-    "Lawful Good", "Neutral Good", "Chaotic Good",
-    "Lawful Neutral", "True Neutral", "Chaotic Neutral",
-    "Lawful Evil", "Neutral Evil", "Chaotic Evil"
+    "Lawful Good",
+    "Neutral Good",
+    "Chaotic Good",
+    "Lawful Neutral",
+    "True Neutral",
+    "Chaotic Neutral",
+    "Lawful Evil",
+    "Neutral Evil",
+    "Chaotic Evil"
   ],
   "count": 9
 }
@@ -125,6 +135,7 @@ curl -X POST http://localhost:8000/api/characters/dnd/generate \
 ```
 
 **Expected Response:**
+
 ```json
 {
   "id": 1,
@@ -157,7 +168,13 @@ curl -X POST http://localhost:8000/api/characters/dnd/generate \
     "tools": []
   },
   "dnd_features": {
-    "racial": ["Darkvision", "Elven Lineage", "Fey Ancestry", "Keen Senses", "Trance"],
+    "racial": [
+      "Darkvision",
+      "Elven Lineage",
+      "Fey Ancestry",
+      "Keen Senses",
+      "Trance"
+    ],
     "class": ["Arcane Recovery", "Ritual Casting", "Spellcasting"],
     "background": {
       "feature": "Researcher",
@@ -165,9 +182,7 @@ curl -X POST http://localhost:8000/api/characters/dnd/generate \
     }
   },
   "dnd_equipment": {
-    "weapons": [
-      {"name": "Quarterstaff", "damage": "1d6 bludgeoning"}
-    ],
+    "weapons": [{ "name": "Quarterstaff", "damage": "1d6 bludgeoning" }],
     "armor": [],
     "gear": ["Component pouch", "Scholar's pack", "Spellbook"],
     "gold": 10
@@ -178,7 +193,7 @@ curl -X POST http://localhost:8000/api/characters/dnd/generate \
     "spell_attack_bonus": 4,
     "cantrips_known": 3,
     "spells_known": 6,
-    "spell_slots": {"1st": 2}
+    "spell_slots": { "1st": 2 }
   },
   "dnd_languages": ["Common", "Elvish"],
   "created_at": "2025-01-20T12:00:00",
@@ -209,6 +224,7 @@ curl http://localhost:8000/api/characters/1/dnd-sheet
 ```
 
 **Expected Response:**
+
 ```json
 {
   "character_id": 1,
@@ -282,6 +298,7 @@ curl -X PUT http://localhost:8000/api/characters/1/dnd-stats \
 ```
 
 **Expected Response:**
+
 ```json
 {
   "message": "D&D stats updated successfully",
@@ -343,28 +360,28 @@ print(f"\n{result['message']}")
 const [classes, setClasses] = useState([]);
 
 useEffect(() => {
-  fetch('/api/characters/dnd/classes')
-    .then(res => res.json())
-    .then(data => setClasses(data.classes));
+  fetch("/api/characters/dnd/classes")
+    .then((res) => res.json())
+    .then((data) => setClasses(data.classes));
 }, []);
 
 // Render dropdown
 <select>
-  {classes.map(cls => (
+  {classes.map((cls) => (
     <option key={cls.id} value={cls.id}>
       {cls.name} ({cls.hit_die}d hit die)
     </option>
   ))}
-</select>
+</select>;
 ```
 
 ### Generate Character
 
 ```javascript
 const generateCharacter = async (formData) => {
-  const response = await fetch('/api/characters/dnd/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/api/characters/dnd/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       name: formData.name,
       dnd_class: formData.selectedClass,
@@ -372,12 +389,12 @@ const generateCharacter = async (formData) => {
       dnd_background: formData.selectedBackground,
       dnd_alignment: formData.selectedAlignment,
       dnd_level: 1,
-      ability_score_method: formData.scoreMethod
-    })
+      ability_score_method: formData.scoreMethod,
+    }),
   });
-  
+
   const character = await response.json();
-  console.log('Character generated:', character);
+  console.log("Character generated:", character);
   return character;
 };
 ```
@@ -394,27 +411,34 @@ const loadCharacterSheet = async (characterId) => {
 };
 
 // Render
-{characterSheet && (
-  <div>
-    <h2>{characterSheet.character_data.name}</h2>
-    <pre>{characterSheet.formatted_sheet}</pre>
-  </div>
-)}
+{
+  characterSheet && (
+    <div>
+      <h2>{characterSheet.character_data.name}</h2>
+      <pre>{characterSheet.formatted_sheet}</pre>
+    </div>
+  );
+}
 ```
 
 ## Common Issues & Solutions
 
 ### Issue: 404 Not Found
+
 **Solution:** Ensure the backend server is running and the endpoint path is correct.
 
 ### Issue: 422 Unprocessable Entity
+
 **Solution:** Check that all required fields are included in the request body and have valid values.
 
 ### Issue: Character generation fails
+
 **Solution:** Verify that `dnd_class`, `dnd_species`, and `dnd_background` values match the IDs from the reference endpoints (lowercase, e.g., "wizard" not "Wizard").
 
 ### Issue: CORS errors in frontend
+
 **Solution:** Ensure CORS is configured in `backend/main.py`:
+
 ```python
 from fastapi.middleware.cors import CORSMiddleware
 

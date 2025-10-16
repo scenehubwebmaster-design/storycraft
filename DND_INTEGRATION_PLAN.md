@@ -25,6 +25,7 @@ Integrate D&D 5th Edition character creation into StoryCraft, allowing users to 
 ## D&D Character Components
 
 ### 1. Core Stats (Ability Scores)
+
 - **STR** (Strength) - Physical power
 - **DEX** (Dexterity) - Agility and reflexes
 - **CON** (Constitution) - Endurance and health
@@ -33,12 +34,14 @@ Integrate D&D 5th Edition character creation into StoryCraft, allowing users to 
 - **CHA** (Charisma) - Force of personality
 
 **Methods**:
+
 - Standard Array: [15, 14, 13, 12, 10, 8]
 - Point Buy: 27 points to distribute
 - Random Roll: 4d6 drop lowest (×6)
 - AI-Generated: Based on class and character concept
 
 ### 2. Classes (13 Core Classes)
+
 - **Barbarian** - Fierce warrior, rage-fueled combat
 - **Bard** - Musician, inspiration, jack-of-all-trades
 - **Cleric** - Divine caster, healer, warrior-priest
@@ -54,20 +57,25 @@ Integrate D&D 5th Edition character creation into StoryCraft, allowing users to 
 - **Artificer** - Magical inventor, infusions, tool expertise
 
 ### 3. Races (Core + Popular)
+
 **Core Races**:
+
 - Human, Elf (High, Wood, Dark), Dwarf (Mountain, Hill)
 - Halfling (Lightfoot, Stout), Dragonborn, Gnome (Forest, Rock)
 - Half-Elf, Half-Orc, Tiefling
 
 **Popular Additions**:
+
 - Aasimar, Genasi, Tabaxi, Firbolg, Goliath, Kenku, Lizardfolk
 
 ### 4. Backgrounds (Common)
+
 - Acolyte, Charlatan, Criminal, Entertainer, Folk Hero
 - Guild Artisan, Hermit, Noble, Outlander, Sage
 - Sailor, Soldier, Urchin
 
 ### 5. Alignment
+
 - **Lawful Good** - Crusader, paladin, righteous hero
 - **Neutral Good** - Kind soul, helpful, balanced
 - **Chaotic Good** - Free spirit, rebel hero, individual
@@ -79,7 +87,9 @@ Integrate D&D 5th Edition character creation into StoryCraft, allowing users to 
 - **Chaotic Evil** - Destroyer, anarchist, pure evil
 
 ### 6. Skills & Proficiencies
+
 **Skills** (18 total):
+
 - Acrobatics, Animal Handling, Arcana, Athletics
 - Deception, History, Insight, Intimidation
 - Investigation, Medicine, Nature, Perception
@@ -87,12 +97,14 @@ Integrate D&D 5th Edition character creation into StoryCraft, allowing users to 
 - Stealth, Survival
 
 **Proficiencies**:
+
 - Armor (Light, Medium, Heavy, Shields)
 - Weapons (Simple, Martial, Specific)
 - Tools (Artisan's tools, musical instruments, etc.)
 - Saving Throws (2 per class)
 
 ### 7. Combat Stats
+
 - **Hit Points** (HP) - Based on class + CON modifier
 - **Armor Class** (AC) - 10 + DEX + armor + shield
 - **Initiative** - DEX modifier
@@ -101,6 +113,7 @@ Integrate D&D 5th Edition character creation into StoryCraft, allowing users to 
 - **Proficiency Bonus** - Starts at +2 (levels 1-4)
 
 ### 8. Equipment & Wealth
+
 - Starting equipment by class
 - Starting gold (varies by class)
 - Weapons, armor, tools
@@ -108,6 +121,7 @@ Integrate D&D 5th Edition character creation into StoryCraft, allowing users to 
 - Spell components (for casters)
 
 ### 9. Spells (For Spellcasters)
+
 - Spell slots by level
 - Spells known/prepared
 - Cantrips
@@ -115,6 +129,7 @@ Integrate D&D 5th Edition character creation into StoryCraft, allowing users to 
 - Spell attack bonus
 
 ### 10. Features & Traits
+
 - Racial traits
 - Class features (level 1)
 - Background feature
@@ -129,10 +144,11 @@ Integrate D&D 5th Edition character creation into StoryCraft, allowing users to 
 **File**: `backend/models.py`
 
 Add D&D fields to Character model:
+
 ```python
 class Character(Base):
     # Existing fields...
-    
+
     # D&D 5E Fields
     is_dnd = Column(Boolean, default=False)
     dnd_class = Column(String, nullable=True)  # "Fighter", "Wizard", etc.
@@ -140,7 +156,7 @@ class Character(Base):
     dnd_race = Column(String, nullable=True)  # "Human", "Elf", etc.
     dnd_background = Column(String, nullable=True)
     dnd_alignment = Column(String, nullable=True)  # "Lawful Good", etc.
-    
+
     # Ability Scores
     strength = Column(Integer, nullable=True)
     dexterity = Column(Integer, nullable=True)
@@ -148,21 +164,21 @@ class Character(Base):
     intelligence = Column(Integer, nullable=True)
     wisdom = Column(Integer, nullable=True)
     charisma = Column(Integer, nullable=True)
-    
+
     # Combat Stats
     hit_points = Column(Integer, nullable=True)
     armor_class = Column(Integer, nullable=True)
     initiative = Column(Integer, nullable=True)
     speed = Column(Integer, default=30)
-    
+
     # Skills & Proficiencies (JSON)
     skills = Column(JSON, nullable=True)  # {"Perception": true, "Stealth": true}
     proficiencies = Column(JSON, nullable=True)  # {"armor": ["light"], "weapons": ["simple"]}
-    
+
     # Equipment & Spells (JSON)
     equipment = Column(JSON, nullable=True)
     spells = Column(JSON, nullable=True)
-    
+
     # Features & Traits (JSON)
     features = Column(JSON, nullable=True)
 ```
@@ -174,6 +190,7 @@ class Character(Base):
 **File**: `backend/dnd_data.py`
 
 Create comprehensive D&D reference data:
+
 - Class definitions (hit dice, proficiencies, features)
 - Race definitions (ability bonuses, traits, languages)
 - Background definitions (skills, tools, features)
@@ -186,6 +203,7 @@ Create comprehensive D&D reference data:
 **File**: `backend/dnd_generator.py`
 
 Functions:
+
 - `generate_ability_scores()` - Standard array, point buy, or AI-generated
 - `calculate_modifiers()` - Convert scores to modifiers
 - `select_class_features()` - Get level 1 class features
@@ -200,16 +218,17 @@ Functions:
 **File**: `backend/prompts.py`
 
 Add D&D-specific prompt sections:
+
 ```python
 def dnd_character_prompt(class_name, race, background, alignment, stats):
     return f"""
     Generate a D&D 5E character with the following specifications:
-    
+
     CLASS: {class_name}
     RACE: {race}
     BACKGROUND: {background}
     ALIGNMENT: {alignment}
-    
+
     ABILITY SCORES:
     - Strength: {stats['strength']} ({modifier(stats['strength'])})
     - Dexterity: {stats['dexterity']} ({modifier(stats['dexterity'])})
@@ -217,7 +236,7 @@ def dnd_character_prompt(class_name, race, background, alignment, stats):
     - Intelligence: {stats['intelligence']} ({modifier(stats['intelligence'])})
     - Wisdom: {stats['wisdom']} ({modifier(stats['wisdom'])})
     - Charisma: {stats['charisma']} ({modifier(stats['charisma'])})
-    
+
     Create a backstory that explains:
     - How they became a {class_name}
     - Their connection to their {race} heritage
@@ -233,6 +252,7 @@ def dnd_character_prompt(class_name, race, background, alignment, stats):
 **File**: `backend/routers/characters.py`
 
 New endpoints:
+
 ```python
 @router.post("/characters/dnd")
 async def generate_dnd_character(request: DnDCharacterRequest):
@@ -268,6 +288,7 @@ async def export_to_dnd_beyond(id: int):
 ### Step 6: Frontend UI Components ✅ TODO
 
 **New Component**: `frontend/src/components/DnDCharacterCreator.jsx`
+
 - D&D mode toggle
 - Class selector with descriptions
 - Race selector with traits
@@ -277,6 +298,7 @@ async def export_to_dnd_beyond(id: int):
 - Equipment selection
 
 **New Component**: `frontend/src/components/DnDCharacterSheet.jsx`
+
 - Standard D&D character sheet layout
 - Editable stat blocks
 - Spell slot tracking
@@ -288,6 +310,7 @@ async def export_to_dnd_beyond(id: int):
 **File**: `frontend/src/routes/create/character.jsx`
 
 Add D&D toggle:
+
 ```jsx
 <FormControlLabel
   control={
@@ -297,13 +320,11 @@ Add D&D toggle:
     />
   }
   label="D&D 5E Character"
-/>
+/>;
 
-{isDndCharacter && (
-  <DnDCharacterCreator
-    onGenerate={handleDnDGeneration}
-  />
-)}
+{
+  isDndCharacter && <DnDCharacterCreator onGenerate={handleDnDGeneration} />;
+}
 ```
 
 ---
@@ -319,7 +340,7 @@ Add D&D toggle:
   "dnd_race": "Dwarf (Mountain)",
   "dnd_background": "Soldier",
   "dnd_alignment": "Lawful Good",
-  
+
   "ability_scores": {
     "strength": 16,
     "dexterity": 12,
@@ -328,7 +349,7 @@ Add D&D toggle:
     "wisdom": 13,
     "charisma": 8
   },
-  
+
   "combat_stats": {
     "hit_points": 13,
     "armor_class": 18,
@@ -337,20 +358,20 @@ Add D&D toggle:
     "hit_dice": "1d10",
     "proficiency_bonus": 2
   },
-  
+
   "skills": {
     "Athletics": true,
     "Intimidation": true,
     "Perception": true
   },
-  
+
   "proficiencies": {
     "armor": ["light", "medium", "heavy", "shields"],
     "weapons": ["simple", "martial"],
     "tools": ["smith's tools"],
     "saving_throws": ["strength", "constitution"]
   },
-  
+
   "features": {
     "racial": [
       "Darkvision (60 ft)",
@@ -358,15 +379,10 @@ Add D&D toggle:
       "Dwarven Combat Training",
       "Stonecunning"
     ],
-    "class": [
-      "Fighting Style: Defense",
-      "Second Wind"
-    ],
-    "background": [
-      "Military Rank"
-    ]
+    "class": ["Fighting Style: Defense", "Second Wind"],
+    "background": ["Military Rank"]
   },
-  
+
   "equipment": [
     "Chain mail",
     "Longsword",
@@ -375,7 +391,7 @@ Add D&D toggle:
     "Explorer's pack",
     "Military insignia"
   ],
-  
+
   "personality": {
     "traits": ["I face problems head-on", "I enjoy being strong"],
     "ideal": "Responsibility - I will protect those who cannot protect themselves",
@@ -423,7 +439,7 @@ Add D&D toggle:
 ✅ Generate backstory that fits D&D class/race/background  
 ✅ Display character sheet in standard D&D format  
 ✅ Export to shareable format  
-✅ Integrate seamlessly with existing genre/culture system  
+✅ Integrate seamlessly with existing genre/culture system
 
 ---
 
@@ -443,7 +459,7 @@ Add D&D toggle:
 ## Let's Begin! 🎲
 
 Ready to start implementing? We'll begin with:
+
 1. Database schema updates
 2. D&D data module
 3. Character generator logic
-
