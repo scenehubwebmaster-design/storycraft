@@ -358,6 +358,21 @@ function CreateCharacterComponent() {
         }, 1500);
       } else {
         // Create new character
+        
+        // Check if this is a D&D character that was already saved during generation
+        const isDndAlreadySaved = dndCharacter && dndCharacter.id && dndCharacter.is_dnd;
+        
+        if (isDndAlreadySaved) {
+          // D&D character was already saved when generated, just show success
+          setSuccess("D&D character already saved!");
+          
+          // Navigate to the character detail page after 1.5 seconds
+          setTimeout(() => {
+            navigate({ to: `/characters/${dndCharacter.id}` });
+          }, 1500);
+          return;
+        }
+        
         if (useStructured) {
           // Use structured save endpoint
           await axios.post(
@@ -392,11 +407,33 @@ function CreateCharacterComponent() {
         }, 2000);
       }
     } catch (err) {
-      setError(
-        err.response?.data?.detail ||
-          `Failed to ${isEditMode ? "update" : "save"} character`
-      );
-      console.error(err);
+      console.error("Save error:", err);
+
+      // Handle validation errors (422) specially
+      if (err.response?.status === 422 && err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+
+        // If detail is an array of validation errors, format them nicely
+        if (Array.isArray(detail)) {
+          const errorMessages = detail
+            .map((e) => {
+              const field = e.loc ? e.loc.join(".") : "unknown";
+              return `${field}: ${e.msg}`;
+            })
+            .join("; ");
+          setError(`Validation error: ${errorMessages}`);
+        } else if (typeof detail === "string") {
+          setError(detail);
+        } else {
+          setError(JSON.stringify(detail));
+        }
+      } else {
+        setError(
+          err.response?.data?.detail ||
+            err.response?.data?.message ||
+            `Failed to ${isEditMode ? "update" : "save"} character`
+        );
+      }
     } finally {
       setSaving(false);
     }
