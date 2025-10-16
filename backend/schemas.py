@@ -23,6 +23,13 @@ class CharacterGenerationRequest(BaseModel):
     variation: Optional[str] = Field(None, description="Specific variation within genre (e.g., 'high_fantasy', 'cyberpunk')")
     # NEW: Cultural diversity
     cultural_origin: Optional[str] = Field(None, description="Cultural/geographic origin (e.g., 'west_african', 'japanese', 'norse')")
+    # NEW: D&D 5E Integration
+    is_dnd: Optional[bool] = Field(False, description="Generate as D&D 5E character")
+    dnd_class: Optional[str] = Field(None, description="D&D class (e.g., 'wizard', 'fighter')")
+    dnd_species: Optional[str] = Field(None, description="D&D species/race (e.g., 'elf', 'dwarf')")
+    dnd_background: Optional[str] = Field(None, description="D&D background (e.g., 'sage', 'soldier')")
+    dnd_alignment: Optional[str] = Field(None, description="D&D alignment (e.g., 'Neutral Good')")
+    dnd_level: Optional[int] = Field(1, description="Character level (1-20)", ge=1, le=20)
 
 
 class ImageGenerationRequest(BaseModel):

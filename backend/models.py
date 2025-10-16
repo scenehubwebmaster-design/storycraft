@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Table
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Table, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -66,6 +66,27 @@ class Character(Base):
     image_prompt = Column(Text)  # Store the prompt used to generate the image
     generation_log = Column(JSON)  # Track AI generation history
     structured_data = Column(JSON)  # Store full CharacterProfile from structured generation
+    
+    # D&D 5E Integration Fields
+    is_dnd = Column(Boolean, default=False)  # Flag to indicate D&D character
+    dnd_class = Column(String(100))  # Character class (e.g., "Wizard", "Fighter")
+    dnd_level = Column(Integer, default=1)  # Character level
+    dnd_species = Column(String(100))  # Species/Race (e.g., "Elf", "Dwarf")
+    dnd_background = Column(String(100))  # Background (e.g., "Sage", "Soldier")
+    dnd_alignment = Column(String(50))  # Alignment (e.g., "Neutral Good")
+    dnd_ability_scores = Column(JSON)  # {"strength": 15, "dexterity": 14, ...}
+    dnd_hit_points = Column(Integer)  # Maximum hit points
+    dnd_armor_class = Column(Integer)  # Armor class
+    dnd_initiative = Column(String(10))  # Initiative modifier (e.g., "+2")
+    dnd_speed = Column(Integer)  # Movement speed in feet
+    dnd_proficiency_bonus = Column(String(10))  # Proficiency bonus (e.g., "+2")
+    dnd_skills = Column(JSON)  # ["Arcana", "History", "Investigation", ...]
+    dnd_proficiencies = Column(JSON)  # {"saves": [...], "armor": [...], "weapons": [...], "tools": [...]}
+    dnd_features = Column(JSON)  # {"racial": [...], "class": [...], "background": {...}}
+    dnd_equipment = Column(JSON)  # {"weapons": [...], "armor": [...], "gear": [...]}
+    dnd_spellcasting = Column(JSON)  # {"ability": "Intelligence", "dc": 12, "attack": 4, ...} or null
+    dnd_languages = Column(JSON)  # ["Common", "Elvish", ...]
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
