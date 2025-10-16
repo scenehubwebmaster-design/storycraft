@@ -8,6 +8,7 @@ from rate_limiter import rate_limiter
 from gemini_models import fetch_available_models
 from groq_models import fetch_available_models as fetch_groq_models
 from claude_models import fetch_available_models as fetch_claude_models
+from openai_models import fetch_available_models as fetch_openai_models
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -519,3 +520,112 @@ async def get_claude_models():
     except Exception as e:
         logger.error(f"Failed to fetch Claude models: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
+
+
+@router.get("/openai/models")
+async def get_openai_models():
+    """
+    Get list of available OpenAI models with their capabilities.
+    Returns models with pricing, features, and use case recommendations.
+    """
+    try:
+        models = fetch_openai_models()
+        return {
+            "models": models,
+            "count": len(models),
+            "provider": "openai",
+            "features": {
+                "vision": "GPT-4o models support vision",
+                "function_calling": "Most models support function calling",
+                "json_mode": "JSON mode available on most models",
+                "reasoning": "O1 series optimized for complex reasoning"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch OpenAI models: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
+
+
+@router.get("/models/available")
+async def get_all_available_models():
+    """
+    Get all available models from all providers based on configured API keys.
+    This endpoint checks which API keys are configured and returns models only
+    for providers that have valid API keys set.
+    
+    Returns:
+        Dict with models grouped by provider, only including providers with API keys
+    """
+    available_models = {}
+    provider_status = {}
+    
+    # Check OpenAI
+    if os.getenv("OPENAI_API_KEY"):
+        try:
+            models = fetch_openai_models()
+            available_models["openai"] = {
+                "models": models,
+                "count": len(models),
+                "api_key_configured": True
+            }
+            provider_status["openai"] = "available"
+        except Exception as e:
+            logger.error(f"Failed to fetch OpenAI models: {e}")
+            provider_status["openai"] = f"error: {str(e)}"
+    else:
+        provider_status["openai"] = "no_api_key"
+    
+    # Check Anthropic (Claude)
+    if os.getenv("ANTHROPIC_API_KEY"):
+        try:
+            models = fetch_claude_models()
+            available_models["anthropic"] = {
+                "models": models,
+                "count": len(models),
+                "api_key_configured": True
+            }
+            provider_status["anthropic"] = "available"
+        except Exception as e:
+            logger.error(f"Failed to fetch Claude models: {e}")
+            provider_status["anthropic"] = f"error: {str(e)}"
+    else:
+        provider_status["anthropic"] = "no_api_key"
+    
+    # Check Google (Gemini)
+    if os.getenv("GOOGLE_API_KEY"):
+        try:
+            models = await fetch_available_models()
+            available_models["google"] = {
+                "models": models,
+                "count": len(models),
+                "api_key_configured": True
+            }
+            provider_status["google"] = "available"
+        except Exception as e:
+            logger.error(f"Failed to fetch Gemini models: {e}")
+            provider_status["google"] = f"error: {str(e)}"
+    else:
+        provider_status["google"] = "no_api_key"
+    
+    # Check Groq
+    if os.getenv("GROQ_API_KEY"):
+        try:
+            models = await fetch_groq_models()
+            available_models["groq"] = {
+                "models": models,
+                "count": len(models),
+                "api_key_configured": True
+            }
+            provider_status["groq"] = "available"
+        except Exception as e:
+            logger.error(f"Failed to fetch Groq models: {e}")
+            provider_status["groq"] = f"error: {str(e)}"
+    else:
+        provider_status["groq"] = "no_api_key"
+    
+    return {
+        "providers": available_models,
+        "provider_status": provider_status,
+        "total_providers": len(available_models),
+        "total_models": sum(p["count"] for p in available_models.values())
+    }
