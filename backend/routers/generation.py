@@ -1030,3 +1030,319 @@ async def save_structured_world(
             detail=f"Failed to save structured world: {str(e)}"
         )
 
+
+# ============================================================================
+# D&D NARRATIVE GENERATION ENDPOINTS
+# ============================================================================
+
+class DnDNarrativeRequest(BaseModel):
+    """Request for generating D&D character narrative aspects"""
+    character_id: int
+    aspect: str  # appearance, personality, backstory, etc.
+    style: str = "detailed"  # concise, detailed, dramatic, poetic, gritty
+    custom_context: Optional[str] = None
+    provider: str = "groq"
+    model: Optional[str] = None
+
+
+@router.post("/dnd/narrative")
+async def generate_dnd_narrative(request: DnDNarrativeRequest, db: Session = Depends(get_db)):
+    """
+    Generate AI-enhanced narrative aspects for a D&D character.
+    
+    Aspects include: appearance, personality, backstory, motivations, quirks,
+    voice, beliefs, relationships, fears, dreams, secrets, name
+    
+    The prompts are context-aware and informed by the character's D&D stats,
+    class, species, background, and alignment.
+    """
+    from dnd_narrative_prompts import DnDNarrativePromptBuilder, NarrativeAspect, NarrativeStyle
+    
+    try:
+        # Get character from database
+        character = db.query(Character).filter(Character.id == request.character_id).first()
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found")
+        
+        if not character.is_dnd:
+            raise HTTPException(status_code=400, detail="Character is not a D&D character")
+        
+        # Build character data dict
+        character_data = {
+            "name": character.name,
+            "dnd_class": character.dnd_class,
+            "dnd_species": character.dnd_species,
+            "dnd_background": character.dnd_background,
+            "dnd_alignment": character.dnd_alignment,
+            "dnd_level": character.dnd_level,
+            "dnd_ability_scores": character.dnd_ability_scores or {},
+        }
+        
+        # Validate aspect
+        try:
+            aspect_enum = NarrativeAspect(request.aspect.lower())
+        except ValueError:
+            valid_aspects = [a.value for a in NarrativeAspect]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid aspect '{request.aspect}'. Valid options: {', '.join(valid_aspects)}"
+            )
+        
+        # Validate style
+        try:
+            style_enum = NarrativeStyle(request.style.lower())
+        except ValueError:
+            valid_styles = [s.value for s in NarrativeStyle]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid style '{request.style}'. Valid options: {', '.join(valid_styles)}"
+            )
+        
+        # Build prompt
+        builder = DnDNarrativePromptBuilder(character_data)
+        prompt = builder.build_prompt(
+            aspect=aspect_enum,
+            style=style_enum,
+            custom_context=request.custom_context
+        )
+        
+        # Generate with LLM
+        llm_provider = LLMProvider()
+        
+        # Use provided model or default for provider
+        model = request.model
+        if not model:
+            if request.provider == "groq":
+                model = "llama-3.3-70b-versatile"
+            elif request.provider == "google":
+                model = "gemini-2.0-flash-exp"
+            elif request.provider == "openai":
+                model = "gpt-4o-mini"
+        
+        result = await llm_provider.generate_text(
+            provider=request.provider,
+            model=model,
+            prompt=prompt,
+            max_tokens=800
+        )
+        
+        generated_text = result.get("text") or result.get("content") or ""
+        
+        return {
+            "aspect": request.aspect,
+            "style": request.style,
+            "content": generated_text,
+            "prompt_used": prompt,
+            "character_id": character.id,
+            "character_name": character.name,
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"D&D narrative generation failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate D&D narrative: {str(e)}"
+        )
+
+
+class BulkDnDNarrativeRequest(BaseModel):
+    """Request for generating multiple D&D narrative aspects at once"""
+    character_id: int
+    aspects: list[str]  # List of aspects to generate
+    style: str = "detailed"
+    custom_context: Optional[str] = None
+    provider: str = "groq"
+    model: Optional[str] = None
+
+
+@router.post("/dnd/narrative/bulk")
+async def generate_bulk_dnd_narrative(request: BulkDnDNarrativeRequest, db: Session = Depends(get_db)):
+    """
+    Generate multiple AI-enhanced narrative aspects for a D&D character in one request.
+    
+    This endpoint generates all requested aspects in parallel for efficiency.
+    """
+    from dnd_narrative_prompts import DnDNarrativePromptBuilder, NarrativeAspect, NarrativeStyle
+    import asyncio
+    
+    try:
+        # Get character from database
+        character = db.query(Character).filter(Character.id == request.character_id).first()
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found")
+        
+        if not character.is_dnd:
+            raise HTTPException(status_code=400, detail="Character is not a D&D character")
+        
+        # Build character data dict
+        character_data = {
+            "name": character.name,
+            "dnd_class": character.dnd_class,
+            "dnd_species": character.dnd_species,
+            "dnd_background": character.dnd_background,
+            "dnd_alignment": character.dnd_alignment,
+            "dnd_level": character.dnd_level,
+            "dnd_ability_scores": character.dnd_ability_scores or {},
+        }
+        
+        # Validate aspects
+        aspect_enums = []
+        for aspect in request.aspects:
+            try:
+                aspect_enums.append(NarrativeAspect(aspect.lower()))
+            except ValueError:
+                valid_aspects = [a.value for a in NarrativeAspect]
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid aspect '{aspect}'. Valid options: {', '.join(valid_aspects)}"
+                )
+        
+        # Validate style
+        try:
+            style_enum = NarrativeStyle(request.style.lower())
+        except ValueError:
+            valid_styles = [s.value for s in NarrativeStyle]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid style '{request.style}'. Valid options: {', '.join(valid_styles)}"
+            )
+        
+        # Build all prompts
+        builder = DnDNarrativePromptBuilder(character_data)
+        prompts = {}
+        for aspect_enum in aspect_enums:
+            prompts[aspect_enum.value] = builder.build_prompt(
+                aspect=aspect_enum,
+                style=style_enum,
+                custom_context=request.custom_context
+            )
+        
+        # Generate all aspects in parallel
+        llm_provider = LLMProvider()
+        
+        # Use provided model or default for provider
+        model = request.model
+        if not model:
+            if request.provider == "groq":
+                model = "llama-3.3-70b-versatile"
+            elif request.provider == "google":
+                model = "gemini-2.0-flash-exp"
+            elif request.provider == "openai":
+                model = "gpt-4o-mini"
+        
+        async def generate_aspect(aspect_name: str, prompt: str):
+            result = await llm_provider.generate_text(
+                provider=request.provider,
+                model=model,
+                prompt=prompt,
+                max_tokens=800
+            )
+            return {
+                "aspect": aspect_name,
+                "content": result.get("text") or result.get("content") or "",
+            }
+        
+        # Generate all in parallel
+        tasks = [generate_aspect(aspect, prompt) for aspect, prompt in prompts.items()]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Process results
+        narratives = {}
+        errors = {}
+        for result in results:
+            if isinstance(result, Exception):
+                logger.error(f"Aspect generation failed: {str(result)}")
+                errors[str(result)] = str(result)
+            else:
+                narratives[result["aspect"]] = result["content"]
+        
+        return {
+            "character_id": character.id,
+            "character_name": character.name,
+            "style": request.style,
+            "narratives": narratives,
+            "errors": errors if errors else None,
+            "success_count": len(narratives),
+            "total_count": len(request.aspects),
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Bulk D&D narrative generation failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate D&D narratives: {str(e)}"
+        )
+
+
+@router.get("/dnd/narrative/aspects")
+async def get_narrative_aspects():
+    """Get list of available D&D narrative aspects that can be generated"""
+    from dnd_narrative_prompts import NarrativeAspect
+    
+    aspects = []
+    for aspect in NarrativeAspect:
+        aspects.append({
+            "id": aspect.value,
+            "name": aspect.value.replace("_", " ").title(),
+            "description": get_aspect_description(aspect.value)
+        })
+    
+    return {
+        "aspects": aspects,
+        "count": len(aspects)
+    }
+
+
+@router.get("/dnd/narrative/styles")
+async def get_narrative_styles():
+    """Get list of available narrative generation styles"""
+    from dnd_narrative_prompts import NarrativeStyle
+    
+    styles = []
+    for style in NarrativeStyle:
+        styles.append({
+            "id": style.value,
+            "name": style.value.title(),
+            "description": get_style_description(style.value)
+        })
+    
+    return {
+        "styles": styles,
+        "count": len(styles)
+    }
+
+
+def get_aspect_description(aspect: str) -> str:
+    """Get description for a narrative aspect"""
+    descriptions = {
+        "appearance": "Physical description including body build, facial features, distinctive marks, and typical attire",
+        "personality": "Core personality traits, behavioral patterns, social tendencies, and emotional characteristics",
+        "backstory": "Origin story, formative experiences, key relationships, and path to becoming an adventurer",
+        "motivations": "Primary goals, desires, ambitions, and what drives the character to adventure",
+        "quirks": "Unique habits, mannerisms, speech patterns, and memorable behavioral traits",
+        "voice": "Speaking style, vocabulary, accent, common phrases, and vocal characteristics",
+        "beliefs": "Moral code, religious views, political leanings, and personal philosophy",
+        "relationships": "Important connections to family, mentors, rivals, and social groups",
+        "fears": "Deep-seated fears, phobias, insecurities, and vulnerabilities",
+        "dreams": "Ultimate aspirations, ideal future vision, and legacy desires",
+        "secrets": "Hidden aspects, past mistakes, concealed knowledge, and guarded information",
+        "name": "Character name with cultural and background-appropriate naming conventions",
+    }
+    return descriptions.get(aspect, "Character narrative aspect")
+
+
+def get_style_description(style: str) -> str:
+    """Get description for a narrative style"""
+    descriptions = {
+        "concise": "Brief, to-the-point descriptions focusing on essential details",
+        "detailed": "Rich, comprehensive descriptions with vivid imagery and context",
+        "dramatic": "Epic, theatrical storytelling with heightened emotion and stakes",
+        "poetic": "Lyrical, metaphorical language with artistic flair",
+        "gritty": "Dark, realistic, grounded descriptions emphasizing harsh realities",
+    }
+    return descriptions.get(style, "Narrative writing style")
+
