@@ -31,6 +31,8 @@ import {
   AccordionDetails,
   Tooltip,
   IconButton,
+  Card,
+  CardContent,
 } from "@mui/material";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -1459,47 +1461,182 @@ function CreateCharacterComponent() {
                 useStructured
               )}
               {dndCharacter && dndCharacter.is_dnd === true ? (
-                // D&D Character Sheet
-                <Box>
-                  <DnDCharacterSheet character={dndCharacter} />
-                  {/* Save and Regenerate buttons for D&D character */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      gap: 2,
-                      mt: 3,
-                    }}
-                  >
-                    <Button
-                      variant="outlined"
-                      onClick={() => {
-                        // Regenerate D&D character - reset to D&D generation form (step 0)
-                        setDndCharacter(null);
-                        setGeneratedContent(null);
-                        setActiveStep(0); // Go back to step 0 where DnDCharacterCreator is shown
-                        setDndRegenerationKey((prev) => prev + 1); // Force DnDCharacterCreator to remount
-                        setSuccess(null);
-                        setError(null);
+                // D&D Character Sheet - Modern scrollable layout
+                <Grid container spacing={3}>
+                  {/* Left Column: Portrait (sticky) */}
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Box
+                      sx={{
+                        position: { md: "sticky" },
+                        top: 24,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 2,
                       }}
-                      disabled={saving || generating}
                     >
-                      Regenerate
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={() => handleSave(dndCharacter)}
-                      disabled={saving || generating || !characterName.trim()}
-                      startIcon={saving ? <CircularProgress size={20} /> : null}
+                      {/* Character Portrait */}
+                      {dndCharacter.portrait_image && (
+                        <Card
+                          sx={{
+                            background:
+                              "linear-gradient(135deg, #2c1810 0%, #3d2817 100%)",
+                            border: "2px solid #8b6f47",
+                          }}
+                        >
+                          <CardContent sx={{ p: 2 }}>
+                            <img
+                              src={dndCharacter.portrait_image}
+                              alt={dndCharacter.name}
+                              style={{
+                                width: "100%",
+                                height: "auto",
+                                borderRadius: "8px",
+                                border: "2px solid #8b6f47",
+                              }}
+                            />
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Character Name & Basic Info Card */}
+                      <Card
+                        sx={{
+                          background:
+                            "linear-gradient(135deg, #2c1810 0%, #3d2817 100%)",
+                          border: "2px solid #8b6f47",
+                          color: "#f4e4c1",
+                        }}
+                      >
+                        <CardContent>
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              fontFamily: '"Cinzel", "Times New Roman", serif',
+                              fontWeight: 700,
+                              mb: 1,
+                            }}
+                          >
+                            {dndCharacter.name}
+                          </Typography>
+                          <Typography
+                            variant="subtitle1"
+                            sx={{
+                              fontFamily: '"Crimson Text", serif',
+                              opacity: 0.9,
+                              mb: 2,
+                            }}
+                          >
+                            Level {dndCharacter.dnd_level}{" "}
+                            {dndCharacter.dnd_species} {dndCharacter.dnd_class}
+                          </Typography>
+                          <Divider sx={{ bgcolor: "#8b6f47", my: 2 }} />
+                          <Box
+                            sx={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: 1,
+                            }}
+                          >
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{ opacity: 0.7 }}
+                              >
+                                Alignment
+                              </Typography>
+                              <Typography variant="body2">
+                                {dndCharacter.dnd_alignment}
+                              </Typography>
+                            </Box>
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{ opacity: 0.7 }}
+                              >
+                                Background
+                              </Typography>
+                              <Typography variant="body2">
+                                {dndCharacter.dnd_background}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </CardContent>
+                      </Card>
+
+                      {/* Action Buttons */}
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        <Button
+                          variant="contained"
+                          onClick={() => handleSave(dndCharacter)}
+                          disabled={saving || generating || !characterName.trim()}
+                          startIcon={
+                            saving ? <CircularProgress size={20} /> : null
+                          }
+                          sx={{
+                            bgcolor: "#8b6f47",
+                            "&:hover": { bgcolor: "#6d5839" },
+                          }}
+                        >
+                          {saving
+                            ? "Saving..."
+                            : isEditMode
+                              ? "Update"
+                              : "Save Character"}
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          onClick={() => {
+                            // Regenerate D&D character - reset to D&D generation form (step 0)
+                            setDndCharacter(null);
+                            setGeneratedContent(null);
+                            setActiveStep(0); // Go back to step 0 where DnDCharacterCreator is shown
+                            setDndRegenerationKey((prev) => prev + 1); // Force DnDCharacterCreator to remount
+                            setSuccess(null);
+                            setError(null);
+                          }}
+                          disabled={saving || generating}
+                          sx={{
+                            borderColor: "#8b6f47",
+                            color: "#8b6f47",
+                            "&:hover": {
+                              borderColor: "#6d5839",
+                              bgcolor: "rgba(139, 111, 71, 0.1)",
+                            },
+                          }}
+                        >
+                          Regenerate
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Grid>
+
+                  {/* Right Column: Scrollable Stats */}
+                  <Grid size={{ xs: 12, md: 8 }}>
+                    <Box
+                      sx={{
+                        maxHeight: { md: "calc(100vh - 200px)" },
+                        overflowY: "auto",
+                        pr: 2,
+                        "&::-webkit-scrollbar": {
+                          width: "8px",
+                        },
+                        "&::-webkit-scrollbar-track": {
+                          background: "#f1f1f1",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                          background: "#8b6f47",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb:hover": {
+                          background: "#6d5839",
+                        },
+                      }}
                     >
-                      {saving
-                        ? "Saving..."
-                        : isEditMode
-                          ? "Update"
-                          : "Save Character"}
-                    </Button>
-                  </Box>
-                </Box>
+                      <DnDCharacterSheet character={dndCharacter} />
+                    </Box>
+                  </Grid>
+                </Grid>
               ) : useStructured ? (
                 <Box>
                   <StructuredCharacterDisplay
