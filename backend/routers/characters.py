@@ -218,7 +218,7 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
     from dnd_generator import generate_dnd_character, format_character_sheet
     from dnd_narrative_prompts import build_dnd_narrative_prompt
     from schemas import DnDCharacterNarrative
-    from structured_output_utils import generate_structured_content
+    from routers.generation import call_llm_structured
     
     try:
         # Generate D&D character using our generator
@@ -245,11 +245,12 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
                 
                 if request.use_structured:
                     # Use structured output for consistent narrative format
-                    narrative_data = await generate_structured_content(
+                    narrative_data, metadata = await call_llm_structured(
                         prompt=narrative_prompt,
-                        schema_class=DnDCharacterNarrative,
                         provider=request.narrative_provider,
-                        model=request.narrative_model
+                        schema_model=DnDCharacterNarrative,
+                        model=request.narrative_model,
+                        max_tokens=3000
                     )
                     
                     # Convert to dict for storage
