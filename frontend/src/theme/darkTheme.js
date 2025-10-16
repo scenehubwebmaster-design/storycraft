@@ -1,6 +1,16 @@
 import { createTheme } from "@mui/material/styles";
 
 export const darkTheme = createTheme({
+  // Define custom breakpoints if needed (optional - using defaults)
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536,
+    },
+  },
   palette: {
     mode: "dark",
     primary: {
@@ -38,68 +48,246 @@ export const darkTheme = createTheme({
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    // Responsive typography - scales down on mobile
     h1: {
       fontSize: "2.5rem",
       fontWeight: 500,
       letterSpacing: "-0.01562em",
+      "@media (max-width:600px)": {
+        fontSize: "2rem", // Smaller on mobile
+      },
     },
     h2: {
       fontSize: "2rem",
       fontWeight: 500,
       letterSpacing: "-0.00833em",
+      "@media (max-width:600px)": {
+        fontSize: "1.75rem",
+      },
     },
     h3: {
       fontSize: "1.75rem",
       fontWeight: 500,
       letterSpacing: "0em",
+      "@media (max-width:600px)": {
+        fontSize: "1.5rem",
+      },
     },
     h4: {
       fontSize: "1.5rem",
       fontWeight: 500,
       letterSpacing: "0.00735em",
+      "@media (max-width:600px)": {
+        fontSize: "1.25rem",
+      },
     },
     h5: {
       fontSize: "1.25rem",
       fontWeight: 500,
       letterSpacing: "0em",
+      "@media (max-width:600px)": {
+        fontSize: "1.1rem",
+      },
     },
     h6: {
       fontSize: "1rem",
       fontWeight: 500,
       letterSpacing: "0.0075em",
+      "@media (max-width:600px)": {
+        fontSize: "0.95rem",
+      },
     },
     body1: {
       fontSize: "1rem",
       letterSpacing: "0.00938em",
+      "@media (max-width:600px)": {
+        fontSize: "0.95rem",
+      },
     },
     body2: {
       fontSize: "0.875rem",
       letterSpacing: "0.01071em",
     },
   },
+  spacing: 8, // Default spacing unit (1 spacing = 8px)
   shape: {
     borderRadius: 8,
   },
   components: {
+    // Global responsive container settings
+    MuiContainer: {
+      styleOverrides: {
+        root: {
+          paddingLeft: "16px",
+          paddingRight: "16px",
+          "@media (max-width:600px)": {
+            paddingLeft: "12px",
+            paddingRight: "12px",
+          },
+        },
+      },
+    },
+    // Responsive button sizing
     MuiButton: {
       styleOverrides: {
         root: {
           textTransform: "none",
           fontWeight: 500,
+          minHeight: "44px", // Minimum touch target size (accessibility)
+          "@media (max-width:600px)": {
+            minHeight: "48px", // Larger on mobile for easier tapping
+            fontSize: "0.95rem",
+          },
+        },
+        sizeLarge: {
+          "@media (max-width:600px)": {
+            padding: "12px 24px",
+          },
         },
       },
     },
+    // Icon buttons with proper touch targets
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          "@media (max-width:600px)": {
+            padding: "12px", // Larger touch target on mobile
+          },
+        },
+      },
+    },
+    // Card spacing adjustments
     MuiCard: {
       styleOverrides: {
         root: {
           backgroundImage: "none",
+          "@media (max-width:600px)": {
+            borderRadius: "4px", // Slightly less rounded on mobile
+          },
         },
       },
     },
+    MuiCardContent: {
+      styleOverrides: {
+        root: {
+          "@media (max-width:600px)": {
+            padding: "12px", // Tighter padding on mobile
+            "&:last-child": {
+              paddingBottom: "12px",
+            },
+          },
+        },
+      },
+    },
+    // Paper component
     MuiPaper: {
       styleOverrides: {
         root: {
           backgroundImage: "none",
+          "@media (max-width:600px)": {
+            borderRadius: "4px",
+          },
+        },
+      },
+    },
+    // TextField optimizations for mobile
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          "@media (max-width:600px)": {
+            "& .MuiInputBase-root": {
+              fontSize: "16px", // Prevents zoom on iOS
+            },
+          },
+        },
+      },
+    },
+    // Select dropdown optimizations
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          "@media (max-width:600px)": {
+            fontSize: "16px", // Prevents zoom on iOS
+          },
+        },
+      },
+    },
+    // AppBar mobile optimization
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          "@media (max-width:600px)": {
+            "& .MuiToolbar-root": {
+              minHeight: "56px",
+              paddingLeft: "8px",
+              paddingRight: "8px",
+            },
+          },
+        },
+      },
+    },
+    // Toolbar mobile spacing
+    MuiToolbar: {
+      styleOverrides: {
+        root: {
+          "@media (max-width:600px)": {
+            minHeight: "56px",
+            paddingLeft: "8px",
+            paddingRight: "8px",
+          },
+        },
+      },
+    },
+    // Dialog full-screen on mobile
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          "@media (max-width:600px)": {
+            margin: "16px",
+            maxHeight: "calc(100% - 32px)",
+            borderRadius: "8px",
+          },
+        },
+      },
+    },
+    // Stepper mobile optimization
+    MuiStepper: {
+      styleOverrides: {
+        root: {
+          "@media (max-width:600px)": {
+            padding: "12px 4px",
+          },
+        },
+      },
+    },
+    MuiStepLabel: {
+      styleOverrides: {
+        label: {
+          "@media (max-width:600px)": {
+            fontSize: "0.8rem",
+          },
+        },
+      },
+    },
+    // Chip mobile sizing
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          "@media (max-width:600px)": {
+            height: "28px",
+            fontSize: "0.8rem",
+          },
+        },
+      },
+    },
+    // Table responsive behavior
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          "@media (max-width:600px)": {
+            padding: "8px",
+            fontSize: "0.85rem",
+          },
         },
       },
     },

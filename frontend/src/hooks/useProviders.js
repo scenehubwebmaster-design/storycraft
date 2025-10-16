@@ -20,39 +20,43 @@ export const useProviders = () => {
         setLoading(true);
         // Use the new unified endpoint that checks API keys
         const response = await axios.get(`${API_URL}/api/llm/models/available`);
-        
+
         // Transform the response to match the expected format
         // Response format: { providers: { openai: { models: [...], count: N }, ... }, provider_status: {...} }
         const transformedData = {};
-        
+
         if (response.data.providers) {
-          Object.entries(response.data.providers).forEach(([provider, data]) => {
-            transformedData[provider] = {
-              available: data.api_key_configured,
-              models: data.models.map(m => m.id), // Extract model IDs for quick selection
-              model_details: data.models, // Keep full model data for details
-              count: data.count
-            };
-          });
+          Object.entries(response.data.providers).forEach(
+            ([provider, data]) => {
+              transformedData[provider] = {
+                available: data.api_key_configured,
+                models: data.models.map((m) => m.id), // Extract model IDs for quick selection
+                model_details: data.models, // Keep full model data for details
+                count: data.count,
+              };
+            }
+          );
         }
-        
+
         // Add provider status information
         if (response.data.provider_status) {
-          Object.entries(response.data.provider_status).forEach(([provider, status]) => {
-            if (!transformedData[provider]) {
-              transformedData[provider] = {
-                available: false,
-                models: [],
-                model_details: [],
-                count: 0,
-                status: status
-              };
-            } else {
-              transformedData[provider].status = status;
+          Object.entries(response.data.provider_status).forEach(
+            ([provider, status]) => {
+              if (!transformedData[provider]) {
+                transformedData[provider] = {
+                  available: false,
+                  models: [],
+                  model_details: [],
+                  count: 0,
+                  status: status,
+                };
+              } else {
+                transformedData[provider].status = status;
+              }
             }
-          });
+          );
         }
-        
+
         setProviders(transformedData);
         setError(null);
       } catch (err) {
