@@ -51,39 +51,28 @@ function CharactersComponent() {
   const [characterToDelete, setCharacterToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // All hooks must be called before any conditional returns
+  // Load characters when returning to the list view
   useEffect(() => {
     if (!isChildRouteActive) {
+      const loadCharacters = async () => {
+        try {
+          setLoading(true);
+          const response = await axios.get(`${API_URL}/api/characters`);
+          setCharacters(response.data);
+          setError(null);
+        } catch (err) {
+          setError(err.response?.data?.detail || "Failed to load characters");
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
       loadCharacters();
     }
   }, [isChildRouteActive]);
 
+  // Filter characters based on search query
   useEffect(() => {
-    if (!isChildRouteActive) {
-      filterCharacters();
-    }
-  }, [searchQuery, characters, isChildRouteActive]);
-
-  // If a child route is active (like character detail), render the outlet
-  if (isChildRouteActive) {
-    return <Outlet />;
-  }
-
-  const loadCharacters = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_URL}/api/characters`);
-      setCharacters(response.data);
-      setError(null);
-    } catch (err) {
-      setError(err.response?.data?.detail || "Failed to load characters");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterCharacters = () => {
     if (!searchQuery.trim()) {
       setFilteredCharacters(characters);
       return;
@@ -98,7 +87,12 @@ function CharactersComponent() {
         char.background?.toLowerCase().includes(query)
     );
     setFilteredCharacters(filtered);
-  };
+  }, [searchQuery, characters]);
+
+  // If a child route is active (like character detail), render the outlet
+  if (isChildRouteActive) {
+    return <Outlet />;
+  }
 
   const handleDeleteClick = (character) => {
     setCharacterToDelete(character);
@@ -285,7 +279,62 @@ function CharactersComponent() {
                     color="text.secondary"
                     sx={{ mb: 2 }}
                   >
-                    {truncateText(character.description)}
+                    {(() => {
+                      // For structured characters, show a summary from structured_data
+                      if (character.structured_data) {
+                        try {
+                          const data =
+                            typeof character.structured_data === "string"
+                              ? JSON.parse(character.structured_data)
+                              : character.structured_data;
+
+                          // Build a summary from key fields
+                          const parts = [];
+                          if (data.age) parts.push(`Age: ${data.age}`);
+
+                          // Add personality traits (first 3 for brevity)
+                          if (data.personality_traits?.length) {
+                            const traits = Array.isArray(
+                              data.personality_traits
+                            )
+                              ? data.personality_traits.slice(0, 3).join(", ")
+                              : data.personality_traits;
+                            parts.push(traits);
+                          } else if (data.personality_description) {
+                            // Use personality description if no traits array
+                            parts.push(data.personality_description);
+                          }
+
+                          // Add brief backstory if space permits
+                          if (
+                            data.backstory &&
+                            parts.join(" • ").length < 120
+                          ) {
+                            parts.push(data.backstory);
+                          } else if (
+                            data.upbringing &&
+                            parts.join(" • ").length < 120
+                          ) {
+                            parts.push(data.upbringing);
+                          }
+
+                          return truncateText(
+                            parts.join(" • ") ||
+                              character.description ||
+                              "No description",
+                            180
+                          );
+                        } catch (e) {
+                          return truncateText(
+                            character.description || "No description"
+                          );
+                        }
+                      }
+                      // For legacy characters, show description
+                      return truncateText(
+                        character.description || "No description"
+                      );
+                    })()}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                     <Chip
