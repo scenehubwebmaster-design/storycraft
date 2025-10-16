@@ -1202,6 +1202,7 @@ function CreateCharacterComponent() {
       {/* Step 2: Review & Save */}
       {activeStep === 2 && (
         <Box>
+          {/* Character Name Input */}
           <TextField
             fullWidth
             label="Character Name"
@@ -1212,284 +1213,299 @@ function CreateCharacterComponent() {
             required
           />
 
-          {/* Portrait Generation Section */}
-          <Paper sx={{ p: 3, mb: 3, backgroundColor: "background.default" }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                mb: 2,
-              }}
-            >
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Character Portrait
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Generate an AI portrait based on the character's appearance
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Provider and Model Selection */}
-            <Box sx={{ mb: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
-              <FormControl sx={{ minWidth: 180 }}>
-                <InputLabel id="provider-select-label">
-                  Image Provider
-                </InputLabel>
-                <Select
-                  labelId="provider-select-label"
-                  value={imageProvider}
-                  onChange={(e) => {
-                    const newProvider = e.target.value;
-                    setImageProvider(newProvider);
-                    // Set default model for each provider
-                    if (newProvider === "google") {
-                      setImageModel("imagen-4.0-fast-generate-001");
-                    } else if (newProvider === "openai") {
-                      setImageModel("dall-e-3"); // DALL-E 3 as default (more widely available)
-                    }
-                  }}
-                  label="Image Provider"
-                >
-                  <MenuItem value="google">Google Imagen</MenuItem>
-                  <MenuItem value="openai">OpenAI</MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl sx={{ minWidth: 220 }}>
-                <InputLabel id="model-select-label">Model</InputLabel>
-                <Select
-                  labelId="model-select-label"
-                  value={imageModel}
-                  onChange={(e) => {
-                    console.log("Model changed to:", e.target.value);
-                    setImageModel(e.target.value);
-                  }}
-                  label="Model"
-                >
-                  {/* Google Imagen Models */}
-                  <MenuItem
-                    value="imagen-4.0-fast-generate-001"
-                    sx={{
-                      display: imageProvider === "google" ? "block" : "none",
-                    }}
-                  >
-                    Imagen Fast (Recommended)
-                  </MenuItem>
-                  <MenuItem
-                    value="imagen-4.0-generate-001"
-                    sx={{
-                      display: imageProvider === "google" ? "block" : "none",
-                    }}
-                  >
-                    Imagen Standard
-                  </MenuItem>
-                  <MenuItem
-                    value="imagen-4.0-ultra-generate-001"
-                    sx={{
-                      display: imageProvider === "google" ? "block" : "none",
-                    }}
-                  >
-                    Imagen Ultra (Best Quality)
-                  </MenuItem>
-
-                  {/* OpenAI Models */}
-                  <MenuItem
-                    value="dall-e-3"
-                    sx={{
-                      display: imageProvider === "openai" ? "block" : "none",
-                    }}
-                  >
-                    DALL-E 3 (Recommended)
-                  </MenuItem>
-                  <MenuItem
-                    value="dall-e-2"
-                    sx={{
-                      display: imageProvider === "openai" ? "block" : "none",
-                    }}
-                  >
-                    DALL-E 2
-                  </MenuItem>
-                  <MenuItem
-                    value="gpt-4.1-mini"
-                    sx={{
-                      display: imageProvider === "openai" ? "block" : "none",
-                    }}
-                  >
-                    GPT Image (Requires Verification)
-                  </MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl sx={{ minWidth: 200 }}>
-                <InputLabel>Art Style</InputLabel>
-                <Select
-                  value={imageStyle}
-                  onChange={(e) => setImageStyle(e.target.value)}
-                  label="Art Style"
-                >
-                  <MenuItem value="realistic">Realistic Portrait</MenuItem>
-                  <MenuItem value="fantasy_art">Fantasy Art</MenuItem>
-                  <MenuItem value="anime">Anime/Manga</MenuItem>
-                  <MenuItem value="watercolor">Watercolor</MenuItem>
-                  <MenuItem value="oil_painting">Oil Painting</MenuItem>
-                  <MenuItem value="digital_art">Digital Art</MenuItem>
-                  <MenuItem value="comic_book">Comic Book</MenuItem>
-                  <MenuItem value="noir">Film Noir</MenuItem>
-                </Select>
-              </FormControl>
-
-              {imageProvider === "openai" && imageModel === "dall-e-3" && (
-                <FormControl sx={{ minWidth: 150 }}>
-                  <InputLabel>Quality</InputLabel>
-                  <Select
-                    value={imageQuality}
-                    onChange={(e) => setImageQuality(e.target.value)}
-                    label="Quality"
-                  >
-                    <MenuItem value="standard">Standard</MenuItem>
-                    <MenuItem value="hd">HD (Higher Cost)</MenuItem>
-                  </Select>
-                </FormControl>
-              )}
-            </Box>
-
-            {/* Generate Button */}
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-              <Button
-                variant="outlined"
-                startIcon={
-                  generatingPortrait ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    <PhotoCameraIcon />
-                  )
-                }
-                onClick={handleGeneratePortrait}
-                disabled={
-                  generatingPortrait ||
-                  !characterName.trim() ||
-                  !generatedContent
-                }
-                title={
-                  !characterName.trim()
-                    ? "Enter a character name first"
-                    : !generatedContent
-                      ? "Generate character content first"
-                      : "Generate AI portrait"
-                }
-              >
-                {generatingPortrait ? "Generating..." : "Generate Portrait"}
-              </Button>
-            </Box>
-
-            {(!characterName.trim() || !generatedContent) &&
-              !generatingPortrait && (
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  {!characterName.trim()
-                    ? "Enter a character name above to enable portrait generation"
-                    : "Character content is required for portrait generation"}
-                </Alert>
-              )}
-
-            {portraitError && (
-              <Alert
-                severity="error"
-                sx={{ mb: 2 }}
-                onClose={() => setPortraitError(null)}
-              >
-                {portraitError}
-              </Alert>
-            )}
-
-            {portraitImage && (
-              <Box sx={{ mt: 2, textAlign: "center" }}>
-                <img
-                  src={`data:image/png;base64,${portraitImage}`}
-                  alt={`${characterName} portrait`}
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "500px",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-                  }}
-                />
-                <Typography
-                  variant="caption"
-                  display="block"
-                  sx={{ mt: 1 }}
-                  color="text.secondary"
-                >
-                  Generated with Google Imagen
-                </Typography>
-              </Box>
-            )}
-          </Paper>
-
-          {/* Display Component - Conditional based on generation mode */}
-          {console.log(
-            "Display logic - dndCharacter:",
-            dndCharacter,
-            "is_dnd:",
-            dndCharacter?.is_dnd,
-            "typeof is_dnd:",
-            typeof dndCharacter?.is_dnd,
-            "useStructured:",
-            useStructured
-          )}
-          {dndCharacter && dndCharacter.is_dnd === true ? (
-            // D&D Character Sheet
-            <Box sx={{ mb: 3 }}>
-              <DnDCharacterSheet character={dndCharacter} />
-            </Box>
-          ) : useStructured ? (
-            <Box sx={{ mb: 3 }}>
-              <StructuredCharacterDisplay characterProfile={generatedContent} />
+          {/* Grid Layout: Portrait on Left, Details on Right */}
+          <Grid container spacing={3}>
+            {/* Left Column - Portrait (sticky/fixed) */}
+            <Grid item xs={12} md={4}>
               <Box
                 sx={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 2,
-                  mt: 3,
+                  position: { md: "sticky" },
+                  top: { md: 24 },
                 }}
               >
-                <Button
-                  variant="outlined"
-                  onClick={() =>
-                    handleRefine(
-                      "Please regenerate with different details while keeping the same structure"
-                    )
-                  }
-                  disabled={saving || generating}
+                {/* Portrait Generation Section */}
+                <Paper
+                  sx={{
+                    p: 3,
+                    backgroundColor: "background.default",
+                  }}
                 >
-                  Regenerate
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => handleSave(generatedContent)}
-                  disabled={saving || generating || !characterName.trim()}
-                  startIcon={saving ? <CircularProgress size={20} /> : null}
-                >
-                  {saving
-                    ? "Saving..."
-                    : isEditMode
-                      ? "Update"
-                      : "Save Character"}
-                </Button>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Character Portrait
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Generate an AI portrait
+                    </Typography>
+                  </Box>
+
+                  {/* Portrait Image Display */}
+                  {portraitImage && (
+                    <Box sx={{ mb: 2, textAlign: "center" }}>
+                      <img
+                        src={`data:image/png;base64,${portraitImage}`}
+                        alt={`${characterName} portrait`}
+                        style={{
+                          width: "100%",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+                        }}
+                      />
+                    </Box>
+                  )}
+
+                  {/* Provider and Model Selection - Compact */}
+                  <Box
+                    sx={{
+                      mb: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Provider</InputLabel>
+                      <Select
+                        value={imageProvider}
+                        onChange={(e) => {
+                          const newProvider = e.target.value;
+                          setImageProvider(newProvider);
+                          if (newProvider === "google") {
+                            setImageModel("imagen-4.0-fast-generate-001");
+                          } else if (newProvider === "openai") {
+                            setImageModel("dall-e-3");
+                          }
+                        }}
+                        label="Provider"
+                      >
+                        <MenuItem value="google">Google Imagen</MenuItem>
+                        <MenuItem value="openai">OpenAI</MenuItem>
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Model</InputLabel>
+                      <Select
+                        value={imageModel}
+                        onChange={(e) => setImageModel(e.target.value)}
+                        label="Model"
+                      >
+                        {/* Google Models */}
+                        <MenuItem
+                          value="imagen-4.0-fast-generate-001"
+                          sx={{
+                            display:
+                              imageProvider === "google" ? "block" : "none",
+                          }}
+                        >
+                          Imagen Fast
+                        </MenuItem>
+                        <MenuItem
+                          value="imagen-4.0-generate-001"
+                          sx={{
+                            display:
+                              imageProvider === "google" ? "block" : "none",
+                          }}
+                        >
+                          Imagen Standard
+                        </MenuItem>
+                        <MenuItem
+                          value="imagen-4.0-ultra-generate-001"
+                          sx={{
+                            display:
+                              imageProvider === "google" ? "block" : "none",
+                          }}
+                        >
+                          Imagen Ultra
+                        </MenuItem>
+                        {/* OpenAI Models */}
+                        <MenuItem
+                          value="dall-e-3"
+                          sx={{
+                            display:
+                              imageProvider === "openai" ? "block" : "none",
+                          }}
+                        >
+                          DALL-E 3
+                        </MenuItem>
+                        <MenuItem
+                          value="dall-e-2"
+                          sx={{
+                            display:
+                              imageProvider === "openai" ? "block" : "none",
+                          }}
+                        >
+                          DALL-E 2
+                        </MenuItem>
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Art Style</InputLabel>
+                      <Select
+                        value={imageStyle}
+                        onChange={(e) => setImageStyle(e.target.value)}
+                        label="Art Style"
+                      >
+                        <MenuItem value="realistic">Realistic</MenuItem>
+                        <MenuItem value="fantasy_art">Fantasy Art</MenuItem>
+                        <MenuItem value="anime">Anime</MenuItem>
+                        <MenuItem value="watercolor">Watercolor</MenuItem>
+                        <MenuItem value="digital_art">Digital Art</MenuItem>
+                      </Select>
+                    </FormControl>
+
+                    {imageProvider === "openai" &&
+                      imageModel === "dall-e-3" && (
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Quality</InputLabel>
+                          <Select
+                            value={imageQuality}
+                            onChange={(e) => setImageQuality(e.target.value)}
+                            label="Quality"
+                          >
+                            <MenuItem value="standard">Standard</MenuItem>
+                            <MenuItem value="hd">HD</MenuItem>
+                          </Select>
+                        </FormControl>
+                      )}
+                  </Box>
+
+                  {/* Generate Button */}
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={
+                      generatingPortrait ? (
+                        <CircularProgress size={20} />
+                      ) : (
+                        <PhotoCameraIcon />
+                      )
+                    }
+                    onClick={handleGeneratePortrait}
+                    disabled={
+                      generatingPortrait ||
+                      !characterName.trim() ||
+                      !generatedContent
+                    }
+                  >
+                    {generatingPortrait ? "Generating..." : "Generate"}
+                  </Button>
+
+                  {portraitError && (
+                    <Alert
+                      severity="error"
+                      sx={{ mt: 2 }}
+                      onClose={() => setPortraitError(null)}
+                    >
+                      {portraitError}
+                    </Alert>
+                  )}
+                </Paper>
               </Box>
-            </Box>
-          ) : (
-            <GenerationResult
-              content={generatedContent}
-              onSave={handleSave}
-              onRefine={handleRefine}
-              saving={saving || generating}
-              entity="Character"
-              isEditMode={isEditMode}
-            />
-          )}
+            </Grid>
+
+            {/* Right Column - Character Details (scrollable) */}
+            <Grid item xs={12} md={8}>
+              {/* Display Component - Conditional based on generation mode */}
+              {console.log(
+                "Display logic - dndCharacter:",
+                dndCharacter,
+                "is_dnd:",
+                dndCharacter?.is_dnd,
+                "typeof is_dnd:",
+                typeof dndCharacter?.is_dnd,
+                "useStructured:",
+                useStructured
+              )}
+              {dndCharacter && dndCharacter.is_dnd === true ? (
+                // D&D Character Sheet
+                <Box>
+                  <DnDCharacterSheet character={dndCharacter} />
+                  {/* Save and Regenerate buttons for D&D character */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: 2,
+                      mt: 3,
+                    }}
+                  >
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        // Regenerate D&D character with same parameters
+                        setActiveStep(1);
+                        setDndCharacter(null);
+                      }}
+                      disabled={saving || generating}
+                    >
+                      Regenerate
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => handleSave(dndCharacter)}
+                      disabled={saving || generating || !characterName.trim()}
+                      startIcon={saving ? <CircularProgress size={20} /> : null}
+                    >
+                      {saving
+                        ? "Saving..."
+                        : isEditMode
+                          ? "Update"
+                          : "Save Character"}
+                    </Button>
+                  </Box>
+                </Box>
+              ) : useStructured ? (
+                <Box>
+                  <StructuredCharacterDisplay
+                    characterProfile={generatedContent}
+                  />
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: 2,
+                      mt: 3,
+                    }}
+                  >
+                    <Button
+                      variant="outlined"
+                      onClick={() =>
+                        handleRefine(
+                          "Please regenerate with different details while keeping the same structure"
+                        )
+                      }
+                      disabled={saving || generating}
+                    >
+                      Regenerate
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => handleSave(generatedContent)}
+                      disabled={saving || generating || !characterName.trim()}
+                      startIcon={saving ? <CircularProgress size={20} /> : null}
+                    >
+                      {saving
+                        ? "Saving..."
+                        : isEditMode
+                          ? "Update"
+                          : "Save Character"}
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <GenerationResult
+                  content={generatedContent}
+                  onSave={handleSave}
+                  onRefine={handleRefine}
+                  saving={saving || generating}
+                  entity="Character"
+                  isEditMode={isEditMode}
+                />
+              )}
+            </Grid>
+          </Grid>
         </Box>
       )}
 

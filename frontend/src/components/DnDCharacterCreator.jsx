@@ -426,13 +426,13 @@ Length: 2-3 distinctive quirks.`,
     // Build D&D-specific portrait prompt with species and class details
     const speciesName = speciesInfo?.name || character.dnd_species;
     const className = classInfo?.name || character.dnd_class;
-    
+
     // Add appearance details from structured_data if available
     let appearanceDetails = "";
     if (character.structured_data?.character_appearance) {
       appearanceDetails = character.structured_data.character_appearance;
     }
-    
+
     // Build comprehensive D&D fantasy portrait prompt
     const portraitPrompt = `A ${portraitStyle} fantasy RPG character portrait of ${character.name}, a ${speciesName} ${className}. ${appearanceDetails} Dungeons & Dragons character art style, professional fantasy illustration, detailed armor and equipment, dramatic lighting, heroic pose, high quality digital art, trending on artstation.${narrativePrompt ? ` Additional context: ${narrativePrompt}` : ""}`;
 

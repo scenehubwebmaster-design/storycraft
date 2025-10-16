@@ -225,72 +225,165 @@ ${formatNarrative(char.ai_narrative)}
 
   return (
     <Box>
-      {/* Header with export options */}
-      <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
+      {/* Header with export options - D&D styled */}
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          mb: 2,
+          background: "linear-gradient(135deg, #2c1810 0%, #3d2817 100%)",
+          color: "#f4e4c1",
+          borderRadius: 2,
+          border: "2px solid #8b6f47",
+        }}
+      >
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h4" component="h1">
-            {character.name}
-          </Typography>
+          <Box>
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{
+                fontFamily: '"Cinzel", "Times New Roman", serif',
+                fontWeight: 700,
+                letterSpacing: 1,
+                mb: 1,
+              }}
+            >
+              {character.name}
+            </Typography>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontFamily: '"Crimson Text", serif',
+                fontSize: "1.1rem",
+                opacity: 0.9,
+              }}
+            >
+              Level {character.dnd_level} {character.dnd_species}{" "}
+              {character.dnd_class}
+            </Typography>
+          </Box>
           <Box>
             <Tooltip title="Copy to Clipboard">
-              <IconButton onClick={copyToClipboard}>
+              <IconButton onClick={copyToClipboard} sx={{ color: "#f4e4c1" }}>
                 <ContentCopyIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Export as JSON">
-              <IconButton onClick={exportToJSON}>
+              <IconButton onClick={exportToJSON} sx={{ color: "#f4e4c1" }}>
                 <DownloadIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Export as Text">
-              <IconButton onClick={exportToText}>
+              <IconButton onClick={exportToText} sx={{ color: "#f4e4c1" }}>
                 <DownloadIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Print">
-              <IconButton onClick={handlePrint}>
+              <IconButton onClick={handlePrint} sx={{ color: "#f4e4c1" }}>
                 <PrintIcon />
               </IconButton>
             </Tooltip>
           </Box>
         </Box>
 
-        <Box display="flex" gap={1} mt={1} flexWrap="wrap">
+        <Box display="flex" gap={1} mt={2} flexWrap="wrap">
           <Chip
-            label={`Level ${character.dnd_level} ${character.dnd_class}`}
-            color="primary"
+            label={character.dnd_background}
+            sx={{
+              bgcolor: "#8b6f47",
+              color: "#f4e4c1",
+              fontWeight: 600,
+            }}
           />
-          <Chip label={character.dnd_species} color="secondary" />
-          <Chip label={character.dnd_background} />
           {character.dnd_alignment && (
-            <Chip label={character.dnd_alignment} variant="outlined" />
+            <Chip
+              label={character.dnd_alignment}
+              sx={{
+                bgcolor: "rgba(139, 111, 71, 0.3)",
+                color: "#f4e4c1",
+                borderColor: "#8b6f47",
+                borderWidth: 1,
+                borderStyle: "solid",
+              }}
+            />
           )}
         </Box>
       </Paper>
 
       <Grid container spacing={2}>
-        {/* Left Column - Ability Scores */}
+        {/* Left Column - Ability Scores & Combat Stats */}
         <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
+          {/* Ability Scores - Classic D&D hexagon style */}
+          <Paper
+            elevation={2}
+            sx={{
+              p: 2.5,
+              mb: 2,
+              background:
+                "linear-gradient(to bottom, #f8f4e6 0%, #ebe6d5 100%)",
+              border: "2px solid #8b6f47",
+              borderRadius: 2,
+            }}
+          >
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                fontFamily: '"Cinzel", serif',
+                color: "#2c1810",
+                borderBottom: "2px solid #8b6f47",
+                pb: 1,
+                mb: 2,
+              }}
+            >
               Ability Scores
             </Typography>
-            <Grid container spacing={1}>
+            <Grid container spacing={1.5}>
               {character.dnd_ability_scores &&
                 Object.entries(character.dnd_ability_scores).map(
                   ([ability, score]) => (
                     <Grid item xs={6} key={ability}>
-                      <Card variant="outlined">
-                        <CardContent sx={{ textAlign: "center", p: 1 }}>
+                      <Card
+                        variant="outlined"
+                        sx={{
+                          background:
+                            "linear-gradient(135deg, #2c1810 0%, #3d2817 100%)",
+                          border: "2px solid #8b6f47",
+                          borderRadius: 1.5,
+                        }}
+                      >
+                        <CardContent sx={{ textAlign: "center", p: 1.5 }}>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
-                            sx={{ textTransform: "uppercase" }}
+                            sx={{
+                              textTransform: "uppercase",
+                              color: "#d4af37",
+                              fontWeight: 700,
+                              letterSpacing: 1,
+                              fontSize: "0.7rem",
+                            }}
                           >
                             {ability.substring(0, 3)}
                           </Typography>
-                          <Typography variant="h4">{score}</Typography>
-                          <Typography variant="body2" color="primary">
+                          <Typography
+                            variant="h3"
+                            sx={{
+                              color: "#f4e4c1",
+                              fontFamily: '"Cinzel", serif',
+                              fontWeight: 700,
+                              my: 0.5,
+                            }}
+                          >
+                            {score}
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              color: "#d4af37",
+                              fontWeight: 700,
+                            }}
+                          >
                             {getAbilityModifier(score)}
                           </Typography>
                         </CardContent>
@@ -301,53 +394,138 @@ ${formatNarrative(char.ai_narrative)}
             </Grid>
           </Paper>
 
-          {/* Combat Stats */}
-          <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
+          {/* Combat Stats - Parchment style */}
+          <Paper
+            elevation={2}
+            sx={{
+              p: 2.5,
+              mb: 2,
+              background:
+                "linear-gradient(to bottom, #f8f4e6 0%, #ebe6d5 100%)",
+              border: "2px solid #8b6f47",
+              borderRadius: 2,
+            }}
+          >
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                fontFamily: '"Cinzel", serif',
+                color: "#2c1810",
+                borderBottom: "2px solid #8b6f47",
+                pb: 1,
+                mb: 2,
+              }}
+            >
               Combat Stats
             </Typography>
             <Box>
               <Box display="flex" justifyContent="space-between" py={1}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#2c1810",
+                    fontWeight: 600,
+                  }}
+                >
                   Hit Points
                 </Typography>
-                <Typography variant="body1" fontWeight="bold">
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontWeight: 700,
+                    color: "#c41e3a",
+                    fontSize: "1.1rem",
+                  }}
+                >
                   {character.dnd_hit_points}
                 </Typography>
               </Box>
-              <Divider />
+              <Divider sx={{ borderColor: "#8b6f47", opacity: 0.3 }} />
               <Box display="flex" justifyContent="space-between" py={1}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#2c1810",
+                    fontWeight: 600,
+                  }}
+                >
                   Armor Class
                 </Typography>
-                <Typography variant="body1" fontWeight="bold">
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontWeight: 700,
+                    color: "#2c1810",
+                    fontSize: "1.1rem",
+                  }}
+                >
                   {character.dnd_armor_class}
                 </Typography>
               </Box>
-              <Divider />
+              <Divider sx={{ borderColor: "#8b6f47", opacity: 0.3 }} />
               <Box display="flex" justifyContent="space-between" py={1}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#2c1810",
+                    fontWeight: 600,
+                  }}
+                >
                   Initiative
                 </Typography>
-                <Typography variant="body1" fontWeight="bold">
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontWeight: 700,
+                    color: "#2c1810",
+                    fontSize: "1.1rem",
+                  }}
+                >
                   {character.dnd_initiative}
                 </Typography>
               </Box>
-              <Divider />
+              <Divider sx={{ borderColor: "#8b6f47", opacity: 0.3 }} />
               <Box display="flex" justifyContent="space-between" py={1}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#2c1810",
+                    fontWeight: 600,
+                  }}
+                >
                   Speed
                 </Typography>
-                <Typography variant="body1" fontWeight="bold">
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontWeight: 700,
+                    color: "#2c1810",
+                    fontSize: "1.1rem",
+                  }}
+                >
                   {character.dnd_speed} ft
                 </Typography>
               </Box>
-              <Divider />
+              <Divider sx={{ borderColor: "#8b6f47", opacity: 0.3 }} />
               <Box display="flex" justifyContent="space-between" py={1}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#2c1810",
+                    fontWeight: 600,
+                  }}
+                >
                   Proficiency Bonus
                 </Typography>
-                <Typography variant="body1" fontWeight="bold">
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontWeight: 700,
+                    color: "#2c1810",
+                    fontSize: "1.1rem",
+                  }}
+                >
                   {character.dnd_proficiency_bonus}
                 </Typography>
               </Box>
