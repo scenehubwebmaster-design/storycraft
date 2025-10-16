@@ -42,6 +42,10 @@ from prompt_variations import (
     list_all_variation_names,
     build_enhanced_character_prompt,
 )
+from cultural_modules import (
+    list_cultural_origin_names,
+    build_culturally_enhanced_prompt,
+)
 from routers.llm import LLMProvider
 from rate_limiter import rate_limiter
 from structured_output_utils import (
@@ -134,6 +138,30 @@ async def get_prompt_variations():
     return list_all_variation_names()
 
 
+@router.get("/cultural-origins")
+async def get_cultural_origins():
+    """Get all available cultural origins for character generation, organized by region.
+    
+    Returns 50+ cultural origins across:
+    - African cultures (West African, East African, North African, etc.)
+    - Asian cultures (Chinese, Japanese, Indian, Southeast Asian, etc.)
+    - Middle Eastern cultures (Arabian, Persian, Turkish, etc.)
+    - European cultures (Mediterranean, Nordic, Celtic, etc.)
+    - Americas cultures (Indigenous, Mesoamerican, Caribbean, etc.)
+    - Pacific cultures (Polynesian, Aboriginal Australian, Maori, etc.)
+    
+    All content is in English for accessibility while maintaining cultural authenticity.
+    """
+    try:
+        logger.info("GET /api/generate/cultural-origins - Fetching cultural origins")
+        result = list_cultural_origin_names()
+        logger.info(f"Successfully fetched {len(result)} cultural origins")
+        return result
+    except Exception as e:
+        logger.error(f"Error fetching cultural origins: {e}", exc_info=True)
+        raise
+
+
 @router.post("/character", response_model=GenerationResponse)
 async def generate_character(request: CharacterGenerationRequest):
     """Generate a character using AI with optional genre-specific variations.
@@ -167,6 +195,11 @@ async def generate_character(request: CharacterGenerationRequest):
             prompt = build_enhanced_character_prompt(base_prompt, request.genre, request.variation)
         else:
             prompt = base_prompt
+        
+        # Further enhance with cultural origin if specified
+        if request.cultural_origin:
+            logger.info(f"Adding cultural depth with {request.cultural_origin}")
+            prompt = build_culturally_enhanced_prompt(prompt, request.cultural_origin)
     
     # Generate with LLM
     content, metadata = await call_llm(prompt, request.provider, request.model)
@@ -175,6 +208,8 @@ async def generate_character(request: CharacterGenerationRequest):
     if request.genre and request.variation:
         metadata["genre"] = request.genre
         metadata["variation"] = request.variation
+    if request.cultural_origin:
+        metadata["cultural_origin"] = request.cultural_origin
     
     return GenerationResponse(
         content=content,
