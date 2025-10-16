@@ -5,6 +5,8 @@ const API_URL = "http://localhost:8000";
 
 /**
  * Custom hook to fetch and manage LLM providers and their available models
+ * This hook now uses the unified endpoint that checks API key configuration
+ * and only returns models for providers with valid API keys.
  * @returns {Object} Provider data and state
  */
 export const useProviders = () => {
@@ -16,8 +18,42 @@ export const useProviders = () => {
     const fetchProviders = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/api/llm/providers`);
-        setProviders(response.data);
+        // Use the new unified endpoint that checks API keys
+        const response = await axios.get(`${API_URL}/api/llm/models/available`);
+        
+        // Transform the response to match the expected format
+        // Response format: { providers: { openai: { models: [...], count: N }, ... }, provider_status: {...} }
+        const transformedData = {};
+        
+        if (response.data.providers) {
+          Object.entries(response.data.providers).forEach(([provider, data]) => {
+            transformedData[provider] = {
+              available: data.api_key_configured,
+              models: data.models.map(m => m.id), // Extract model IDs for quick selection
+              model_details: data.models, // Keep full model data for details
+              count: data.count
+            };
+          });
+        }
+        
+        // Add provider status information
+        if (response.data.provider_status) {
+          Object.entries(response.data.provider_status).forEach(([provider, status]) => {
+            if (!transformedData[provider]) {
+              transformedData[provider] = {
+                available: false,
+                models: [],
+                model_details: [],
+                count: 0,
+                status: status
+              };
+            } else {
+              transformedData[provider].status = status;
+            }
+          });
+        }
+        
+        setProviders(transformedData);
         setError(null);
       } catch (err) {
         setError(err.message);
@@ -35,7 +71,8 @@ export const useProviders = () => {
 
 /**
  * Custom hook to fetch detailed models for a specific provider
- * @param {string} provider - Provider name (google, groq)
+ * Supports all providers: openai, anthropic, google, groq
+ * @param {string} provider - Provider name (openai, anthropic, google, groq)
  * @returns {Object} Detailed model data
  */
 export const useProviderModels = (provider) => {
@@ -44,7 +81,7 @@ export const useProviderModels = (provider) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!provider || (provider !== "google" && provider !== "groq")) {
+    if (!provider) {
       return;
     }
 
