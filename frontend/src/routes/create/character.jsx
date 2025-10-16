@@ -1502,22 +1502,25 @@ function CreateCharacterComponent() {
         >
           Back
         </Button>
-        <Button
-          variant="contained"
-          onClick={handleNext}
-          disabled={generating || activeStep === 2}
-          endIcon={
-            activeStep === 1 ? <AutoAwesomeIcon /> : <NavigateNextIcon />
-          }
-        >
-          {generating ? (
-            <CircularProgress size={24} />
-          ) : activeStep === steps.length - 2 ? (
-            "Generate with AI"
-          ) : (
-            "Next"
-          )}
-        </Button>
+        {/* Hide Next button for D&D characters on review step (they have inline Save button) */}
+        {!(isDnDMode && activeStep === 2) && (
+          <Button
+            variant="contained"
+            onClick={handleNext}
+            disabled={generating || activeStep === 2}
+            endIcon={
+              activeStep === 1 ? <AutoAwesomeIcon /> : <NavigateNextIcon />
+            }
+          >
+            {generating ? (
+              <CircularProgress size={24} />
+            ) : activeStep === steps.length - 2 ? (
+              "Generate with AI"
+            ) : (
+              "Next"
+            )}
+          </Button>
+        )}
       </Box>
     </Container>
   );
