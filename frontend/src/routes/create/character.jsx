@@ -95,6 +95,7 @@ function CreateCharacterComponent() {
   // D&D Mode toggle
   const [isDnDMode, setIsDnDMode] = useState(false);
   const [dndCharacter, setDndCharacter] = useState(null);
+  const [dndRegenerationKey, setDndRegenerationKey] = useState(0); // Key to force DnDCharacterCreator remount
 
   // Generation results
   const [generatedContent, setGeneratedContent] = useState(null);
@@ -358,21 +359,22 @@ function CreateCharacterComponent() {
         }, 1500);
       } else {
         // Create new character
-        
+
         // Check if this is a D&D character that was already saved during generation
-        const isDndAlreadySaved = dndCharacter && dndCharacter.id && dndCharacter.is_dnd;
-        
+        const isDndAlreadySaved =
+          dndCharacter && dndCharacter.id && dndCharacter.is_dnd;
+
         if (isDndAlreadySaved) {
           // D&D character was already saved when generated, just show success
           setSuccess("D&D character already saved!");
-          
+
           // Navigate to the character detail page after 1.5 seconds
           setTimeout(() => {
             navigate({ to: `/characters/${dndCharacter.id}` });
           }, 1500);
           return;
         }
-        
+
         if (useStructured) {
           // Use structured save endpoint
           await axios.post(
@@ -652,6 +654,7 @@ function CreateCharacterComponent() {
           {/* Show D&D Creator when D&D mode is active */}
           {isDnDMode ? (
             <DnDCharacterCreator
+              key={dndRegenerationKey} // Force remount when key changes
               onCharacterGenerated={(character) => {
                 setDndCharacter(character);
                 setGeneratedContent(character);
@@ -1471,9 +1474,13 @@ function CreateCharacterComponent() {
                     <Button
                       variant="outlined"
                       onClick={() => {
-                        // Regenerate D&D character with same parameters
-                        setActiveStep(1);
+                        // Regenerate D&D character - reset to generation step with fresh form
                         setDndCharacter(null);
+                        setGeneratedContent(null);
+                        setActiveStep(1);
+                        setDndRegenerationKey(prev => prev + 1); // Force DnDCharacterCreator to remount
+                        setSuccess(null);
+                        setError(null);
                       }}
                       disabled={saving || generating}
                     >
