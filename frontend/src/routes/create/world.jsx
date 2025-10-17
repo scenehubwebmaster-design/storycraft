@@ -313,8 +313,8 @@ function CreateWorldComponent() {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {useStructured
-                  ? "Structured generation creates comprehensive world profiles with organized sections, detailed history, geography, culture, and more."
-                  : "Free-form generation creates narrative-style world descriptions with more creative flexibility."}
+                  ? "Organized sections with complete details."
+                  : "Narrative style with creative flexibility."}
               </Typography>
             </Box>
             <FormControlLabel

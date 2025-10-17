@@ -571,8 +571,8 @@ function CreateCharacterComponent() {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {useStructured
-                  ? "Structured generation creates comprehensive profiles with organized sections, guaranteed completeness, and rich details."
-                  : "Free-form generation creates narrative-style character descriptions with more creative flexibility."}
+                  ? "Organized sections with complete details."
+                  : "Narrative style with creative flexibility."}
               </Typography>
             </Box>
             <FormControlLabel

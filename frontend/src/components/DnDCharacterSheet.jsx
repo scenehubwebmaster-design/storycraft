@@ -33,8 +33,11 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
  *
  * Displays a complete D&D 5E character sheet with all stats, abilities,
  * equipment, and narrative information
+ * 
+ * @param {Object} character - The D&D character data
+ * @param {boolean} hideBasicStats - If true, hides header, ability scores, and combat stats (for edit view)
  */
-export default function DnDCharacterSheet({ character }) {
+export default function DnDCharacterSheet({ character, hideBasicStats = false }) {
   const [expanded, setExpanded] = useState({
     combat: true,
     abilities: true,
@@ -225,104 +228,92 @@ ${formatNarrative(char.ai_narrative)}
 
   return (
     <Box>
-      {/* Header with export options - D&D styled */}
-      <Paper
-        elevation={3}
-        sx={{
-          p: 3,
-          mb: 2,
-          background: "linear-gradient(135deg, #2c1810 0%, #3d2817 100%)",
-          color: "#f4e4c1",
-          borderRadius: 2,
-          border: "2px solid #8b6f47",
-        }}
-      >
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography
-              variant="h3"
-              component="h1"
-              sx={{
-                fontFamily: '"Cinzel", "Times New Roman", serif',
-                fontWeight: 700,
-                letterSpacing: 1,
-                mb: 1,
-              }}
-            >
-              {character.name}
-            </Typography>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontFamily: '"Crimson Text", serif',
-                fontSize: "1.1rem",
-                opacity: 0.9,
-              }}
-            >
-              Level {character.dnd_level} {character.dnd_species}{" "}
-              {character.dnd_class}
-            </Typography>
+      {/* Header with export options - Only show if not in edit mode */}
+      {!hideBasicStats && (
+        <Paper
+          elevation={3}
+          sx={{
+            p: 3,
+            mb: 2,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography
+                variant="h3"
+                component="h1"
+                sx={{
+                  fontWeight: 700,
+                  mb: 1,
+                }}
+              >
+                {character.name}
+              </Typography>
+              <Typography
+                variant="subtitle1"
+                color="text.secondary"
+                sx={{
+                  fontSize: "1.1rem",
+                }}
+              >
+                Level {character.dnd_level} {character.dnd_species}{" "}
+                {character.dnd_class}
+              </Typography>
+            </Box>
+            <Box>
+              <Tooltip title="Copy to Clipboard">
+                <IconButton onClick={copyToClipboard}>
+                  <ContentCopyIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Export as JSON">
+                <IconButton onClick={exportToJSON}>
+                  <DownloadIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Export as Text">
+                <IconButton onClick={exportToText}>
+                  <DownloadIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Print">
+                <IconButton onClick={handlePrint}>
+                  <PrintIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
-          <Box>
-            <Tooltip title="Copy to Clipboard">
-              <IconButton onClick={copyToClipboard} sx={{ color: "#f4e4c1" }}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Export as JSON">
-              <IconButton onClick={exportToJSON} sx={{ color: "#f4e4c1" }}>
-                <DownloadIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Export as Text">
-              <IconButton onClick={exportToText} sx={{ color: "#f4e4c1" }}>
-                <DownloadIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Print">
-              <IconButton onClick={handlePrint} sx={{ color: "#f4e4c1" }}>
-                <PrintIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
 
-        <Box display="flex" gap={1} mt={2} flexWrap="wrap">
-          <Chip
-            label={character.dnd_background}
-            sx={{
-              bgcolor: "#8b6f47",
-              color: "#f4e4c1",
-              fontWeight: 600,
-            }}
-          />
-          {character.dnd_alignment && (
+          <Box display="flex" gap={1} mt={2} flexWrap="wrap">
             <Chip
-              label={character.dnd_alignment}
-              sx={{
-                bgcolor: "rgba(139, 111, 71, 0.3)",
-                color: "#f4e4c1",
-                borderColor: "#8b6f47",
-                borderWidth: 1,
-                borderStyle: "solid",
-              }}
+              label={character.dnd_background}
+              color="error"
+              sx={{ fontWeight: 600 }}
             />
-          )}
-        </Box>
-      </Paper>
+            {character.dnd_alignment && (
+              <Chip
+                label={character.dnd_alignment}
+                color="error"
+                variant="outlined"
+              />
+            )}
+          </Box>
+        </Paper>
+      )}
 
       <Grid container spacing={2}>
-        {/* Left Column - Ability Scores & Combat Stats */}
-        <Grid item xs={12} md={4}>
-          {/* Ability Scores - Classic D&D hexagon style */}
+        {/* Left Column - Ability Scores & Combat Stats - Only show if not in edit mode */}
+        {!hideBasicStats && (
+          <Grid item xs={12} md={4}>
+          {/* Ability Scores - Modern Dark Theme */}
           <Paper
             elevation={2}
             sx={{
               p: 2.5,
               mb: 2,
-              background:
-                "linear-gradient(to bottom, #f8f4e6 0%, #ebe6d5 100%)",
-              border: "2px solid #8b6f47",
+              bgcolor: "background.paper",
               borderRadius: 2,
             }}
           >
@@ -330,9 +321,8 @@ ${formatNarrative(char.ai_narrative)}
               variant="h6"
               gutterBottom
               sx={{
-                fontFamily: '"Cinzel", serif',
-                color: "#2c1810",
-                borderBottom: "2px solid #8b6f47",
+                borderBottom: 1,
+                borderColor: "divider",
                 pb: 1,
                 mb: 2,
               }}
@@ -347,9 +337,7 @@ ${formatNarrative(char.ai_narrative)}
                       <Card
                         variant="outlined"
                         sx={{
-                          background:
-                            "linear-gradient(135deg, #2c1810 0%, #3d2817 100%)",
-                          border: "2px solid #8b6f47",
+                          bgcolor: "background.default",
                           borderRadius: 1.5,
                         }}
                       >
@@ -358,7 +346,7 @@ ${formatNarrative(char.ai_narrative)}
                             variant="caption"
                             sx={{
                               textTransform: "uppercase",
-                              color: "#d4af37",
+                              color: "error.main",
                               fontWeight: 700,
                               letterSpacing: 1,
                               fontSize: "0.7rem",
@@ -369,8 +357,7 @@ ${formatNarrative(char.ai_narrative)}
                           <Typography
                             variant="h3"
                             sx={{
-                              color: "#f4e4c1",
-                              fontFamily: '"Cinzel", serif',
+                              color: "text.primary",
                               fontWeight: 700,
                               my: 0.5,
                             }}
@@ -380,7 +367,7 @@ ${formatNarrative(char.ai_narrative)}
                           <Typography
                             variant="h6"
                             sx={{
-                              color: "#d4af37",
+                              color: "error.main",
                               fontWeight: 700,
                             }}
                           >
@@ -394,15 +381,13 @@ ${formatNarrative(char.ai_narrative)}
             </Grid>
           </Paper>
 
-          {/* Combat Stats - Parchment style */}
+          {/* Combat Stats - Modern Dark Theme */}
           <Paper
             elevation={2}
             sx={{
               p: 2.5,
               mb: 2,
-              background:
-                "linear-gradient(to bottom, #f8f4e6 0%, #ebe6d5 100%)",
-              border: "2px solid #8b6f47",
+              bgcolor: "background.paper",
               borderRadius: 2,
             }}
           >
@@ -410,9 +395,8 @@ ${formatNarrative(char.ai_narrative)}
               variant="h6"
               gutterBottom
               sx={{
-                fontFamily: '"Cinzel", serif',
-                color: "#2c1810",
-                borderBottom: "2px solid #8b6f47",
+                borderBottom: 1,
+                borderColor: "divider",
                 pb: 1,
                 mb: 2,
               }}
@@ -424,7 +408,6 @@ ${formatNarrative(char.ai_narrative)}
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#2c1810",
                     fontWeight: 600,
                   }}
                 >
@@ -434,19 +417,18 @@ ${formatNarrative(char.ai_narrative)}
                   variant="body1"
                   sx={{
                     fontWeight: 700,
-                    color: "#c41e3a",
+                    color: "error.main",
                     fontSize: "1.1rem",
                   }}
                 >
                   {character.dnd_hit_points}
                 </Typography>
               </Box>
-              <Divider sx={{ borderColor: "#8b6f47", opacity: 0.3 }} />
+              <Divider />
               <Box display="flex" justifyContent="space-between" py={1}>
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#2c1810",
                     fontWeight: 600,
                   }}
                 >
@@ -456,19 +438,17 @@ ${formatNarrative(char.ai_narrative)}
                   variant="body1"
                   sx={{
                     fontWeight: 700,
-                    color: "#2c1810",
                     fontSize: "1.1rem",
                   }}
                 >
                   {character.dnd_armor_class}
                 </Typography>
               </Box>
-              <Divider sx={{ borderColor: "#8b6f47", opacity: 0.3 }} />
+              <Divider />
               <Box display="flex" justifyContent="space-between" py={1}>
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#2c1810",
                     fontWeight: 600,
                   }}
                 >
@@ -478,19 +458,17 @@ ${formatNarrative(char.ai_narrative)}
                   variant="body1"
                   sx={{
                     fontWeight: 700,
-                    color: "#2c1810",
                     fontSize: "1.1rem",
                   }}
                 >
                   {character.dnd_initiative}
                 </Typography>
               </Box>
-              <Divider sx={{ borderColor: "#8b6f47", opacity: 0.3 }} />
+              <Divider />
               <Box display="flex" justifyContent="space-between" py={1}>
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#2c1810",
                     fontWeight: 600,
                   }}
                 >
@@ -500,19 +478,17 @@ ${formatNarrative(char.ai_narrative)}
                   variant="body1"
                   sx={{
                     fontWeight: 700,
-                    color: "#2c1810",
                     fontSize: "1.1rem",
                   }}
                 >
                   {character.dnd_speed} ft
                 </Typography>
               </Box>
-              <Divider sx={{ borderColor: "#8b6f47", opacity: 0.3 }} />
+              <Divider />
               <Box display="flex" justifyContent="space-between" py={1}>
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#2c1810",
                     fontWeight: 600,
                   }}
                 >
@@ -522,7 +498,6 @@ ${formatNarrative(char.ai_narrative)}
                   variant="body1"
                   sx={{
                     fontWeight: 700,
-                    color: "#2c1810",
                     fontSize: "1.1rem",
                   }}
                 >
@@ -532,9 +507,10 @@ ${formatNarrative(char.ai_narrative)}
             </Box>
           </Paper>
         </Grid>
+        )}
 
         {/* Right Column - Detailed Information */}
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={hideBasicStats ? 12 : 8}>
           {/* Skills & Proficiencies */}
           <Accordion
             expanded={expanded.skills}

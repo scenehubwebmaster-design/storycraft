@@ -28,6 +28,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ClearIcon from "@mui/icons-material/Clear";
 import { API_URL } from "../config/api";
 
+// Configure axios with timeout and better error handling
+axios.defaults.timeout = 10000; // 10 second timeout
+
 export default function CharactersPage() {
   const [characters, setCharacters] = useState([]);
   const [filteredCharacters, setFilteredCharacters] = useState([]);
@@ -37,22 +40,54 @@ export default function CharactersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [apiHealthy, setApiHealthy] = useState(null);
 
   useEffect(() => {
-    const loadCharacters = async () => {
+    const checkApiAndLoadCharacters = async () => {
       try {
         setLoading(true);
+
+        // First, check if the API is reachable
+        console.log(
+          "[Characters] Checking API health at:",
+          `${API_URL}/health`
+        );
+        try {
+          const healthResponse = await axios.get(`${API_URL}/health`, {
+            timeout: 5000,
+          });
+          console.log("[Characters] API health check:", healthResponse.data);
+          setApiHealthy(true);
+        } catch (healthErr) {
+          console.error(
+            "[Characters] API health check failed:",
+            healthErr.message
+          );
+          setApiHealthy(false);
+          throw new Error(
+            `Cannot reach backend API at ${API_URL}. Is the backend server running?`
+          );
+        }
+
+        // Now load characters
+        console.log("[Characters] Loading from API URL:", API_URL);
         const response = await axios.get(`${API_URL}/api/characters`);
+        console.log("[Characters] Loaded", response.data.length, "characters");
         setCharacters(response.data);
         setError(null);
       } catch (err) {
-        setError(err.response?.data?.detail || "Failed to load characters");
-        console.error(err);
+        const errorMsg =
+          err.response?.data?.detail ||
+          err.message ||
+          "Failed to load characters";
+        console.error("[Characters] Error loading:", errorMsg);
+        console.error("[Characters] Full error:", err);
+        setError(`${errorMsg} (API: ${API_URL})`);
       } finally {
         setLoading(false);
       }
     };
-    loadCharacters();
+    checkApiAndLoadCharacters();
   }, []);
 
   // Filter characters based on search query
@@ -178,7 +213,28 @@ export default function CharactersPage() {
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+            {error}
+          </Typography>
+          {apiHealthy === false && (
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              <strong>Troubleshooting:</strong>
+              <br />
+              1. Make sure the backend server is running on port 8000
+              <br />
+              2. Check if you can access:{" "}
+              <a
+                href={`${API_URL}/health`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {API_URL}/health
+              </a>
+              <br />
+              3. Verify both frontend and mobile device are on the same WiFi
+              network
+            </Typography>
+          )}
         </Alert>
       )}
 
@@ -250,15 +306,41 @@ export default function CharactersPage() {
                   </Box>
                 )}
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {character.name}
-                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="h6">{character.name}</Typography>
+                    {character.is_dnd && (
+                      <Chip
+                        label="D&D"
+                        size="small"
+                        color="error"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    )}
+                  </Box>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{ mb: 2 }}
                   >
                     {(() => {
+                      // For D&D characters, show class and level
+                      if (character.is_dnd) {
+                        const parts = [];
+                        if (character.dnd_level)
+                          parts.push(`Level ${character.dnd_level}`);
+                        if (character.dnd_class)
+                          parts.push(character.dnd_class);
+                        if (character.dnd_species)
+                          parts.push(character.dnd_species);
+                        return parts.join(" • ") || "D&D Character";
+                      }
                       // For structured characters, show a summary from structured_data
                       if (character.structured_data) {
                         try {
@@ -315,7 +397,30 @@ export default function CharactersPage() {
                       );
                     })()}
                   </Typography>
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 1,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                    }}
+                  >
+                    {character.is_dnd && (
+                      <Chip
+                        label="D&D 5E"
+                        size="small"
+                        color="error"
+                        variant="filled"
+                      />
+                    )}
+                    {character.structured_data && !character.is_dnd && (
+                      <Chip
+                        label="Structured"
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                    )}
                     <Chip
                       label={formatDate(character.created_at)}
                       size="small"

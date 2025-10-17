@@ -28,8 +28,6 @@ import { API_URL } from "../config/api";
 
 const steps = ["Location Setup", "Generate", "Review & Save"];
 
-export default function CreateLocationPage() {
-
 const LOCATION_TYPES = [
   "City",
   "Town",
@@ -53,7 +51,7 @@ const LOCATION_TYPES = [
   "Wilderness",
 ];
 
-function CreateLocationComponent() {
+export default function CreateLocationPage() {
   const [options, setOptions] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
 

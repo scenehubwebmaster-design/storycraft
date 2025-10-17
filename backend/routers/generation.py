@@ -323,21 +323,28 @@ async def generate_character_portrait_endpoint(request: ImageGenerationRequest):
 
 @router.post("/character/save-portrait")
 async def save_character_portrait(
-    character_id: int,
-    image_base64: str,
-    image_prompt: str,
+    request: dict,
     db: Session = Depends(get_db)
 ):
     """Save generated portrait to existing character"""
     try:
+        character_id = request.get("character_id")
+        image_base64 = request.get("image_base64")
+        image_prompt = request.get("image_prompt")
+        
+        if not character_id:
+            raise HTTPException(status_code=400, detail="character_id is required")
+        
         character = db.query(Character).filter(Character.id == character_id).first()
         
         if not character:
             raise HTTPException(status_code=404, detail="Character not found")
         
         # Update character with portrait
-        character.portrait_image = image_base64
-        character.image_prompt = image_prompt
+        if image_base64:
+            character.portrait_image = image_base64
+        if image_prompt:
+            character.image_prompt = image_prompt
         character.updated_at = datetime.now()
         
         db.commit()
@@ -345,6 +352,8 @@ async def save_character_portrait(
         
         return {"message": "Portrait saved successfully", "character_id": character_id}
         
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to save portrait: {str(e)}")

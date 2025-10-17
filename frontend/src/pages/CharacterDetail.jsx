@@ -23,6 +23,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PersonIcon from "@mui/icons-material/Person";
 import StructuredCharacterDisplay from "../components/StructuredCharacterDisplay";
+import DnDCharacterSheet from "../components/DnDCharacterSheet";
 import { API_URL } from "../config/api";
 
 export default function CharacterDetailPage() {
@@ -149,9 +150,50 @@ export default function CharacterDetailPage() {
           }}
         >
           <Box>
-            <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
-              {character.name}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+              <Typography variant="h3" component="h1" sx={{ fontWeight: 700 }}>
+                {character.name}
+              </Typography>
+              {character.is_dnd && (
+                <Chip
+                  label="D&D 5E Character"
+                  color="error"
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
+              {character.structured_data && !character.is_dnd && (
+                <Chip
+                  label="Structured Profile"
+                  color="primary"
+                  variant="outlined"
+                />
+              )}
+            </Box>
+            {character.is_dnd && (
+              <Box sx={{ mb: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {character.dnd_level && (
+                  <Chip
+                    label={`Level ${character.dnd_level}`}
+                    size="small"
+                    variant="outlined"
+                  />
+                )}
+                {character.dnd_class && (
+                  <Chip
+                    label={character.dnd_class}
+                    size="small"
+                    variant="outlined"
+                  />
+                )}
+                {character.dnd_species && (
+                  <Chip
+                    label={character.dnd_species}
+                    size="small"
+                    variant="outlined"
+                  />
+                )}
+              </Box>
+            )}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               Created: {formatDate(character.created_at)}
             </Typography>
@@ -223,8 +265,8 @@ export default function CharacterDetailPage() {
           </Card>
         </Grid>
 
-        {/* Navigation Sidebar - Only show for structured characters */}
-        {character.structured_data && (
+        {/* Navigation Sidebar - Only show for structured characters (not DnD) */}
+        {character.structured_data && !character.is_dnd && (
           <Grid
             size={{ xs: 12, md: 2 }}
             sx={{ display: { xs: "none", md: "block" } }}
@@ -305,7 +347,12 @@ export default function CharacterDetailPage() {
         )}
 
         {/* Details Card - Scrollable */}
-        <Grid size={{ xs: 12, md: character.structured_data ? 7 : 9 }}>
+        <Grid
+          size={{
+            xs: 12,
+            md: character.is_dnd ? 9 : character.structured_data ? 7 : 9,
+          }}
+        >
           <Box
             sx={{
               maxHeight: { md: "calc(100vh - 250px)" },
@@ -328,8 +375,13 @@ export default function CharacterDetailPage() {
               },
             }}
           >
-            {/* Check if character has structured data */}
-            {character.structured_data ? (
+            {/* Check if character is a D&D character */}
+            {character.is_dnd ? (
+              // Display D&D character sheet
+              <Box>
+                <DnDCharacterSheet character={character} />
+              </Box>
+            ) : character.structured_data ? (
               // Display structured character profile
               <Box>
                 <Box

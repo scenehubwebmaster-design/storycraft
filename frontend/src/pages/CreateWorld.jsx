@@ -117,7 +117,9 @@ export default function CreateWorldPage() {
       );
       setActiveStep(2);
       setSuccess(
-        `World generated successfully using ${useStructured ? "structured" : "free-form"} generation!`
+        `World generated successfully using ${
+          useStructured ? "structured" : "free-form"
+        } generation!`
       );
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to generate world");
@@ -305,8 +307,8 @@ export default function CreateWorldPage() {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {useStructured
-                  ? "Structured generation creates comprehensive world profiles with organized sections, detailed history, geography, culture, and more."
-                  : "Free-form generation creates narrative-style world descriptions with more creative flexibility."}
+                  ? "Organized sections with complete details."
+                  : "Narrative style with creative flexibility."}
               </Typography>
             </Box>
             <FormControlLabel

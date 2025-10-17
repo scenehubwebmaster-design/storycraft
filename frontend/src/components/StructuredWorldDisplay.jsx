@@ -40,7 +40,14 @@ const StructuredWorldDisplay = ({ worldProfile }) => {
       {/* Header: World Name and Tagline */}
       <Paper
         elevation={3}
-        sx={{ p: 3, mb: 3, bgcolor: "primary.main", color: "white" }}
+        sx={{
+          p: 3,
+          mb: 3,
+          bgcolor: "primary.main",
+          color: "white",
+          background: "linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)",
+          borderRadius: 2,
+        }}
       >
         <Typography variant="h3" gutterBottom>
           {worldProfile.name}
@@ -55,11 +62,21 @@ const StructuredWorldDisplay = ({ worldProfile }) => {
       </Paper>
 
       {/* Overview */}
-      <Card sx={{ mb: 3 }}>
+      <Card
+        sx={{
+          mb: 3,
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "primary.main",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <PublicIcon sx={{ mr: 1, color: "primary.main" }} />
-            <Typography variant="h5" color="primary">
+            <PublicIcon sx={{ mr: 1, color: "primary.main", fontSize: 28 }} />
+            <Typography
+              variant="h5"
+              sx={{ color: "primary.light", fontWeight: 600 }}
+            >
               World Overview
             </Typography>
           </Box>
@@ -70,11 +87,22 @@ const StructuredWorldDisplay = ({ worldProfile }) => {
       </Card>
 
       {/* History Section - Accordion */}
-      <Accordion defaultExpanded sx={{ mb: 2 }}>
+      <Accordion
+        defaultExpanded
+        sx={{
+          mb: 2,
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "info.main",
+        }}
+      >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box display="flex" alignItems="center">
-            <HistoryIcon sx={{ mr: 1, color: "info.main" }} />
-            <Typography variant="h6" color="info.main">
+            <HistoryIcon sx={{ mr: 1, color: "info.main", fontSize: 28 }} />
+            <Typography
+              variant="h6"
+              sx={{ color: "info.light", fontWeight: 600 }}
+            >
               History
             </Typography>
           </Box>
@@ -150,11 +178,21 @@ const StructuredWorldDisplay = ({ worldProfile }) => {
       </Accordion>
 
       {/* Geography Section - Accordion */}
-      <Accordion sx={{ mb: 2 }}>
+      <Accordion
+        sx={{
+          mb: 2,
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "success.main",
+        }}
+      >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box display="flex" alignItems="center">
-            <TerrainIcon sx={{ mr: 1, color: "success.main" }} />
-            <Typography variant="h6" color="success.main">
+            <TerrainIcon sx={{ mr: 1, color: "success.main", fontSize: 28 }} />
+            <Typography
+              variant="h6"
+              sx={{ color: "success.light", fontWeight: 600 }}
+            >
               Geography
             </Typography>
           </Box>
@@ -231,11 +269,21 @@ const StructuredWorldDisplay = ({ worldProfile }) => {
       </Accordion>
 
       {/* Culture & Society Section - Accordion */}
-      <Accordion sx={{ mb: 2 }}>
+      <Accordion
+        sx={{
+          mb: 2,
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "secondary.main",
+        }}
+      >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box display="flex" alignItems="center">
-            <GroupsIcon sx={{ mr: 1, color: "secondary.main" }} />
-            <Typography variant="h6" color="secondary.main">
+            <GroupsIcon sx={{ mr: 1, color: "secondary.main", fontSize: 28 }} />
+            <Typography
+              variant="h6"
+              sx={{ color: "secondary.light", fontWeight: 600 }}
+            >
               Culture & Society
             </Typography>
           </Box>
@@ -327,11 +375,23 @@ const StructuredWorldDisplay = ({ worldProfile }) => {
       </Accordion>
 
       {/* Magic/Technology System - Accordion */}
-      <Accordion sx={{ mb: 2 }}>
+      <Accordion
+        sx={{
+          mb: 2,
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "error.main",
+        }}
+      >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box display="flex" alignItems="center">
-            <AutoFixHighIcon sx={{ mr: 1, color: "error.main" }} />
-            <Typography variant="h6" color="error.main">
+            <AutoFixHighIcon
+              sx={{ mr: 1, color: "error.main", fontSize: 28 }}
+            />
+            <Typography
+              variant="h6"
+              sx={{ color: "error.light", fontWeight: 600 }}
+            >
               Magic/Technology System
             </Typography>
           </Box>
@@ -380,11 +440,21 @@ const StructuredWorldDisplay = ({ worldProfile }) => {
       </Accordion>
 
       {/* Conflicts & Themes - Accordion */}
-      <Accordion sx={{ mb: 2 }}>
+      <Accordion
+        sx={{
+          mb: 2,
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "warning.main",
+        }}
+      >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box display="flex" alignItems="center">
-            <GavelIcon sx={{ mr: 1, color: "warning.main" }} />
-            <Typography variant="h6" color="warning.main">
+            <GavelIcon sx={{ mr: 1, color: "warning.main", fontSize: 28 }} />
+            <Typography
+              variant="h6"
+              sx={{ color: "warning.light", fontWeight: 600 }}
+            >
               Conflicts & Themes
             </Typography>
           </Box>
@@ -424,11 +494,21 @@ const StructuredWorldDisplay = ({ worldProfile }) => {
       </Accordion>
 
       {/* Lore & Mysteries - Accordion */}
-      <Accordion sx={{ mb: 2 }}>
+      <Accordion
+        sx={{
+          mb: 2,
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "info.main",
+        }}
+      >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box display="flex" alignItems="center">
-            <MenuBookIcon sx={{ mr: 1, color: "info.main" }} />
-            <Typography variant="h6" color="info.main">
+            <MenuBookIcon sx={{ mr: 1, color: "info.main", fontSize: 28 }} />
+            <Typography
+              variant="h6"
+              sx={{ color: "info.light", fontWeight: 600 }}
+            >
               Lore & Mysteries
             </Typography>
           </Box>
@@ -473,11 +553,21 @@ const StructuredWorldDisplay = ({ worldProfile }) => {
       </Accordion>
 
       {/* Story Potential - Accordion */}
-      <Accordion sx={{ mb: 2 }}>
+      <Accordion
+        sx={{
+          mb: 2,
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "primary.light",
+        }}
+      >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box display="flex" alignItems="center">
-            <ExploreIcon sx={{ mr: 1, color: "primary.main" }} />
-            <Typography variant="h6" color="primary">
+            <ExploreIcon sx={{ mr: 1, color: "primary.light", fontSize: 28 }} />
+            <Typography
+              variant="h6"
+              sx={{ color: "primary.light", fontWeight: 600 }}
+            >
               Story Potential
             </Typography>
           </Box>

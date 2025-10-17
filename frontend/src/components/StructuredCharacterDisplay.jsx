@@ -39,7 +39,14 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       {/* Header: Name and Age */}
       <Paper
         elevation={3}
-        sx={{ p: 3, mb: 3, bgcolor: "primary.main", color: "white" }}
+        sx={{
+          p: 3,
+          mb: 3,
+          bgcolor: "primary.main",
+          color: "white",
+          background: "linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)",
+          borderRadius: 2,
+        }}
       >
         <Typography variant="h3" gutterBottom>
           {characterProfile.name}
@@ -50,11 +57,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Paper>
 
       {/* Section 1: Physical Appearance */}
-      <Card id="physical" sx={{ mb: 3, scrollMarginTop: "20px" }}>
+      <Card
+        id="physical"
+        sx={{
+          mb: 3,
+          scrollMarginTop: "20px",
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "primary.main",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <PersonIcon sx={{ mr: 1, color: "primary.main" }} />
-            <Typography variant="h5" color="primary">
+            <PersonIcon sx={{ mr: 1, color: "primary.main", fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: "primary.light", fontWeight: 600 }}>
               Physical Appearance
             </Typography>
           </Box>
@@ -117,11 +133,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 2: Personality */}
-      <Card id="personality" sx={{ mb: 3, scrollMarginTop: "20px" }}>
+      <Card
+        id="personality"
+        sx={{
+          mb: 3,
+          scrollMarginTop: "20px",
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "secondary.main",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <PsychologyIcon sx={{ mr: 1, color: "secondary.main" }} />
-            <Typography variant="h5" color="secondary">
+            <PsychologyIcon sx={{ mr: 1, color: "secondary.main", fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: "secondary.light", fontWeight: 600 }}>
               Personality
             </Typography>
           </Box>
@@ -174,11 +199,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 3: Background */}
-      <Card id="background" sx={{ mb: 3, scrollMarginTop: "20px" }}>
+      <Card
+        id="background"
+        sx={{
+          mb: 3,
+          scrollMarginTop: "20px",
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "primary.dark",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <HistoryIcon sx={{ mr: 1, color: "info.main" }} />
-            <Typography variant="h5" color="info.main">
+            <HistoryIcon sx={{ mr: 1, color: "primary.dark", fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: "primary.light", fontWeight: 600 }}>
               Background
             </Typography>
           </Box>
@@ -227,11 +261,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 4: Motivations */}
-      <Card id="motivations" sx={{ mb: 3, scrollMarginTop: "20px" }}>
+      <Card
+        id="motivations"
+        sx={{
+          mb: 3,
+          scrollMarginTop: "20px",
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "error.main",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <FavoriteIcon sx={{ mr: 1, color: "error.main" }} />
-            <Typography variant="h5" color="error.main">
+            <FavoriteIcon sx={{ mr: 1, color: "error.main", fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: "error.light", fontWeight: 600 }}>
               Motivations & Values
             </Typography>
           </Box>
@@ -278,11 +321,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 5: Fears & Weaknesses */}
-      <Card id="fears" sx={{ mb: 3, scrollMarginTop: "20px" }}>
+      <Card
+        id="fears"
+        sx={{
+          mb: 3,
+          scrollMarginTop: "20px",
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "warning.main",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <WarningIcon sx={{ mr: 1, color: "warning.main" }} />
-            <Typography variant="h5" color="warning.main">
+            <WarningIcon sx={{ mr: 1, color: "warning.main", fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: "warning.light", fontWeight: 600 }}>
               Fears & Weaknesses
             </Typography>
           </Box>
@@ -338,11 +390,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 6: Strengths & Abilities */}
-      <Card id="strengths" sx={{ mb: 3, scrollMarginTop: "20px" }}>
+      <Card
+        id="strengths"
+        sx={{
+          mb: 3,
+          scrollMarginTop: "20px",
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "success.main",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <FlashOnIcon sx={{ mr: 1, color: "success.main" }} />
-            <Typography variant="h5" color="success.main">
+            <FlashOnIcon sx={{ mr: 1, color: "success.main", fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: "success.light", fontWeight: 600 }}>
               Strengths & Abilities
             </Typography>
           </Box>
@@ -388,11 +449,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 7: Relationships */}
-      <Card id="relationships" sx={{ mb: 3, scrollMarginTop: "20px" }}>
+      <Card
+        id="relationships"
+        sx={{
+          mb: 3,
+          scrollMarginTop: "20px",
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "primary.light",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <PeopleIcon sx={{ mr: 1, color: "primary.main" }} />
-            <Typography variant="h5" color="primary">
+            <PeopleIcon sx={{ mr: 1, color: "primary.light", fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: "primary.light", fontWeight: 600 }}>
               Key Relationships
             </Typography>
           </Box>
@@ -423,11 +493,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 8: Character Arc */}
-      <Card id="arc" sx={{ mb: 3, scrollMarginTop: "20px" }}>
+      <Card
+        id="arc"
+        sx={{
+          mb: 3,
+          scrollMarginTop: "20px",
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "secondary.dark",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <TrendingUpIcon sx={{ mr: 1, color: "secondary.main" }} />
-            <Typography variant="h5" color="secondary">
+            <TrendingUpIcon sx={{ mr: 1, color: "secondary.main", fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: "secondary.light", fontWeight: 600 }}>
               Character Arc Potential
             </Typography>
           </Box>
@@ -438,11 +517,20 @@ const StructuredCharacterDisplay = ({ characterProfile }) => {
       </Card>
 
       {/* Section 9: Unique Qualities */}
-      <Card id="unique" sx={{ mb: 3, scrollMarginTop: "20px" }}>
+      <Card
+        id="unique"
+        sx={{
+          mb: 3,
+          scrollMarginTop: "20px",
+          bgcolor: "background.paper",
+          borderLeft: "4px solid",
+          borderColor: "info.main",
+        }}
+      >
         <CardContent>
           <Box display="flex" alignItems="center" mb={2}>
-            <StarsIcon sx={{ mr: 1, color: "info.main" }} />
-            <Typography variant="h5" color="info.main">
+            <StarsIcon sx={{ mr: 1, color: "info.main", fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: "info.light", fontWeight: 600 }}>
               What Makes Them Unique
             </Typography>
           </Box>

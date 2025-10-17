@@ -168,8 +168,16 @@ export default function CreateCharacterPage() {
       // Pre-populate form with existing data
       setCharacterName(character.name || "");
 
+      // Check if this is a D&D character
+      if (character.is_dnd) {
+        console.log("Loading D&D character for editing:", character);
+        setIsDnDMode(true);
+        setDndCharacter(character);
+        setActiveStep(2); // Skip to review step for D&D characters
+        setSuccess("D&D character data loaded for editing");
+      }
       // Check if character has structured data (from structured generation)
-      if (character.structured_data) {
+      else if (character.structured_data) {
         // Parse structured data if it's a JSON string
         let structuredData = character.structured_data;
         if (typeof structuredData === "string") {
@@ -189,21 +197,27 @@ export default function CreateCharacterPage() {
           setGeneratedContent(character.description || "");
           setUseStructured(false);
         }
+
+        setPortraitImage(character.portrait_image || null);
+        setImagePrompt(character.image_prompt || null);
+
+        // Skip to review step if we have generated content
+        setActiveStep(2);
+        setSuccess("Character data loaded for editing");
       } else {
         // Legacy character without structured data
         setGeneratedContent(character.description || "");
         setUseStructured(false);
+        setPortraitImage(character.portrait_image || null);
+        setImagePrompt(character.image_prompt || null);
+
+        // Skip to review step if we have generated content
+        if (character.description) {
+          setActiveStep(2);
+        }
+
+        setSuccess("Character data loaded for editing");
       }
-
-      setPortraitImage(character.portrait_image || null);
-      setImagePrompt(character.image_prompt || null);
-
-      // Skip to review step if we have generated content
-      if (character.structured_data || character.description) {
-        setActiveStep(2);
-      }
-
-      setSuccess("Character data loaded for editing");
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to load character");
       console.error(err);
@@ -246,7 +260,9 @@ export default function CreateCharacterPage() {
       );
       setActiveStep(2);
       setSuccess(
-        `Character generated successfully using ${useStructured ? "structured" : "free-form"} generation!`
+        `Character generated successfully using ${
+          useStructured ? "structured" : "free-form"
+        } generation!`
       );
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to generate character");
@@ -322,30 +338,59 @@ export default function CreateCharacterPage() {
     try {
       if (isEditMode && editId) {
         // Update existing character
-        const updateData = {
-          name: characterName,
-          portrait_image: portraitImage,
-          image_prompt: imagePrompt,
-        };
 
-        // Add structured data or plain description based on mode
-        // Only include if we have content to update (user regenerated or modified)
-        if (useStructured) {
-          const contentToSave = finalContent || generatedContent;
-          if (contentToSave) {
-            updateData.structured_data = JSON.stringify(contentToSave);
-            // Also update description field with the character's name for backwards compatibility
-            updateData.description = characterName;
+        // Handle D&D characters specially
+        if (dndCharacter && dndCharacter.is_dnd) {
+          // For D&D characters, use the portrait save endpoint to avoid overwriting data
+          // This endpoint only updates portrait fields
+          if (portraitImage || imagePrompt) {
+            console.log(
+              "Saving D&D character portrait using dedicated endpoint"
+            );
+            await axios.post(
+              `${API_URL}/api/generate/character/save-portrait`,
+              {
+                character_id: parseInt(editId),
+                image_base64: portraitImage || "",
+                image_prompt: imagePrompt || "",
+              }
+            );
+          }
+
+          // If name changed, update it separately
+          if (characterName !== dndCharacter.name) {
+            await axios.put(`${API_URL}/api/characters/${editId}`, {
+              name: characterName,
+            });
           }
         } else {
-          const contentToSave = finalContent || generatedContent;
-          if (contentToSave) {
-            updateData.description = contentToSave;
+          // Regular character - use full update
+          const updateData = {
+            name: characterName,
+            portrait_image: portraitImage,
+            image_prompt: imagePrompt,
+          };
+
+          // Add structured data or plain description based on mode
+          // Only include if we have content to update (user regenerated or modified)
+          if (useStructured) {
+            const contentToSave = finalContent || generatedContent;
+            if (contentToSave) {
+              updateData.structured_data = JSON.stringify(contentToSave);
+              // Also update description field with the character's name for backwards compatibility
+              updateData.description = characterName;
+            }
+          } else {
+            const contentToSave = finalContent || generatedContent;
+            if (contentToSave) {
+              updateData.description = contentToSave;
+            }
           }
+
+          console.log("Updating character with data:", updateData);
+          await axios.put(`${API_URL}/api/characters/${editId}`, updateData);
         }
 
-        console.log("Updating character with data:", updateData);
-        await axios.put(`${API_URL}/api/characters/${editId}`, updateData);
         setSuccess("Character updated successfully!");
 
         // Navigate back to detail view after 1.5 seconds
@@ -447,11 +492,30 @@ export default function CreateCharacterPage() {
 
     try {
       // Extract appearance from generated content
-      // For structured content, extract physical description
-      const appearanceText = useStructured
-        ? generatedContent.physical_description ||
-          `${generatedContent.height}, ${generatedContent.build} build, ${generatedContent.hair} hair, ${generatedContent.eyes} eyes`
-        : generatedContent;
+      let appearanceText = "";
+
+      if (dndCharacter && dndCharacter.is_dnd) {
+        // For D&D characters, extract from structured_data or build from available fields
+        if (dndCharacter.structured_data) {
+          const sd = dndCharacter.structured_data;
+          appearanceText =
+            sd.character_appearance ||
+            `${sd.age || ""} ${dndCharacter.dnd_species || "character"}, ${
+              sd.eyes || ""
+            } eyes, ${sd.skin || ""} skin, ${sd.hair || ""} hair. ${
+              dndCharacter.dnd_class || ""
+            } adventurer.`.trim();
+        } else {
+          appearanceText = `A ${dndCharacter.dnd_level} level ${dndCharacter.dnd_species} ${dndCharacter.dnd_class}`;
+        }
+      } else if (useStructured) {
+        // For structured content, extract physical description
+        appearanceText =
+          generatedContent.physical_description ||
+          `${generatedContent.height}, ${generatedContent.build} build, ${generatedContent.hair} hair, ${generatedContent.eyes} eyes`;
+      } else {
+        appearanceText = generatedContent;
+      }
 
       const response = await axios.post(
         `${API_URL}/api/generate/character/generate-portrait`,
@@ -464,6 +528,9 @@ export default function CreateCharacterPage() {
           custom_prompt: null,
           style_preset: imageStyle,
           quality: imageQuality,
+        },
+        {
+          timeout: 60000, // 60 seconds timeout for image generation
         }
       );
 
@@ -563,8 +630,8 @@ export default function CreateCharacterPage() {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {useStructured
-                  ? "Structured generation creates comprehensive profiles with organized sections, guaranteed completeness, and rich details."
-                  : "Free-form generation creates narrative-style character descriptions with more creative flexibility."}
+                  ? "Organized sections with complete details."
+                  : "Narrative style with creative flexibility."}
               </Typography>
             </Box>
             <FormControlLabel
@@ -1188,9 +1255,9 @@ export default function CreateCharacterPage() {
                   {selectedGenre === "sci_fi"
                     ? "Sci-Fi"
                     : selectedGenre === "mystery_thriller"
-                      ? "Mystery/Thriller"
-                      : selectedGenre.charAt(0).toUpperCase() +
-                        selectedGenre.slice(1)}{" "}
+                    ? "Mystery/Thriller"
+                    : selectedGenre.charAt(0).toUpperCase() +
+                      selectedGenre.slice(1)}{" "}
                   -{" "}
                   {variations[selectedGenre]?.find(
                     (v) => v.key === selectedVariation
@@ -1250,223 +1317,233 @@ export default function CreateCharacterPage() {
 
           {/* Grid Layout: Portrait on Left, Details on Right */}
           <Grid container spacing={3}>
-            {/* Left Column - Portrait (sticky/fixed) */}
-            <Grid item xs={12} md={4}>
-              <Box
-                sx={{
-                  position: { md: "sticky" },
-                  top: { md: 24 },
-                }}
-              >
-                {/* Portrait Generation Section */}
-                <Paper
+            {/* Left Column - Portrait (sticky/fixed) - Only for non-DnD characters */}
+            {!(dndCharacter && dndCharacter.is_dnd) && (
+              <Grid item xs={12} md={4}>
+                <Box
                   sx={{
-                    p: 3,
-                    backgroundColor: "background.default",
+                    position: { md: "sticky" },
+                    top: { md: 24 },
                   }}
                 >
-                  {/* Header with Settings Toggle */}
-                  <Box
+                  {/* Portrait Generation Section */}
+                  <Paper
                     sx={{
-                      mb: 2,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      p: 3,
+                      backgroundColor: "background.default",
                     }}
                   >
-                    <Box>
-                      <Typography variant="h6" gutterBottom>
-                        Character Portrait
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Generate an AI portrait
-                      </Typography>
-                    </Box>
-                    <Tooltip title="Portrait Settings">
-                      <IconButton
-                        onClick={() =>
-                          setShowPortraitSettings(!showPortraitSettings)
-                        }
-                        color={showPortraitSettings ? "primary" : "default"}
-                      >
-                        <SettingsIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-
-                  {/* Portrait Image Display */}
-                  {portraitImage && (
-                    <Box sx={{ mb: 2, textAlign: "center" }}>
-                      <img
-                        src={`data:image/png;base64,${portraitImage}`}
-                        alt={`${characterName} portrait`}
-                        style={{
-                          width: "100%",
-                          borderRadius: "8px",
-                          boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-                        }}
-                      />
-                    </Box>
-                  )}
-
-                  {/* Collapsible Settings */}
-                  {showPortraitSettings && (
+                    {/* Header with Settings Toggle */}
                     <Box
                       sx={{
                         mb: 2,
                         display: "flex",
-                        flexDirection: "column",
-                        gap: 2,
-                        p: 2,
-                        backgroundColor: "action.hover",
-                        borderRadius: 1,
+                        justifyContent: "space-between",
+                        alignItems: "center",
                       }}
                     >
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Provider</InputLabel>
-                        <Select
-                          value={imageProvider}
-                          onChange={(e) => {
-                            const newProvider = e.target.value;
-                            setImageProvider(newProvider);
-                            if (newProvider === "google") {
-                              setImageModel("imagen-4.0-fast-generate-001");
-                            } else if (newProvider === "openai") {
-                              setImageModel("dall-e-3");
-                            }
-                          }}
-                          label="Provider"
+                      <Box>
+                        <Typography variant="h6" gutterBottom>
+                          Character Portrait
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Generate an AI portrait
+                        </Typography>
+                      </Box>
+                      <Tooltip title="Portrait Settings">
+                        <IconButton
+                          onClick={() =>
+                            setShowPortraitSettings(!showPortraitSettings)
+                          }
+                          color={showPortraitSettings ? "primary" : "default"}
                         >
-                          <MenuItem value="google">Google Imagen</MenuItem>
-                          <MenuItem value="openai">OpenAI</MenuItem>
-                        </Select>
-                      </FormControl>
-
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Model</InputLabel>
-                        <Select
-                          value={imageModel}
-                          onChange={(e) => setImageModel(e.target.value)}
-                          label="Model"
-                        >
-                          {/* Google Models */}
-                          <MenuItem
-                            value="imagen-4.0-fast-generate-001"
-                            sx={{
-                              display:
-                                imageProvider === "google" ? "block" : "none",
-                            }}
-                          >
-                            Imagen Fast
-                          </MenuItem>
-                          <MenuItem
-                            value="imagen-4.0-generate-001"
-                            sx={{
-                              display:
-                                imageProvider === "google" ? "block" : "none",
-                            }}
-                          >
-                            Imagen Standard
-                          </MenuItem>
-                          <MenuItem
-                            value="imagen-4.0-ultra-generate-001"
-                            sx={{
-                              display:
-                                imageProvider === "google" ? "block" : "none",
-                            }}
-                          >
-                            Imagen Ultra
-                          </MenuItem>
-                          {/* OpenAI Models */}
-                          <MenuItem
-                            value="dall-e-3"
-                            sx={{
-                              display:
-                                imageProvider === "openai" ? "block" : "none",
-                            }}
-                          >
-                            DALL-E 3
-                          </MenuItem>
-                          <MenuItem
-                            value="dall-e-2"
-                            sx={{
-                              display:
-                                imageProvider === "openai" ? "block" : "none",
-                            }}
-                          >
-                            DALL-E 2
-                          </MenuItem>
-                        </Select>
-                      </FormControl>
-
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Art Style</InputLabel>
-                        <Select
-                          value={imageStyle}
-                          onChange={(e) => setImageStyle(e.target.value)}
-                          label="Art Style"
-                        >
-                          <MenuItem value="realistic">Realistic</MenuItem>
-                          <MenuItem value="fantasy_art">Fantasy Art</MenuItem>
-                          <MenuItem value="anime">Anime</MenuItem>
-                          <MenuItem value="watercolor">Watercolor</MenuItem>
-                          <MenuItem value="digital_art">Digital Art</MenuItem>
-                        </Select>
-                      </FormControl>
-
-                      {imageProvider === "openai" &&
-                        imageModel === "dall-e-3" && (
-                          <FormControl fullWidth size="small">
-                            <InputLabel>Quality</InputLabel>
-                            <Select
-                              value={imageQuality}
-                              onChange={(e) => setImageQuality(e.target.value)}
-                              label="Quality"
-                            >
-                              <MenuItem value="standard">Standard</MenuItem>
-                              <MenuItem value="hd">HD</MenuItem>
-                            </Select>
-                          </FormControl>
-                        )}
+                          <SettingsIcon />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
-                  )}
 
-                  {/* Generate Button */}
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={
-                      generatingPortrait ? (
-                        <CircularProgress size={20} />
-                      ) : (
-                        <PhotoCameraIcon />
-                      )
-                    }
-                    onClick={handleGeneratePortrait}
-                    disabled={
-                      generatingPortrait ||
-                      !characterName.trim() ||
-                      !generatedContent
-                    }
-                  >
-                    {generatingPortrait ? "Generating..." : "Generate"}
-                  </Button>
+                    {/* Portrait Image Display */}
+                    {portraitImage && (
+                      <Box sx={{ mb: 2, textAlign: "center" }}>
+                        <img
+                          src={`data:image/png;base64,${portraitImage}`}
+                          alt={`${characterName} portrait`}
+                          style={{
+                            width: "100%",
+                            borderRadius: "8px",
+                            boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+                          }}
+                        />
+                      </Box>
+                    )}
 
-                  {portraitError && (
-                    <Alert
-                      severity="error"
-                      sx={{ mt: 2 }}
-                      onClose={() => setPortraitError(null)}
+                    {/* Collapsible Settings */}
+                    {showPortraitSettings && (
+                      <Box
+                        sx={{
+                          mb: 2,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                          p: 2,
+                          backgroundColor: "action.hover",
+                          borderRadius: 1,
+                        }}
+                      >
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Provider</InputLabel>
+                          <Select
+                            value={imageProvider}
+                            onChange={(e) => {
+                              const newProvider = e.target.value;
+                              setImageProvider(newProvider);
+                              if (newProvider === "google") {
+                                setImageModel("imagen-4.0-fast-generate-001");
+                              } else if (newProvider === "openai") {
+                                setImageModel("dall-e-3");
+                              }
+                            }}
+                            label="Provider"
+                          >
+                            <MenuItem value="google">Google Imagen</MenuItem>
+                            <MenuItem value="openai">OpenAI</MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Model</InputLabel>
+                          <Select
+                            value={imageModel}
+                            onChange={(e) => setImageModel(e.target.value)}
+                            label="Model"
+                          >
+                            {/* Google Models */}
+                            <MenuItem
+                              value="imagen-4.0-fast-generate-001"
+                              sx={{
+                                display:
+                                  imageProvider === "google" ? "block" : "none",
+                              }}
+                            >
+                              Imagen Fast
+                            </MenuItem>
+                            <MenuItem
+                              value="imagen-4.0-generate-001"
+                              sx={{
+                                display:
+                                  imageProvider === "google" ? "block" : "none",
+                              }}
+                            >
+                              Imagen Standard
+                            </MenuItem>
+                            <MenuItem
+                              value="imagen-4.0-ultra-generate-001"
+                              sx={{
+                                display:
+                                  imageProvider === "google" ? "block" : "none",
+                              }}
+                            >
+                              Imagen Ultra
+                            </MenuItem>
+                            {/* OpenAI Models */}
+                            <MenuItem
+                              value="dall-e-3"
+                              sx={{
+                                display:
+                                  imageProvider === "openai" ? "block" : "none",
+                              }}
+                            >
+                              DALL-E 3
+                            </MenuItem>
+                            <MenuItem
+                              value="dall-e-2"
+                              sx={{
+                                display:
+                                  imageProvider === "openai" ? "block" : "none",
+                              }}
+                            >
+                              DALL-E 2
+                            </MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Art Style</InputLabel>
+                          <Select
+                            value={imageStyle}
+                            onChange={(e) => setImageStyle(e.target.value)}
+                            label="Art Style"
+                          >
+                            <MenuItem value="realistic">Realistic</MenuItem>
+                            <MenuItem value="fantasy_art">Fantasy Art</MenuItem>
+                            <MenuItem value="anime">Anime</MenuItem>
+                            <MenuItem value="watercolor">Watercolor</MenuItem>
+                            <MenuItem value="digital_art">Digital Art</MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        {imageProvider === "openai" &&
+                          imageModel === "dall-e-3" && (
+                            <FormControl fullWidth size="small">
+                              <InputLabel>Quality</InputLabel>
+                              <Select
+                                value={imageQuality}
+                                onChange={(e) =>
+                                  setImageQuality(e.target.value)
+                                }
+                                label="Quality"
+                              >
+                                <MenuItem value="standard">Standard</MenuItem>
+                                <MenuItem value="hd">HD</MenuItem>
+                              </Select>
+                            </FormControl>
+                          )}
+                      </Box>
+                    )}
+
+                    {/* Generate Button */}
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={
+                        generatingPortrait ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <PhotoCameraIcon />
+                        )
+                      }
+                      onClick={handleGeneratePortrait}
+                      disabled={
+                        generatingPortrait ||
+                        !characterName.trim() ||
+                        !generatedContent
+                      }
                     >
-                      {portraitError}
-                    </Alert>
-                  )}
-                </Paper>
-              </Box>
-            </Grid>
+                      {generatingPortrait
+                        ? "Generating..."
+                        : "Generate Portrait"}
+                    </Button>
+
+                    {portraitError && (
+                      <Alert
+                        severity="error"
+                        sx={{ mt: 2 }}
+                        onClose={() => setPortraitError(null)}
+                      >
+                        {portraitError}
+                      </Alert>
+                    )}
+                  </Paper>
+                </Box>
+              </Grid>
+            )}
 
             {/* Right Column - Character Details (scrollable) */}
-            <Grid item xs={12} md={8}>
+            <Grid
+              item
+              xs={12}
+              md={!(dndCharacter && dndCharacter.is_dnd) ? 8 : 12}
+            >
               {/* Display Component - Conditional based on generation mode */}
               {console.log(
                 "Display logic - dndCharacter:",
@@ -1492,44 +1569,256 @@ export default function CreateCharacterPage() {
                         gap: 2,
                       }}
                     >
-                      {/* Character Portrait */}
-                      {dndCharacter.portrait_image && (
-                        <Card
-                          sx={{
-                            background:
-                              "linear-gradient(135deg, #2c1810 0%, #3d2817 100%)",
-                            border: "2px solid #8b6f47",
-                          }}
-                        >
-                          <CardContent sx={{ p: 2 }}>
-                            <img
-                              src={dndCharacter.portrait_image}
-                              alt={dndCharacter.name}
-                              style={{
-                                width: "100%",
-                                height: "auto",
-                                borderRadius: "8px",
-                                border: "2px solid #8b6f47",
+                      {/* Character Portrait Generation Section */}
+                      <Card sx={{ bgcolor: "background.paper" }}>
+                        <CardContent>
+                          {/* Header with Settings Toggle */}
+                          <Box
+                            sx={{
+                              mb: 2,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Box>
+                              <Typography variant="h6" gutterBottom>
+                                Character Portrait
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Generate an AI portrait
+                              </Typography>
+                            </Box>
+                            <Tooltip title="Portrait Settings">
+                              <IconButton
+                                onClick={() =>
+                                  setShowPortraitSettings(!showPortraitSettings)
+                                }
+                                color={
+                                  showPortraitSettings ? "primary" : "default"
+                                }
+                              >
+                                <SettingsIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+
+                          {/* Portrait Image Display */}
+                          {(portraitImage || dndCharacter.portrait_image) && (
+                            <Box sx={{ mb: 2, textAlign: "center" }}>
+                              <img
+                                src={
+                                  portraitImage
+                                    ? `data:image/png;base64,${portraitImage}`
+                                    : dndCharacter.portrait_image
+                                }
+                                alt={dndCharacter.name}
+                                style={{
+                                  width: "100%",
+                                  borderRadius: "8px",
+                                  boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+                                }}
+                              />
+                            </Box>
+                          )}
+
+                          {/* Collapsible Settings */}
+                          {showPortraitSettings && (
+                            <Box
+                              sx={{
+                                mb: 2,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 2,
+                                p: 2,
+                                backgroundColor: "action.hover",
+                                borderRadius: 1,
                               }}
-                            />
-                          </CardContent>
-                        </Card>
-                      )}
+                            >
+                              <FormControl fullWidth size="small">
+                                <InputLabel>Provider</InputLabel>
+                                <Select
+                                  value={imageProvider}
+                                  onChange={(e) => {
+                                    const newProvider = e.target.value;
+                                    setImageProvider(newProvider);
+                                    if (newProvider === "google") {
+                                      setImageModel(
+                                        "imagen-4.0-fast-generate-001"
+                                      );
+                                    } else if (newProvider === "openai") {
+                                      setImageModel("dall-e-3");
+                                    }
+                                  }}
+                                  label="Provider"
+                                >
+                                  <MenuItem value="google">
+                                    Google Imagen
+                                  </MenuItem>
+                                  <MenuItem value="openai">OpenAI</MenuItem>
+                                </Select>
+                              </FormControl>
+
+                              <FormControl fullWidth size="small">
+                                <InputLabel>Model</InputLabel>
+                                <Select
+                                  value={imageModel}
+                                  onChange={(e) =>
+                                    setImageModel(e.target.value)
+                                  }
+                                  label="Model"
+                                >
+                                  <MenuItem
+                                    value="imagen-4.0-fast-generate-001"
+                                    sx={{
+                                      display:
+                                        imageProvider === "google"
+                                          ? "block"
+                                          : "none",
+                                    }}
+                                  >
+                                    Imagen Fast
+                                  </MenuItem>
+                                  <MenuItem
+                                    value="imagen-4.0-generate-001"
+                                    sx={{
+                                      display:
+                                        imageProvider === "google"
+                                          ? "block"
+                                          : "none",
+                                    }}
+                                  >
+                                    Imagen Standard
+                                  </MenuItem>
+                                  <MenuItem
+                                    value="imagen-4.0-ultra-generate-001"
+                                    sx={{
+                                      display:
+                                        imageProvider === "google"
+                                          ? "block"
+                                          : "none",
+                                    }}
+                                  >
+                                    Imagen Ultra
+                                  </MenuItem>
+                                  <MenuItem
+                                    value="dall-e-3"
+                                    sx={{
+                                      display:
+                                        imageProvider === "openai"
+                                          ? "block"
+                                          : "none",
+                                    }}
+                                  >
+                                    DALL-E 3
+                                  </MenuItem>
+                                  <MenuItem
+                                    value="dall-e-2"
+                                    sx={{
+                                      display:
+                                        imageProvider === "openai"
+                                          ? "block"
+                                          : "none",
+                                    }}
+                                  >
+                                    DALL-E 2
+                                  </MenuItem>
+                                </Select>
+                              </FormControl>
+
+                              <FormControl fullWidth size="small">
+                                <InputLabel>Art Style</InputLabel>
+                                <Select
+                                  value={imageStyle}
+                                  onChange={(e) =>
+                                    setImageStyle(e.target.value)
+                                  }
+                                  label="Art Style"
+                                >
+                                  <MenuItem value="realistic">
+                                    Realistic
+                                  </MenuItem>
+                                  <MenuItem value="fantasy_art">
+                                    Fantasy Art
+                                  </MenuItem>
+                                  <MenuItem value="anime">Anime</MenuItem>
+                                  <MenuItem value="watercolor">
+                                    Watercolor
+                                  </MenuItem>
+                                  <MenuItem value="digital_art">
+                                    Digital Art
+                                  </MenuItem>
+                                </Select>
+                              </FormControl>
+
+                              {imageProvider === "openai" &&
+                                imageModel === "dall-e-3" && (
+                                  <FormControl fullWidth size="small">
+                                    <InputLabel>Quality</InputLabel>
+                                    <Select
+                                      value={imageQuality}
+                                      onChange={(e) =>
+                                        setImageQuality(e.target.value)
+                                      }
+                                      label="Quality"
+                                    >
+                                      <MenuItem value="standard">
+                                        Standard
+                                      </MenuItem>
+                                      <MenuItem value="hd">HD</MenuItem>
+                                    </Select>
+                                  </FormControl>
+                                )}
+                            </Box>
+                          )}
+
+                          {/* Generate Button */}
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            color="error"
+                            startIcon={
+                              generatingPortrait ? (
+                                <CircularProgress size={20} />
+                              ) : (
+                                <PhotoCameraIcon />
+                              )
+                            }
+                            onClick={handleGeneratePortrait}
+                            disabled={
+                              generatingPortrait || !characterName.trim()
+                            }
+                          >
+                            {generatingPortrait
+                              ? "Generating..."
+                              : "Generate Portrait"}
+                          </Button>
+
+                          {portraitError && (
+                            <Alert
+                              severity="error"
+                              sx={{ mt: 2 }}
+                              onClose={() => setPortraitError(null)}
+                            >
+                              {portraitError}
+                            </Alert>
+                          )}
+                        </CardContent>
+                      </Card>
 
                       {/* Character Name & Basic Info Card */}
                       <Card
                         sx={{
-                          background:
-                            "linear-gradient(135deg, #2c1810 0%, #3d2817 100%)",
-                          border: "2px solid #8b6f47",
-                          color: "#f4e4c1",
+                          bgcolor: "background.paper",
                         }}
                       >
                         <CardContent>
                           <Typography
                             variant="h4"
                             sx={{
-                              fontFamily: '"Cinzel", "Times New Roman", serif',
                               fontWeight: 700,
                               mb: 1,
                             }}
@@ -1538,16 +1827,15 @@ export default function CreateCharacterPage() {
                           </Typography>
                           <Typography
                             variant="subtitle1"
+                            color="text.secondary"
                             sx={{
-                              fontFamily: '"Crimson Text", serif',
-                              opacity: 0.9,
                               mb: 2,
                             }}
                           >
                             Level {dndCharacter.dnd_level}{" "}
                             {dndCharacter.dnd_species} {dndCharacter.dnd_class}
                           </Typography>
-                          <Divider sx={{ bgcolor: "#8b6f47", my: 2 }} />
+                          <Divider sx={{ my: 2 }} />
                           <Box
                             sx={{
                               display: "grid",
@@ -1558,7 +1846,7 @@ export default function CreateCharacterPage() {
                             <Box>
                               <Typography
                                 variant="caption"
-                                sx={{ opacity: 0.7 }}
+                                color="text.secondary"
                               >
                                 Alignment
                               </Typography>
@@ -1569,12 +1857,202 @@ export default function CreateCharacterPage() {
                             <Box>
                               <Typography
                                 variant="caption"
-                                sx={{ opacity: 0.7 }}
+                                color="text.secondary"
                               >
                                 Background
                               </Typography>
                               <Typography variant="body2">
                                 {dndCharacter.dnd_background}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </CardContent>
+                      </Card>
+
+                      {/* Ability Scores Card */}
+                      <Card sx={{ bgcolor: "background.paper" }}>
+                        <CardContent>
+                          <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{
+                              borderBottom: 1,
+                              borderColor: "divider",
+                              pb: 1,
+                              mb: 2,
+                            }}
+                          >
+                            Ability Scores
+                          </Typography>
+                          <Grid container spacing={1.5}>
+                            {dndCharacter.dnd_ability_scores &&
+                              Object.entries(
+                                dndCharacter.dnd_ability_scores
+                              ).map(([ability, score]) => (
+                                <Grid item xs={6} key={ability}>
+                                  <Card
+                                    variant="outlined"
+                                    sx={{
+                                      bgcolor: "background.default",
+                                      borderRadius: 1.5,
+                                    }}
+                                  >
+                                    <CardContent
+                                      sx={{ textAlign: "center", p: 1.5 }}
+                                    >
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          textTransform: "uppercase",
+                                          color: "error.main",
+                                          fontWeight: 700,
+                                          letterSpacing: 1,
+                                          fontSize: "0.7rem",
+                                        }}
+                                      >
+                                        {ability.substring(0, 3)}
+                                      </Typography>
+                                      <Typography
+                                        variant="h3"
+                                        sx={{
+                                          color: "text.primary",
+                                          fontWeight: 700,
+                                          my: 0.5,
+                                        }}
+                                      >
+                                        {score}
+                                      </Typography>
+                                      <Typography
+                                        variant="h6"
+                                        sx={{
+                                          color: "error.main",
+                                          fontWeight: 700,
+                                        }}
+                                      >
+                                        {Math.floor((score - 10) / 2) >= 0
+                                          ? `+${Math.floor((score - 10) / 2)}`
+                                          : `${Math.floor((score - 10) / 2)}`}
+                                      </Typography>
+                                    </CardContent>
+                                  </Card>
+                                </Grid>
+                              ))}
+                          </Grid>
+                        </CardContent>
+                      </Card>
+
+                      {/* Combat Stats Card */}
+                      <Card sx={{ bgcolor: "background.paper" }}>
+                        <CardContent>
+                          <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{
+                              borderBottom: 1,
+                              borderColor: "divider",
+                              pb: 1,
+                              mb: 2,
+                            }}
+                          >
+                            Combat Stats
+                          </Typography>
+                          <Box>
+                            <Box
+                              display="flex"
+                              justifyContent="space-between"
+                              py={1}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Hit Points
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  fontWeight: 700,
+                                  color: "error.main",
+                                  fontSize: "1.1rem",
+                                }}
+                              >
+                                {dndCharacter.dnd_hit_points}
+                              </Typography>
+                            </Box>
+                            <Divider />
+                            <Box
+                              display="flex"
+                              justifyContent="space-between"
+                              py={1}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Armor Class
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                sx={{ fontWeight: 700, fontSize: "1.1rem" }}
+                              >
+                                {dndCharacter.dnd_armor_class}
+                              </Typography>
+                            </Box>
+                            <Divider />
+                            <Box
+                              display="flex"
+                              justifyContent="space-between"
+                              py={1}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Initiative
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                sx={{ fontWeight: 700, fontSize: "1.1rem" }}
+                              >
+                                {dndCharacter.dnd_initiative}
+                              </Typography>
+                            </Box>
+                            <Divider />
+                            <Box
+                              display="flex"
+                              justifyContent="space-between"
+                              py={1}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Speed
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                sx={{ fontWeight: 700, fontSize: "1.1rem" }}
+                              >
+                                {dndCharacter.dnd_speed} ft
+                              </Typography>
+                            </Box>
+                            <Divider />
+                            <Box
+                              display="flex"
+                              justifyContent="space-between"
+                              py={1}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Proficiency Bonus
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                sx={{ fontWeight: 700, fontSize: "1.1rem" }}
+                              >
+                                {dndCharacter.dnd_proficiency_bonus}
                               </Typography>
                             </Box>
                           </Box>
@@ -1591,6 +2069,7 @@ export default function CreateCharacterPage() {
                       >
                         <Button
                           variant="contained"
+                          color="error"
                           onClick={() => handleSave(dndCharacter)}
                           disabled={
                             saving || generating || !characterName.trim()
@@ -1598,19 +2077,16 @@ export default function CreateCharacterPage() {
                           startIcon={
                             saving ? <CircularProgress size={20} /> : null
                           }
-                          sx={{
-                            bgcolor: "#8b6f47",
-                            "&:hover": { bgcolor: "#6d5839" },
-                          }}
                         >
                           {saving
                             ? "Saving..."
                             : isEditMode
-                              ? "Update"
-                              : "Save Character"}
+                            ? "Update"
+                            : "Save Character"}
                         </Button>
                         <Button
                           variant="outlined"
+                          color="error"
                           onClick={() => {
                             // Regenerate D&D character - reset to D&D generation form (step 0)
                             setDndCharacter(null);
@@ -1621,14 +2097,6 @@ export default function CreateCharacterPage() {
                             setError(null);
                           }}
                           disabled={saving || generating}
-                          sx={{
-                            borderColor: "#8b6f47",
-                            color: "#8b6f47",
-                            "&:hover": {
-                              borderColor: "#6d5839",
-                              bgcolor: "rgba(139, 111, 71, 0.1)",
-                            },
-                          }}
                         >
                           Regenerate
                         </Button>
@@ -1659,7 +2127,10 @@ export default function CreateCharacterPage() {
                         },
                       }}
                     >
-                      <DnDCharacterSheet character={dndCharacter} />
+                      <DnDCharacterSheet
+                        character={dndCharacter}
+                        hideBasicStats={true}
+                      />
                     </Box>
                   </Grid>
                 </Grid>
@@ -1696,8 +2167,8 @@ export default function CreateCharacterPage() {
                       {saving
                         ? "Saving..."
                         : isEditMode
-                          ? "Update"
-                          : "Save Character"}
+                        ? "Update"
+                        : "Save Character"}
                     </Button>
                   </Box>
                 </Box>
