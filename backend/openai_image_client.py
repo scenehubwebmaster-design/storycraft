@@ -356,17 +356,46 @@ async def generate_portrait_with_provider(
     Args:
         character_name: Name of the character
         appearance_text: Physical appearance description
-        provider: Image provider ("openai", "google")
+        provider: Image provider ("openai", "google", "stablediffusion")
         model: Model to use (provider-specific)
         aspect_ratio: Aspect ratio for Google Imagen or DALL-E size
         custom_prompt: Optional custom prompt override
         style_preset: Style preset (realistic, fantasy_art, anime, etc.)
-        quality: Image quality (standard, hd) - DALL-E 3 only
+        quality: Image quality (standard, hd) - DALL-E 3 only, or (draft, standard, high) for SD
         
     Returns:
         Dictionary with image_base64, prompt, and model
     """
-    if provider.lower() == "openai":
+    if provider.lower() == "stablediffusion":
+        # Use local Stable Diffusion
+        from stablediffusion_client import generate_portrait_with_sd
+        
+        logger.info(f"Using Stable Diffusion for {character_name} portrait")
+        
+        # Build prompt with style if not custom
+        if custom_prompt:
+            prompt = custom_prompt
+        else:
+            safe_appearance = extract_safe_appearance(appearance_text)
+            prompt = f"{character_name}, {safe_appearance}"
+        
+        # Map style_preset to SD styles
+        sd_style = style_preset if style_preset else "photorealistic"
+        
+        # Generate using SD
+        image_base64, full_prompt = generate_portrait_with_sd(
+            character_description=prompt,
+            style=sd_style,
+            quality=quality if quality in ["draft", "standard", "high"] else "standard"
+        )
+        
+        return {
+            "image_base64": image_base64,
+            "prompt": full_prompt,
+            "model": "Stable Diffusion (Local)"
+        }
+    
+    elif provider.lower() == "openai":
         # Determine if we should use DALL-E or GPT Image
         use_dalle = model and "dall-e" in model.lower()
         
