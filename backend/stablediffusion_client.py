@@ -49,17 +49,70 @@ class StableDiffusionClient:
         try:
             logger.info(f"Generating SD image with prompt: {prompt[:100]}...")
             
-            # Gradio API format for prediction
-            # fn_index 2 is the txt2img generation endpoint
+            # Gradio API format for txt2img endpoint (fn_index 124)
+            # Build complete parameter array (71 parameters total)
+            data = []
+            data.append({})  # 0. parameter_47 (Label) - empty dict
+            data.append(prompt)  # 1. Prompt
+            data.append(negative_prompt)  # 2. Negative prompt
+            data.append([])  # 3. Styles - empty list
+            data.append(1)  # 4. Batch count
+            data.append(1)  # 5. Batch size
+            data.append(cfg_scale)  # 6. CFG Scale
+            data.append(height)  # 7. Height
+            data.append(width)  # 8. Width
+            data.append(False)  # 9. Hires. fix
+            data.append(0.7)  # 10. Denoising strength
+            data.append(2.0)  # 11. Upscale by
+            data.append("")  # 12. Upscaler
+            data.append(0)  # 13. Hires steps
+            data.append(0)  # 14. Resize width to
+            data.append(0)  # 15. Resize height to
+            data.append("")  # 16. Checkpoint (empty = use current)
+            data.append("")  # 17. Hires sampling method
+            data.append("")  # 18. Hires schedule type
+            data.append("")  # 19. Hires prompt
+            data.append("")  # 20. Hires negative prompt
+            data.append([])  # 21. Override settings
+            data.append("None")  # 22. Script
+            data.append(steps)  # 23. Sampling steps
+            data.append("")  # 24. Sampling method (empty = default)
+            data.append("")  # 25. Schedule type
+            data.append(False)  # 26. Refiner
+            data.append("")  # 27. Checkpoint (refiner)
+            data.append(0.5)  # 28. Switch at
+            data.append(seed)  # 29. Seed
+            data.append(False)  # 30. Extra
+            data.append(-1)  # 31. Variation seed
+            data.append(0)  # 32. Variation strength
+            data.append(0)  # 33. Resize seed from width
+            data.append(0)  # 34. Resize seed from height
+            data.append(False)  # 35. Model Keyword Enabled
+            data.append("")  # 36. Keyword placement
+            data.append("")  # 37. Multiple keywords
+            data.append("")  # 38. Textual Inversion
+            data.append("")  # 39. Keyword order
+            data.append("")  # 40. Model
+            data.append(1.0)  # 41. multiplier
+            data.append("")  # 42. keywords
+            data.append(False)  # 43. NegPiP
+            
+            # Script parameters (44-70) - all defaults for "None" script
+            for _ in range(44, 71):
+                if _ in [44, 45, 49, 50, 62, 63, 64, 65, 66, 67, 68, 70]:
+                    data.append(False)  # Checkboxes
+                elif _ in [48, 69]:
+                    data.append(0)  # Margins
+                elif _ in [46, 47, 51]:
+                    data.append("")  # Radio buttons
+                elif _ in [55, 58, 61]:
+                    data.append([])  # Dropdown lists
+                else:
+                    data.append("")  # Text/dropdown strings
+            
             payload = {
-                "fn_index": 2,
-                "data": [
-                    prompt,           # Prompt
-                    negative_prompt,  # Negative prompt
-                    steps,            # Sampling steps
-                    seed,             # Seed
-                    False             # NegPiP (negative prompt in pipeline)
-                ]
+                "fn_index": 124,  # txt2img endpoint
+                "data": data
             }
             
             response = requests.post(
@@ -72,19 +125,67 @@ class StableDiffusionClient:
             result = response.json()
             
             # Extract the generated image from Gradio response
-            # Format: {"data": [<image_base64>, <generation_info>]}
+            # Format: {"data": [[image_array], info_text, html, html]}
             if "data" in result and len(result["data"]) > 0:
-                image_data = result["data"][0]
+                images_array = result["data"][0]  # Gallery output
+                
+                if not images_array or len(images_array) == 0:
+                    # Check for error in HTML output
+                    if len(result["data"]) > 3:
+                        error_html = result["data"][3]
+                        if "error" in error_html.lower():
+                            raise ValueError(f"Generation failed: {error_html[:200]}")
+                    raise ValueError("No images generated")
+                
+                # Get first image from gallery
+                first_image = images_array[0]
                 
                 # Handle different response formats
-                if isinstance(image_data, dict):
-                    # Format: {"name": "...", "data": "base64...", ...}
-                    base64_image = image_data.get("data", "")
-                elif isinstance(image_data, str):
-                    # Direct base64 string
-                    base64_image = image_data
+                if isinstance(first_image, dict):
+                    # Gradio returns {"name": "path/to/file.png", "data": None, "is_file": True}
+                    # Need to fetch the file from the server
+                    if "name" in first_image and "is_file" in first_image:
+                        file_path = first_image["name"]
+                        # Remove query string if present
+                        if "?" in file_path:
+                            file_path = file_path.split("?")[0]
+                        
+                        # Build URL to fetch the file
+                        # Gradio serves files at /file=<path>
+                        file_url = f"{self.base_url}/file={file_path}"
+                        
+                        logger.info(f"Fetching generated image from: {file_url}")
+                        img_response = requests.get(file_url, timeout=30)
+                        img_response.raise_for_status()
+                        
+                        import base64
+                        base64_image = base64.b64encode(img_response.content).decode("utf-8")
+                        
+                    elif "data" in first_image and first_image["data"] is not None:
+                        # Direct base64 in data field
+                        base64_image = first_image["data"]
+                        # Remove data URI prefix if present
+                        if base64_image.startswith("data:"):
+                            base64_image = base64_image.split(",", 1)[1]
+                    elif "url" in first_image:
+                        # URL field
+                        img_url = first_image["url"]
+                        if not img_url.startswith("http"):
+                            img_url = f"{self.base_url}{img_url}"
+                        img_response = requests.get(img_url, timeout=30)
+                        img_response.raise_for_status()
+                        import base64
+                        base64_image = base64.b64encode(img_response.content).decode("utf-8")
+                    else:
+                        raise ValueError(f"Unknown image format: {first_image.keys()}")
+                elif isinstance(first_image, str):
+                    # Direct base64 string or URL
+                    base64_image = first_image
                 else:
-                    raise ValueError("Unexpected image data format")
+                    raise ValueError(f"Unexpected image type: {type(first_image)}")
+                
+                # Get generation info if available
+                info_text = result["data"][1] if len(result["data"]) > 1 else ""
                 
                 return {
                     "image": base64_image,
@@ -93,7 +194,10 @@ class StableDiffusionClient:
                         "negative_prompt": negative_prompt,
                         "steps": steps,
                         "seed": seed,
-                        "model": "Stable Diffusion (Local)"
+                        "cfg_scale": cfg_scale,
+                        "size": f"{width}x{height}",
+                        "model": "Stable Diffusion (Local)",
+                        "generation_info": info_text[:500] if info_text else ""
                     }
                 }
             else:

@@ -1409,7 +1409,9 @@ export default function CreateCharacterPage() {
                           >
                             <MenuItem value="google">Google Imagen</MenuItem>
                             <MenuItem value="openai">OpenAI</MenuItem>
-                            <MenuItem value="stablediffusion">Stable Diffusion (Local)</MenuItem>
+                            <MenuItem value="stablediffusion">
+                              Stable Diffusion (Local)
+                            </MenuItem>
                           </Select>
                         </FormControl>
 
@@ -1472,7 +1474,9 @@ export default function CreateCharacterPage() {
                               value="sd-local"
                               sx={{
                                 display:
-                                  imageProvider === "stablediffusion" ? "block" : "none",
+                                  imageProvider === "stablediffusion"
+                                    ? "block"
+                                    : "none",
                               }}
                             >
                               Local SD Model
@@ -1515,21 +1519,19 @@ export default function CreateCharacterPage() {
 
                         {/* Quality selector for Stable Diffusion */}
                         {imageProvider === "stablediffusion" && (
-                            <FormControl fullWidth size="small">
-                              <InputLabel>Quality</InputLabel>
-                              <Select
-                                value={imageQuality}
-                                onChange={(e) =>
-                                  setImageQuality(e.target.value)
-                                }
-                                label="Quality"
-                              >
-                                <MenuItem value="draft">Draft (Fast)</MenuItem>
-                                <MenuItem value="standard">Standard</MenuItem>
-                                <MenuItem value="high">High Quality</MenuItem>
-                              </Select>
-                            </FormControl>
-                          )}
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Quality</InputLabel>
+                            <Select
+                              value={imageQuality}
+                              onChange={(e) => setImageQuality(e.target.value)}
+                              label="Quality"
+                            >
+                              <MenuItem value="draft">Draft (Fast)</MenuItem>
+                              <MenuItem value="standard">Standard</MenuItem>
+                              <MenuItem value="high">High Quality</MenuItem>
+                            </Select>
+                          </FormControl>
+                        )}
                       </Box>
                     )}
 
@@ -1683,7 +1685,9 @@ export default function CreateCharacterPage() {
                                       );
                                     } else if (newProvider === "openai") {
                                       setImageModel("dall-e-3");
-                                    } else if (newProvider === "stablediffusion") {
+                                    } else if (
+                                      newProvider === "stablediffusion"
+                                    ) {
                                       setImageModel("sd-local");
                                     }
                                   }}
@@ -1693,7 +1697,9 @@ export default function CreateCharacterPage() {
                                     Google Imagen
                                   </MenuItem>
                                   <MenuItem value="openai">OpenAI</MenuItem>
-                                  <MenuItem value="stablediffusion">Stable Diffusion (Local)</MenuItem>
+                                  <MenuItem value="stablediffusion">
+                                    Stable Diffusion (Local)
+                                  </MenuItem>
                                 </Select>
                               </FormControl>
 
@@ -1820,27 +1826,27 @@ export default function CreateCharacterPage() {
                                 )}
 
                               {imageProvider === "stablediffusion" && (
-                                  <FormControl fullWidth size="small">
-                                    <InputLabel>Quality</InputLabel>
-                                    <Select
-                                      value={imageQuality}
-                                      onChange={(e) =>
-                                        setImageQuality(e.target.value)
-                                      }
-                                      label="Quality"
-                                    >
-                                      <MenuItem value="draft">
-                                        Draft (Fast)
-                                      </MenuItem>
-                                      <MenuItem value="standard">
-                                        Standard
-                                      </MenuItem>
-                                      <MenuItem value="high">
-                                        High Quality
-                                      </MenuItem>
-                                    </Select>
-                                  </FormControl>
-                                )}
+                                <FormControl fullWidth size="small">
+                                  <InputLabel>Quality</InputLabel>
+                                  <Select
+                                    value={imageQuality}
+                                    onChange={(e) =>
+                                      setImageQuality(e.target.value)
+                                    }
+                                    label="Quality"
+                                  >
+                                    <MenuItem value="draft">
+                                      Draft (Fast)
+                                    </MenuItem>
+                                    <MenuItem value="standard">
+                                      Standard
+                                    </MenuItem>
+                                    <MenuItem value="high">
+                                      High Quality
+                                    </MenuItem>
+                                  </Select>
+                                </FormControl>
+                              )}
                             </Box>
                           )}
 

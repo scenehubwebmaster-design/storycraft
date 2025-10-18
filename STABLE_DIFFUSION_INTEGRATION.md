@@ -1,105 +1,169 @@
-# Stable Diffusion Integration - Phase 1
+# Stable Diffusion Integration
+
+## Status: ✅ WORKING
+
+Successfully integrated local Stable Diffusion server (Gradio-based WebUI) for character portrait generation.
 
 ## Overview
-Initial integration of local Stable Diffusion server for character portrait generation.
 
-## Components Created
+Character portraits can now be generated using:
 
-### Backend
-- **stablediffusion_client.py**: Client for Gradio-based SD WebUI
-  - `StableDiffusionClient` class with connection testing
-  - `generate_portrait_with_sd()` function for styled portrait generation
-  - Quality presets: draft (fast), standard, high
-  - Style presets: photorealistic, fantasy, anime, oil_painting, digital_art
-
-- **test_stablediffusion.py**: Test suite for SD integration
-  - Connection testing
-  - Portrait generation testing
-
-### Frontend (CreateCharacter.jsx)
-- Added "Stable Diffusion (Local)" as provider option
-- Added SD model selector ("Local SD Model")
-- Added SD quality selector (Draft/Standard/High)
-- Available in both regular character and D&D character edit views
-
-### Integration Points
-- Updated `openai_image_client.py`:
-  - Added `stablediffusion` provider to `generate_portrait_with_provider()`
-  - Maps style presets to SD-compatible styles
-  - Extracts safe appearance descriptions
+- **Google Imagen** (cloud)
+- **OpenAI DALL-E** (cloud)
+- **Stable Diffusion** (local server) ← NEW
 
 ## Configuration
-Add to `.env`:
-```
+
+Add to `.env` file:
+
+```env
 STABLEDIFFUSION_API_URL=http://192.168.250.14:7861
 ```
 
-## Current Status
-✅ Backend client created
-✅ Frontend UI updated with SD options
-✅ Integration into portrait generation pipeline
-⚠️  **API endpoint mapping needs refinement** - Current Gradio interface differs from standard SD WebUI API
+## Server Details
 
-## Next Steps
-1. **Identify correct Gradio endpoint** for text-to-image generation
-   - Current endpoint #2 just echoes inputs, doesn't generate
-   - Need to find the actual generation endpoint in the Gradio interface
-   
-2. **Test actual image generation** once endpoint is identified
+- **Type**: Gradio-based Stable Diffusion WebUI
+- **API Format**: `/api/predict` with `fn_index` parameter
+- **txt2img Endpoint**: fn_index 124 (71 parameters)
+- **Available Models**: 16+ models including:
+  - ChilloutMix
+  - DreamShaper 8
+  - EpicPhotoGasm
+  - Juggernaut XL
+  - And more...
 
-3. **Add model selection** from available SD models:
-   - chilloutmix_NiPrunedFp32Fix
-   - dreamshaper_8
-   - epicphotogasm_ultimateFidelity
-   - goddessOfRealism_gorV6ilxlVAE
-   - juggernautXL_ragnarokBy
-   - kreaUltimateRealism_v10
-   - realismByStableYogi variants
-   - And more...
+## Implementation
 
-4. **Optional enhancements**:
-   - Add negative prompt customization
-   - Add CFG scale control
-   - Add aspect ratio selection
-   - Show generation progress
-   - Cache generated images locally
+### Backend
+
+**stablediffusion_client.py**:
+
+- `StableDiffusionClient` class for Gradio API communication
+- `generate_image()` - Uses endpoint 124 with full 71-parameter array
+- `generate_portrait_with_sd()` - Helper function with quality/style presets
+- Fetches generated images from server using `/file=` endpoint
+
+**openai_image_client.py**:
+
+- Added `stablediffusion` provider to `generate_portrait_with_provider()`
+- Maps style presets to SD-compatible prompts
+- Uses `extract_safe_appearance()` for character description
+
+### Frontend
+
+**CreateCharacter.jsx** (2 locations):
+
+- Added "Stable Diffusion (Local)" to provider selector
+- Shows "Local SD Model" when SD is selected
+- Quality selector: Draft (Fast), Standard, High Quality
+- Reuses existing style selector
+
+### Quality Presets
+
+- **Draft**: 20 steps, 512x512 (fast prototyping)
+- **Standard**: 30 steps, 768x768 (balanced)
+- **High**: 50 steps, 1024x1024 (best quality)
+
+### Style Presets
+
+- Photorealistic
+- Fantasy Art
+- Anime
+- Oil Painting
+- Digital Art
+- Watercolor
+- Comic Book
+- Noir
 
 ## Technical Notes
-- Server running at `http://192.168.250.14:7861`
-- Uses Gradio API format (not standard SD WebUI `/sdapi/v1/` endpoints)
-- Connection test successful ✅
-- Need to map Gradio interface to actual generation functions
 
-## Usage Example (when complete)
+### Gradio API Structure
+
+Endpoint 124 requires 71 parameters in specific order:
+
 ```python
-from stablediffusion_client import generate_portrait_with_sd
-
-image_base64, prompt = generate_portrait_with_sd(
-    character_description="a young elf warrior with blonde hair and blue eyes",
-    style="fantasy",
-    quality="standard"
-)
+data = [
+    {},              # 0. parameter_47 (Label)
+    prompt,          # 1. Prompt
+    negative_prompt, # 2. Negative prompt
+    [],              # 3. Styles (List[str])
+    1,               # 4. Batch count
+    1,               # 5. Batch size
+    7.0,             # 6. CFG Scale
+    height,          # 7. Height
+    width,           # 8. Width
+    # ... 62 more parameters with proper defaults
+]
 ```
 
-Frontend usage:
-1. Select "Stable Diffusion (Local)" as provider
-2. Choose "Local SD Model"
-3. Pick art style (Realistic, Fantasy Art, Anime, etc.)
-4. Select quality (Draft/Standard/High)
-5. Click "Generate Portrait"
+### Response Format
 
-## Files Modified
-- `backend/stablediffusion_client.py` (new)
-- `backend/openai_image_client.py` (updated)
-- `backend/test_stablediffusion.py` (new)
-- `frontend/src/pages/CreateCharacter.jsx` (updated - 2 locations for regular and D&D)
+```json
+{
+  "data": [
+    [{ "name": "path/to/image.png", "data": null, "is_file": true }],
+    "{\"prompt\": \"...\", \"seed\": 123, ...}",
+    "<p>Generation info HTML</p>",
+    "<p>Performance stats</p>"
+  ]
+}
+```
+
+Images are saved on server and fetched via `/file=<path>` endpoint.
 
 ## Testing
+
 ```bash
 cd backend
 python test_stablediffusion.py
 ```
 
-Current test status:
-- ✅ Connection test passes
-- ⚠️  Generation test needs correct endpoint mapping
+Expected output:
+
+```
+✅ Successfully connected to Stable Diffusion server
+✅ Portrait generated successfully!
+   Image size: ~500KB
+   Saved to test_portrait.png
+```
+
+## Usage
+
+1. Start backend server
+2. In character creation/editing:
+   - Select "Stable Diffusion (Local)" as provider
+   - Choose quality level
+   - Select art style
+   - Click "Generate Portrait"
+3. Image generates in ~2-30 seconds depending on quality
+4. Portrait displays and saves to database
+
+## Benefits
+
+✅ No cloud API costs
+✅ No rate limiting (local server)
+✅ Full control over models and settings
+✅ Privacy (all processing local)
+✅ High-quality realistic portraits
+✅ Supports all 16+ installed models
+
+## Known Issues
+
+- ⚠️ Requires SD server to be running
+- ⚠️ First generation may be slower (model loading)
+- ⚠️ High quality settings can take 20-30 seconds
+
+## Files Modified/Created
+
+- `backend/stablediffusion_client.py` (new)
+- `backend/openai_image_client.py` (updated)
+- `backend/test_stablediffusion.py` (new)
+- `frontend/src/pages/CreateCharacter.jsx` (updated - 2 locations)
+
+## Next Steps
+
+- [ ] Add model selector (currently uses server default)
+- [ ] Add advanced settings (sampler, CFG scale)
+- [ ] Implement img2img for portrait refinement
+- [ ] Add LoRA support
+- [ ] Batch generation support
