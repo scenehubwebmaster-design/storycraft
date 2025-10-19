@@ -21,6 +21,19 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Optionally run local development migrations (non-production safe)
+# Controlled by env var RUN_LOCAL_MIGRATIONS=true
+import os
+if os.environ.get("RUN_LOCAL_MIGRATIONS", "false").lower() == "true":
+    try:
+        # Import and run the lightweight migration helper via package import
+        from backend.scripts import ensure_softdelete_columns as _migrate
+
+        logger.info("RUN_LOCAL_MIGRATIONS=true: ensuring soft-delete columns")
+        _migrate.main()
+    except Exception as e:
+        logger.exception("Local migration helper failed: %s", e)
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
