@@ -72,6 +72,8 @@ export default function CreateLocationPage() {
   const [worldId, setWorldId] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [generatedImage, setGeneratedImage] = useState(null);
+  const [generatedImagePrompt, setGeneratedImagePrompt] = useState(null);
 
   useEffect(() => {
     loadOptions();
@@ -82,7 +84,8 @@ export default function CreateLocationPage() {
       const response = await axios.get(`${API_URL}/api/generate/options/`);
       setOptions(response.data);
     } catch (err) {
-      setError("Failed to load options");
+      setGeneratedImage(response.data.image_base64);
+      setGeneratedImagePrompt(response.data.prompt || null);
     }
   };
 
@@ -153,6 +156,8 @@ export default function CreateLocationPage() {
           description: finalContent || generatedContent,
           world_id: parseInt(worldId),
           location_type: locationType || "Other",
+          location_image: generatedImage || null,
+          image_prompt: generatedImagePrompt || null,
         },
       });
 
@@ -365,6 +370,48 @@ export default function CreateLocationPage() {
             saving={saving || generating}
             entity="Location"
           />
+          <Box sx={{ mt: 2, display: "flex", gap: 2, alignItems: "center" }}>
+            <Button
+              variant="outlined"
+              onClick={async () => {
+                try {
+                  setGenerating(true);
+                  setError(null);
+                  const response = await axios.post(
+                    `${API_URL}/api/generate/location/generate-image/`,
+                    {
+                      location_name: locationName || "",
+                      location_type: locationType || "",
+                      description: generatedContent || customDetails || "",
+                      provider: "stablediffusion",
+                      style_preset: "realistic",
+                    }
+                  );
+                  setGeneratedImage(
+                    response.data.image_base64 || response.data.image || null
+                  );
+                } catch (err) {
+                  setError(
+                    err.response?.data?.detail || "Failed to generate image"
+                  );
+                } finally {
+                  setGenerating(false);
+                }
+              }}
+            >
+              Generate Location Image
+            </Button>
+
+            {generatedImage && (
+              <Box>
+                <img
+                  src={`data:image/png;base64,${generatedImage}`}
+                  alt="location"
+                  style={{ maxHeight: 160 }}
+                />
+              </Box>
+            )}
+          </Box>
         </Box>
       )}
 

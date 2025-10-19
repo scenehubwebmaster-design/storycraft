@@ -17,15 +17,35 @@ class WorldBase(BaseModel):
     culture: str | None = None
     magic_system: str | None = None
     technology_level: str | None = None
+    # Optional image/map fields and metadata
+    world_image: str | None = None
+    world_map: str | None = None
+    image_prompt: str | None = None
+    climate: str | None = None
+    population_level: str | None = None
+    danger_level: str | None = None
 
 class WorldCreate(WorldBase):
     pass
+
+class LocationBrief(BaseModel):
+    id: int
+    name: str
+    coordinates: str | None = None
+    location_image: str | None = None
+
 
 class WorldResponse(WorldBase):
     id: int
     created_at: datetime
     updated_at: datetime
-    
+    # Include generated images and prompts when available
+    world_image: str | None = None
+    world_map: str | None = None
+    image_prompt: str | None = None
+    # Basic list of locations for map overlay / quick access
+    locations: list[LocationBrief] | None = None
+
     class Config:
         from_attributes = True
 
@@ -41,7 +61,39 @@ def get_world(world_id: int, db: Session = Depends(get_db)):
     world = db.query(World).filter(World.id == world_id).first()
     if world is None:
         raise HTTPException(status_code=404, detail="World not found")
-    return world
+    # Serialize world with basic location briefs for frontend map overlay
+    locations = []
+    try:
+        for loc in getattr(world, "locations", []) or []:
+            locations.append({
+                "id": loc.id,
+                "name": loc.name,
+                "coordinates": getattr(loc, "coordinates", None),
+                "location_image": getattr(loc, "location_image", None),
+            })
+    except Exception:
+        locations = None
+
+    result = {
+        "id": world.id,
+        "name": world.name,
+        "description": world.description,
+        "history": world.history,
+        "geography": world.geography,
+        "culture": world.culture,
+        "magic_system": world.magic_system,
+        "technology_level": world.technology_level,
+        "world_image": getattr(world, "world_image", None),
+        "world_map": getattr(world, "world_map", None),
+        "image_prompt": getattr(world, "image_prompt", None),
+        "climate": getattr(world, "climate", None),
+        "population_level": getattr(world, "population_level", None),
+        "danger_level": getattr(world, "danger_level", None),
+        "created_at": world.created_at,
+        "updated_at": world.updated_at,
+        "locations": locations,
+    }
+    return result
 
 @router.post("/", response_model=WorldResponse)
 def create_world(world: WorldCreate, db: Session = Depends(get_db)):

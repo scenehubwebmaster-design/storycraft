@@ -61,6 +61,10 @@ export default function CreateWorldPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [worldImage, setWorldImage] = useState(null);
+  const [worldImagePrompt, setWorldImagePrompt] = useState(null);
+  const [worldMap, setWorldMap] = useState(null);
+  const [worldMapPrompt, setWorldMapPrompt] = useState(null);
 
   useEffect(() => {
     loadOptions();
@@ -187,6 +191,9 @@ export default function CreateWorldPage() {
           geography: finalContent || generatedContent,
           culture: finalContent || generatedContent,
           lore: finalContent || generatedContent,
+          world_image: worldImage,
+          world_map: worldMap,
+          image_prompt: worldImagePrompt || worldMapPrompt,
         });
 
         setSuccess("World updated successfully!");
@@ -199,6 +206,9 @@ export default function CreateWorldPage() {
           // Use structured save endpoint
           await axios.post(`${API_URL}/api/generate/world/structured/save/`, {
             world_profile: finalContent || generatedContent,
+            world_image: worldImage || null,
+            image_prompt: worldImagePrompt || null,
+            world_map: worldMap || null,
           });
         } else {
           // Use legacy save endpoint
@@ -206,6 +216,9 @@ export default function CreateWorldPage() {
             params: {
               name: worldName,
               content: finalContent || generatedContent,
+              world_image: worldImage || null,
+              image_prompt: worldImagePrompt || null,
+              world_map: worldMap || null,
             },
           });
         }
@@ -422,6 +435,106 @@ export default function CreateWorldPage() {
           {useStructured ? (
             <Box sx={{ mb: 3 }}>
               <StructuredWorldDisplay worldProfile={generatedContent} />
+              {/* Landscape & Map Generation */}
+              <Box
+                sx={{ display: "flex", gap: 2, mt: 3, alignItems: "center" }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={async () => {
+                    setGenerating(true);
+                    setError(null);
+                    try {
+                      const resp = await axios.post(
+                        `${API_URL}/api/generate/world/generate-landscape/`,
+                        {
+                          world_name:
+                            worldName || generatedContent?.name || "World",
+                          description:
+                            generatedContent?.overview ||
+                            generatedContent?.description ||
+                            (typeof generatedContent === "string"
+                              ? generatedContent
+                              : ""),
+                          landscape_type: "overview",
+                          provider: "stablediffusion",
+                          style_preset: "fantasy-art",
+                        }
+                      );
+                      setWorldImage(
+                        resp.data.image_base64 || resp.data.image || null
+                      );
+                      setWorldImagePrompt(resp.data.prompt || null);
+                    } catch (err) {
+                      setError(
+                        err.response?.data?.detail ||
+                          "Failed to generate landscape"
+                      );
+                    } finally {
+                      setGenerating(false);
+                    }
+                  }}
+                >
+                  Generate Landscape
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  onClick={async () => {
+                    setGenerating(true);
+                    setError(null);
+                    try {
+                      const resp = await axios.post(
+                        `${API_URL}/api/generate/world/generate-landscape/`,
+                        {
+                          world_name:
+                            worldName || generatedContent?.name || "World",
+                          description:
+                            generatedContent?.overview ||
+                            generatedContent?.description ||
+                            (typeof generatedContent === "string"
+                              ? generatedContent
+                              : ""),
+                          landscape_type: "map",
+                          provider: "stablediffusion",
+                          style_preset: "realistic",
+                        }
+                      );
+                      setWorldMap(
+                        resp.data.image_base64 || resp.data.image || null
+                      );
+                      setWorldMapPrompt(resp.data.prompt || null);
+                    } catch (err) {
+                      setError(
+                        err.response?.data?.detail || "Failed to generate map"
+                      );
+                    } finally {
+                      setGenerating(false);
+                    }
+                  }}
+                >
+                  Generate Map
+                </Button>
+
+                {worldImage && (
+                  <Box>
+                    <img
+                      src={`data:image/png;base64,${worldImage}`}
+                      alt="landscape"
+                      style={{ maxHeight: 120 }}
+                    />
+                  </Box>
+                )}
+                {worldMap && (
+                  <Box>
+                    <img
+                      src={`data:image/png;base64,${worldMap}`}
+                      alt="map"
+                      style={{ maxHeight: 120 }}
+                    />
+                  </Box>
+                )}
+              </Box>
               <Box
                 sx={{
                   display: "flex",

@@ -106,6 +106,13 @@ class World(Base):
     magic_system = Column(Text)
     technology_level = Column(String(100))
     structured_data = Column(Text)  # Store full WorldProfile from structured generation (stored as JSON string)
+    # New image and metadata fields
+    world_image = Column(Text)  # Base64 encoded landscape/overview image
+    world_map = Column(Text)    # Base64 encoded map image
+    image_prompt = Column(Text) # Prompt used to generate world image
+    climate = Column(String(100))
+    population_level = Column(String(50))  # sparse, moderate, dense
+    danger_level = Column(String(50))      # safe, moderate, dangerous
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -123,6 +130,13 @@ class Location(Base):
     description = Column(Text)
     location_type = Column(String(100))  # city, region, building, etc.
     generation_log = Column(JSON)  # Track AI generation history
+    # New image and hierarchy fields
+    location_image = Column(Text)  # Base64 encoded image data for location
+    image_prompt = Column(Text)
+    parent_location_id = Column(Integer, ForeignKey("locations.id"), nullable=True)
+    coordinates = Column(String(50))
+    notable_features = Column(Text)
+    inhabitants = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

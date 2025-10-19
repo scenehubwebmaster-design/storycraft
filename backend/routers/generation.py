@@ -65,6 +65,189 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/generate", tags=["generation"])
 
 
+class RegionCropRequest(BaseModel):
+    world_id: int
+    # Either percent bounds (x1%,y1%,x2%,y2%) in 0-100 or lat/lng bounds dict
+    percent_bounds: Optional[Dict[str, float]] = None
+    latlng_bounds: Optional[Dict[str, float]] = None
+    upscale: Optional[int] = 1  # integer upscale multiplier
+
+
+@router.post('/region/crop/')
+def crop_region(request: RegionCropRequest, db: Session = Depends(get_db)):
+    """Crop a region out of the world's map image.
+
+    Accepts either percent_bounds = {x1:float,y1:float,x2:float,y2:float} where
+    coordinates are percents (0-100) relative to the original image width/height,
+    or latlng_bounds which will be handled as fallback for geospatial maps.
+    Returns base64 PNG image of the cropped region.
+    """
+    try:
+        # Avoid selecting all model columns (some DBs may be missing migrated columns)
+        # Query only the world_map column directly to be resilient against schema drift
+        row = db.execute(
+            "SELECT world_map FROM worlds WHERE id = :wid",
+            {"wid": request.world_id}
+        ).fetchone()
+        if not row or not row[0]:
+            raise HTTPException(status_code=404, detail='World or world_map not found')
+
+        import base64
+        from io import BytesIO
+        from PIL import Image
+
+        img_b64 = row[0]
+        img_bytes = base64.b64decode(img_b64)
+        img = Image.open(BytesIO(img_bytes)).convert('RGBA')
+        w, h = img.size
+
+        if request.percent_bounds:
+            pb = request.percent_bounds
+            x1 = max(0, min(100, pb.get('x1', 0))) / 100.0
+            y1 = max(0, min(100, pb.get('y1', 0))) / 100.0
+            x2 = max(0, min(100, pb.get('x2', 100))) / 100.0
+            y2 = max(0, min(100, pb.get('y2', 100))) / 100.0
+            left = int(x1 * w)
+            top = int(y1 * h)
+            right = int(x2 * w)
+            bottom = int(y2 * h)
+        elif request.latlng_bounds:
+            # We don't have a real coordinate reference; treat lat/lng as percent placeholders
+            lb = request.latlng_bounds
+            # Expect keys: lat_min, lng_min, lat_max, lng_max mapped to percent-like 0-100
+            left = int(max(0, min(100, lb.get('lng_min', 0))) / 100.0 * w)
+            top = int(max(0, min(100, lb.get('lat_min', 0))) / 100.0 * h)
+            right = int(max(0, min(100, lb.get('lng_max', 100))) / 100.0 * w)
+            bottom = int(max(0, min(100, lb.get('lat_max', 100))) / 100.0 * h)
+        else:
+            raise HTTPException(status_code=400, detail='No bounds provided')
+
+        # Clamp
+        left = max(0, min(left, w - 1))
+        right = max(left + 1, min(right, w))
+        top = max(0, min(top, h - 1))
+        bottom = max(top + 1, min(bottom, h))
+
+        cropped = img.crop((left, top, right, bottom))
+        if request.upscale and request.upscale > 1:
+            new_w = cropped.width * request.upscale
+            new_h = cropped.height * request.upscale
+            cropped = cropped.resize((new_w, new_h), Image.LANCZOS)
+
+        out_buf = BytesIO()
+        cropped.save(out_buf, format='PNG')
+        out_b64 = base64.b64encode(out_buf.getvalue()).decode('utf-8')
+
+        return { 'image_base64': out_b64, 'width': cropped.width, 'height': cropped.height }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception('Region cropping failed')
+        raise HTTPException(status_code=500, detail=f'Region cropping error: {str(e)}')
+
+
+class CropAndGenerateRequest(BaseModel):
+    world_id: int
+    percent_bounds: Optional[Dict[str, float]] = None
+    latlng_bounds: Optional[Dict[str, float]] = None
+    upscale: Optional[int] = 1
+    prompt: Optional[str] = None
+    provider: Optional[str] = 'stablediffusion'
+    model: Optional[str] = None
+
+
+@router.post('/region/crop-and-generate/')
+async def crop_and_generate(request: CropAndGenerateRequest, db: Session = Depends(get_db)):
+    """Crop a region and then call the image generation helper to stylize/enhance it.
+
+    Returns the generated image_base64 and metadata.
+    """
+    try:
+        # Reuse crop logic: fetch world_map
+        row = db.execute(
+            "SELECT world_map FROM worlds WHERE id = :wid",
+            {"wid": request.world_id}
+        ).fetchone()
+        if not row or not row[0]:
+            raise HTTPException(status_code=404, detail='World or world_map not found')
+
+        import base64
+        from io import BytesIO
+        from PIL import Image
+
+        img_b64 = row[0]
+        img_bytes = base64.b64decode(img_b64)
+        img = Image.open(BytesIO(img_bytes)).convert('RGBA')
+        w, h = img.size
+
+        if request.percent_bounds:
+            pb = request.percent_bounds
+            x1 = max(0, min(100, pb.get('x1', 0))) / 100.0
+            y1 = max(0, min(100, pb.get('y1', 0))) / 100.0
+            x2 = max(0, min(100, pb.get('x2', 100))) / 100.0
+            y2 = max(0, min(100, pb.get('y2', 100))) / 100.0
+            left = int(x1 * w)
+            top = int(y1 * h)
+            right = int(x2 * w)
+            bottom = int(y2 * h)
+        elif request.latlng_bounds:
+            lb = request.latlng_bounds
+            left = int(max(0, min(100, lb.get('lng_min', 0))) / 100.0 * w)
+            top = int(max(0, min(100, lb.get('lat_min', 0))) / 100.0 * h)
+            right = int(max(0, min(100, lb.get('lng_max', 100))) / 100.0 * w)
+            bottom = int(max(0, min(100, lb.get('lat_max', 100))) / 100.0 * h)
+        else:
+            raise HTTPException(status_code=400, detail='No bounds provided')
+
+        # Clamp and crop
+        left = max(0, min(left, w - 1))
+        right = max(left + 1, min(right, w))
+        top = max(0, min(top, h - 1))
+        bottom = max(top + 1, min(bottom, h))
+
+        cropped = img.crop((left, top, right, bottom))
+        if request.upscale and request.upscale > 1:
+            new_w = cropped.width * request.upscale
+            new_h = cropped.height * request.upscale
+            cropped = cropped.resize((new_w, new_h), Image.LANCZOS)
+
+        # Convert cropped image to base64 so generation helper can use it if needed
+        out_buf = BytesIO()
+        cropped.save(out_buf, format='PNG')
+        crop_b64 = base64.b64encode(out_buf.getvalue()).decode('utf-8')
+
+        # Now call the image generation helper to stylize/enhance using prompt
+        gen_result = {}
+        try:
+            from image_generation import generate_location_image
+            prompt_text = request.prompt or 'A detailed view of the selected region, detailed and high-resolution.'
+            gen_result = await generate_location_image(prompt=prompt_text, provider=request.provider or 'stablediffusion', model=request.model)
+            final_image = gen_result.get('image') or crop_b64
+            return {
+                'image_base64': final_image,
+                'crop_base64': crop_b64,
+                'provider': gen_result.get('provider'),
+                'prompt_used': gen_result.get('prompt')
+            }
+        except Exception as gen_err:
+            logger.exception('Image provider failed during crop-and-generate')
+            # Return the cropped image as fallback and include error message
+            return {
+                'image_base64': crop_b64,
+                'crop_base64': crop_b64,
+                'provider': None,
+                'prompt_used': request.prompt,
+                'error': str(gen_err)
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception('Crop and generate failed')
+        raise HTTPException(status_code=500, detail=f'Crop-and-generate error: {str(e)}')
+
+
 async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, Dict[str, Any]]:
     """
     Call the specified LLM provider and return the response.
@@ -525,6 +708,9 @@ async def generate_world(request: WorldGenerationRequest):
 async def save_world(
     name: str,
     content: str,
+    world_image: str = None,
+    image_prompt: str = None,
+    world_map: str = None,
     description: str = None,
     db: Session = Depends(get_db)
 ):
@@ -534,6 +720,9 @@ async def save_world(
             name=name,
             description=description or content[:500],
             lore=content,
+            world_image=world_image,
+            image_prompt=image_prompt,
+            world_map=world_map,
             generation_log=json.dumps([{
                 "timestamp": datetime.now().isoformat(),
                 "action": "created",
@@ -700,6 +889,9 @@ async def save_location(
     name: str,
     content: str,
     world_id: int,
+    location_image: str = None,
+    image_prompt: str = None,
+    coordinates: str | None = None,
     db: Session = Depends(get_db)
 ):
     """Save a generated location to the database"""
@@ -708,6 +900,9 @@ async def save_location(
             name=name,
             description=content,
             world_id=world_id,
+            location_image=location_image,
+            image_prompt=image_prompt,
+            coordinates=coordinates,
             generation_log=json.dumps([{
                 "timestamp": datetime.now().isoformat(),
                 "action": "created",
@@ -950,6 +1145,84 @@ async def generate_world_structured(request: WorldGenerationRequest):
     return world_profile
 
 
+@router.post("/world/generate-landscape/")
+async def generate_world_landscape(
+    world_name: str,
+    description: str,
+    landscape_type: str = "overview",
+    provider: str = "stablediffusion",
+    model: str | None = None,
+    style_preset: str = "fantasy-art",
+):
+    """
+    Generate a landscape image for a world
+    """
+    try:
+        from prompts import build_landscape_prompt
+        from image_generation import generate_landscape_image
+
+        prompt, negative = build_landscape_prompt(
+            world_name, description, landscape_type, style_preset
+        )
+
+        image_data = await generate_landscape_image(
+            prompt=prompt,
+            provider=provider,
+            model=model,
+            aspect_ratio="16:9" if landscape_type == "overview" else "1:1",
+        )
+
+        return {
+            "image_base64": image_data.get("image"),
+            "prompt": image_data.get("prompt") or prompt,
+            "provider": image_data.get("provider"),
+            "model": image_data.get("model"),
+        }
+    except Exception as e:
+        logger.error(f"Landscape generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate landscape: {str(e)}")
+
+
+@router.post("/location/generate-image/")
+async def generate_location_image_endpoint(
+    location_name: str,
+    location_type: str,
+    description: str,
+    time_of_day: str = "day",
+    weather: str = "clear",
+    provider: str = "stablediffusion",
+    model: str | None = None,
+    style_preset: str = "realistic",
+):
+    """
+    Generate an image for a location (city, dungeon, etc.)
+    """
+    try:
+        from prompts import build_location_image_prompt
+        from image_generation import generate_location_image
+
+        prompt, negative = build_location_image_prompt(
+            location_name, location_type, description, time_of_day, weather, style_preset
+        )
+
+        image_data = await generate_location_image(
+            prompt=prompt,
+            provider=provider,
+            model=model,
+            aspect_ratio="16:9",
+        )
+
+        return {
+            "image_base64": image_data.get("image"),
+            "prompt": image_data.get("prompt") or prompt,
+            "provider": image_data.get("provider"),
+            "model": image_data.get("model"),
+        }
+    except Exception as e:
+        logger.error(f"Location image generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate location image: {str(e)}")
+
+
 class CharacterSaveRequest(BaseModel):
     """Request model for saving a structured character with optional portrait"""
     character_profile: CharacterProfile
@@ -1043,6 +1316,9 @@ async def save_structured_character(
 async def save_structured_world(
     world_profile: WorldProfile,
     story_id: int = None,
+    world_image: str | None = None,
+    image_prompt: str | None = None,
+    world_map: str | None = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -1078,6 +1354,9 @@ async def save_structured_world(
             technology_level=world_profile.world_type,
             # New structured data field
             structured_data=structured_dict,
+            world_image=world_image,
+            image_prompt=image_prompt,
+            world_map=world_map,
             generation_log=[{
                 "timestamp": datetime.now().isoformat(),
                 "action": "created_structured",

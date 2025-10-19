@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import characters, stories, worlds, llm, generation, settings
+from routers import characters, stories, worlds, llm, generation, settings, locations
 import logging
 
 # Set up logging
@@ -19,9 +19,16 @@ app = FastAPI(
 )
 
 # Configure CORS
+# Use explicit origins when allow_credentials=True; wildcard '*' may be omitted by some browsers
+FRONTEND_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=FRONTEND_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,6 +41,7 @@ app.include_router(worlds.router, prefix="/api/worlds", tags=["worlds"])
 app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
 app.include_router(generation.router, tags=["generation"])  # No prefix - already defined in router
 app.include_router(settings.router, tags=["settings"])  # No prefix - already defined in router
+app.include_router(locations.router, tags=["locations"])  # /api/locations/
 
 @app.get("/health")
 def health_check():

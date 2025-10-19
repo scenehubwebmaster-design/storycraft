@@ -260,6 +260,53 @@ Please provide a comprehensive character profile including:
 Format the response as a well-structured character profile.
 """
         return base
+
+
+def build_landscape_prompt(world_name, description, landscape_type, style_preset):
+    """Build a prompt for landscape or map generation."""
+    style_tags = {
+        "fantasy-art": "epic fantasy landscape, sweeping vistas, dramatic lighting, vibrant colors, cinematic",
+        "realistic": "photorealistic landscape, natural lighting, detailed terrain, realistic vegetation",
+        "painterly": "oil painting landscape, brushstrokes, soft lighting, painterly",
+        "dark-fantasy": "dark fantasy, moody atmosphere, gothic architecture, high contrast",
+    }
+
+    style = style_tags.get(style_preset, style_tags["fantasy-art"])
+    prompt = f"A {landscape_type} view of {world_name}. {description} {style}. Ultra-detailed, high resolution, cinematic composition."
+    negative_prompt = "blurry, low quality, distorted, text, watermark, deformed"
+    return prompt, negative_prompt
+
+
+def build_location_image_prompt(name, type, description, time_of_day="day", weather="clear", style_preset="realistic"):
+    """Build a prompt for a single location image."""
+    time_tags = {
+        "dawn": "soft warm light, long shadows",
+        "day": "bright daylight, clear visibility",
+        "dusk": "golden hour, dramatic sky",
+        "night": "night scene, moody lighting, artificial lights",
+    }
+    weather_tags = {
+        "clear": "clear skies",
+        "rain": "rainy, wet surfaces, reflections",
+        "storm": "storm clouds, dramatic lighting, wind",
+        "fog": "foggy, low visibility, muted colors",
+        "snow": "snow-covered, cold atmosphere",
+    }
+
+    style_map = {
+        "fantasy-art": "epic fantasy art, painterly, concept art",
+        "realistic": "photorealistic, high detail",
+        "painterly": "oil painting style, artistic",
+        "dark-fantasy": "dark fantasy mood, gothic",
+    }
+
+    style = style_map.get(style_preset, style_map["realistic"])
+    prompt = (
+        f"A {type} called {name}. {description}. {time_tags.get(time_of_day,'')}, {weather_tags.get(weather,'')}. {style}."
+        " Highly detailed, cinematic composition, 4k resolution."
+    )
+    negative = "blurry, low quality, text, watermark, extra limbs"
+    return prompt, negative
     
     @staticmethod
     def story_prompt(themes=None, tone=None, length=None, plot_structure=None, 
