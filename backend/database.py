@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 try:
     # SQLAlchemy 2.0
     from sqlalchemy.orm import declarative_base
@@ -11,13 +12,30 @@ import os
 # Database configuration - prefer an absolute path so all processes use the same file
 # Keep backward-compatible relative URL if an env var overrides it
 DEFAULT_DB_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'storycraft.db'))
-SQLALCHEMY_DATABASE_URL = os.environ.get('STORYCRAFT_DATABASE_URL', f"sqlite:///{DEFAULT_DB_FILE}")
+# Allow tests to run against an isolated in-memory database to avoid stale
+# on-disk schemas (pytest sets PYTEST_CURRENT_TEST in the environment).
+pytest_env = any(k.startswith('PYTEST') for k in os.environ.keys())
+if pytest_env:
+    # Running under pytest - use an in-memory DB for isolation
+    SQLALCHEMY_DATABASE_URL = os.environ.get('STORYCRAFT_DATABASE_URL', "sqlite:///:memory:")
+else:
+    SQLALCHEMY_DATABASE_URL = os.environ.get('STORYCRAFT_DATABASE_URL', f"sqlite:///{DEFAULT_DB_FILE}")
 
 # Create engine
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith('sqlite') else {}
-)
+if SQLALCHEMY_DATABASE_URL.startswith('sqlite') and (':memory:' in SQLALCHEMY_DATABASE_URL):
+    # Use StaticPool so the in-memory DB is shared across connections during tests
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        echo=False,
+        future=True,
+    )
+else:
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith('sqlite') else {}
+    )
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

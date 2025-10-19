@@ -46,6 +46,38 @@ def client():
         yield c
 
 
+@pytest.fixture(scope="session", autouse=True)
+def ensure_seeded_world():
+    """Ensure there's at least one sample world in the DB for image endpoint tests.
+
+    When tests run against an in-memory DB we need to create minimal seed data that
+    some tests rely on (previously created by a separate seed script when using
+    an on-disk DB). This fixture runs once per session.
+    """
+    try:
+        # Import DB/session and models from the backend package
+        from backend.database import SessionLocal, engine, Base
+        from backend.models import World
+
+        # Ensure tables exist on the test engine
+        Base.metadata.create_all(bind=engine)
+
+        session = SessionLocal()
+        try:
+            existing = session.query(World).count()
+            if existing == 0:
+                # Insert a minimal seeded world with a tiny image so image endpoints can run
+                img_b64 = _fake_image_base64_bytes(16, 16)
+                w = World(name="Seeded Sample World", description="Auto-seeded for tests", world_image=img_b64, world_map=img_b64, image_prompt="seeded for tests")
+                session.add(w)
+                session.commit()
+        finally:
+            session.close()
+    except Exception:
+        # If anything goes wrong, don't break tests - individual tests can patch or seed as needed
+        pass
+
+
 @pytest.fixture(autouse=True)
 def caplog_level(monkeypatch):
     """Ensure logging during tests is visible and at INFO by default.

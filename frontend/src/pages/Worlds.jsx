@@ -89,7 +89,7 @@ export default function WorldsPage() {
 
     try {
       setDeleting(true);
-      await axios.delete(`${API_URL}/api/worlds/${worldToDelete.id}`);
+      await axios.delete(`${API_URL}/api/worlds/${worldToDelete.id}/`);
       setWorlds(worlds.filter((w) => w.id !== worldToDelete.id));
       setDeleteDialogOpen(false);
       setWorldToDelete(null);

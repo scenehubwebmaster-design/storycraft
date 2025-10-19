@@ -445,7 +445,7 @@ export default function WorldDetailPage() {
   const handleDelete = async () => {
     try {
       setDeleting(true);
-      await axios.delete(`${API_URL}/api/worlds/${worldId}`);
+      await axios.delete(`${API_URL}/api/worlds/${worldId}/`);
       navigate({ to: "/worlds" });
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to delete world");

@@ -1346,15 +1346,29 @@ export default function CreateCharacterPage() {
           />
 
           {/* If structured generation provided name options, show NamePicker */}
-          {useStructured &&
-            generatedContent &&
-            Array.isArray(generatedContent.name_options) && (
-              <NamePicker
-                nameOptions={generatedContent.name_options}
-                selectedName={characterName}
-                onSelect={(name) => setCharacterName(name)}
-              />
-            )}
+          {useStructured && generatedContent && (
+            <>
+              {Array.isArray(generatedContent.name_options) && (
+                <NamePicker
+                  nameOptions={generatedContent.name_options}
+                  selectedName={characterName}
+                  onSelect={(name) => setCharacterName(name)}
+                />
+              )}
+
+              {/* New: surface name_suggestions returned by backend (LLM proposals) */}
+              {generatedContent.name_suggestions &&
+                Array.isArray(generatedContent.name_suggestions) && (
+                  <NamePicker
+                    nameOptions={generatedContent.name_suggestions.map((s) =>
+                      typeof s === "string" ? { first_name: s } : s
+                    )}
+                    selectedName={characterName}
+                    onSelect={(name) => setCharacterName(name)}
+                  />
+                )}
+            </>
+          )}
 
           {/* Grid Layout: Portrait on Left, Details on Right */}
           <Grid container spacing={3}>
@@ -1941,6 +1955,51 @@ export default function CreateCharacterPage() {
                           >
                             {dndCharacter.name}
                           </Typography>
+                          {/* Show LLM name suggestions if present in structured_data */}
+                          {dndCharacter.structured_data &&
+                            dndCharacter.structured_data.name_suggestions &&
+                            Array.isArray(
+                              dndCharacter.structured_data.name_suggestions
+                            ) && (
+                              <Box sx={{ mt: 1 }}>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Suggested names from AI:
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    mt: 1,
+                                    display: "flex",
+                                    gap: 1,
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  {dndCharacter.structured_data.name_suggestions.map(
+                                    (sugg, idx) => (
+                                      <Chip
+                                        key={idx}
+                                        label={
+                                          typeof sugg === "string"
+                                            ? sugg
+                                            : sugg.first_name ||
+                                              JSON.stringify(sugg)
+                                        }
+                                        size="small"
+                                        onClick={() => {
+                                          setCharacterName(
+                                            typeof sugg === "string"
+                                              ? sugg
+                                              : sugg.first_name || ""
+                                          );
+                                        }}
+                                      />
+                                    )
+                                  )}
+                                </Box>
+                              </Box>
+                            )}
                           <Typography
                             variant="subtitle1"
                             color="text.secondary"

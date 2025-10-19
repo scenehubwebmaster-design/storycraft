@@ -21,6 +21,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Snackbar,
+  Alert as MuiAlert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import PersonIcon from "@mui/icons-material/Person";
@@ -43,6 +45,8 @@ export default function CharactersPage() {
   const [deleting, setDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [lastDeletedIds, setLastDeletedIds] = useState([]);
+  const [undoSnackbarOpen, setUndoSnackbarOpen] = useState(false);
   const [apiHealthy, setApiHealthy] = useState(null);
   const [portraits, setPortraits] = useState({}); // Cache for loaded portraits
   const [loadingPortraits, setLoadingPortraits] = useState({}); // Track which portraits are loading
@@ -194,17 +198,44 @@ export default function CharactersPage() {
       setDeleting(true);
       // Use batch delete endpoint for efficiency
       const ids = Array.from(selectedIds);
-      const resp = await axios.post(`${API_URL}/api/characters/bulk-delete/`, { ids });
+      const resp = await axios.post(`${API_URL}/api/characters/bulk-delete/`, {
+        ids,
+      });
       const deleted = resp.data.deleted || [];
       setCharacters((prev) => prev.filter((c) => !deleted.includes(c.id)));
       setSelectedIds(new Set());
       setBulkDeleteDialogOpen(false);
+      // Store deleted ids for possible undo
+      setLastDeletedIds(deleted);
+      setUndoSnackbarOpen(true);
     } catch (err) {
       setError(
         err.response?.data?.detail || "Failed to delete selected characters"
       );
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!lastDeletedIds || lastDeletedIds.length === 0) return;
+    try {
+      // Call restore endpoint
+      const resp = await axios.post(`${API_URL}/api/characters/restore/`, {
+        ids: lastDeletedIds,
+      });
+      const restored = resp.data.restored || [];
+      if (restored.length) {
+        // Fetch restored characters and append to list (simple approach: refetch page)
+        const fetchResp = await axios.get(`${API_URL}/api/characters/?exclude_portraits=true`);
+        setCharacters(fetchResp.data);
+      }
+    } catch (err) {
+      // Show error in snackbar area
+      setError(err.response?.data?.detail || "Failed to restore characters");
+    } finally {
+      setLastDeletedIds([]);
+      setUndoSnackbarOpen(false);
     }
   };
 
@@ -657,6 +688,27 @@ export default function CharactersPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Undo snackbar after bulk delete */}
+      <Snackbar
+        open={undoSnackbarOpen}
+        autoHideDuration={8000}
+        onClose={() => setUndoSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      >
+        <MuiAlert
+          elevation={6}
+          variant="filled"
+          severity="info"
+          action={
+            <Button color="inherit" size="small" onClick={handleUndo}>
+              UNDO
+            </Button>
+          }
+        >
+          Deleted {lastDeletedIds.length} character{lastDeletedIds.length !== 1 ? "s" : ""}.
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 }

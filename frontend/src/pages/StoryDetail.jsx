@@ -51,7 +51,7 @@ export default function StoryDetailPage() {
   const handleDelete = async () => {
     try {
       setDeleting(true);
-      await axios.delete(`${API_URL}/api/stories/${storyId}`);
+      await axios.delete(`${API_URL}/api/stories/${storyId}/`);
       navigate({ to: "/stories" });
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to delete story");

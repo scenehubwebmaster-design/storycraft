@@ -88,7 +88,7 @@ def get_characters(skip: int = 0, limit: int = 100, exclude_portraits: bool = Tr
     Returns:
         List of characters (without portraits by default to avoid 431 errors)
     """
-    characters = db.query(Character).offset(skip).limit(limit).all()
+    characters = db.query(Character).filter(Character.is_deleted.is_(False)).offset(skip).limit(limit).all()
     
     # If excluding portraits, remove them from response
     if exclude_portraits:
@@ -114,7 +114,7 @@ def get_character(character_id: int, exclude_portrait: bool = False, db: Session
     Returns:
         Character data (optionally without portrait to avoid 431 errors)
     """
-    character = db.query(Character).filter(Character.id == character_id).first()
+    character = db.query(Character).filter(Character.id == character_id, Character.is_deleted.is_(False)).first()
     if character is None:
         raise HTTPException(status_code=404, detail="Character not found")
     
@@ -153,14 +153,15 @@ def update_character(character_id: int, character: CharacterUpdate, db: Session 
 
 @router.delete("/{character_id}/")
 def delete_character(character_id: int, db: Session = Depends(get_db)):
-    """Delete a character"""
-    db_character = db.query(Character).filter(Character.id == character_id).first()
+    """Soft-delete a character (mark as deleted)."""
+    db_character = db.query(Character).filter(Character.id == character_id, Character.is_deleted.is_(False)).first()
     if db_character is None:
-        raise HTTPException(status_code=404, detail="Character not found")
-    
-    db.delete(db_character)
+        raise HTTPException(status_code=404, detail="Character not found or already deleted")
+
+    db_character.is_deleted = True
+    db_character.deleted_at = datetime.utcnow()
     db.commit()
-    return {"message": "Character deleted successfully"}
+    return {"message": "Character soft-deleted"}
 
 
 @router.post("/bulk-delete/")
@@ -173,15 +174,18 @@ def bulk_delete_characters(request: BatchDeleteRequest, db: Session = Depends(ge
     ids = request.ids or []
     if not ids:
         raise HTTPException(status_code=400, detail="No character IDs provided")
+
     try:
-        # Find matching characters
-        chars = db.query(Character).filter(Character.id.in_(ids)).all()
+        # Soft-delete matching characters
+        chars = db.query(Character).filter(Character.id.in_(ids), Character.is_deleted.is_(False)).all()
         if not chars:
             return {"deleted": [], "requested": ids}
 
-        deleted_ids = [c.id for c in chars]
+        deleted_ids = []
         for c in chars:
-            db.delete(c)
+            c.is_deleted = True
+            c.deleted_at = datetime.utcnow()
+            deleted_ids.append(c.id)
 
         db.commit()
         return {"deleted": deleted_ids}
@@ -189,6 +193,27 @@ def bulk_delete_characters(request: BatchDeleteRequest, db: Session = Depends(ge
         db.rollback()
         logger.error(f"Bulk delete failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete characters")
+
+
+@router.post("/restore/")
+def restore_characters(request: BatchDeleteRequest, db: Session = Depends(get_db)):
+    """Restore soft-deleted characters by IDs"""
+    ids = request.ids or []
+    if not ids:
+        raise HTTPException(status_code=400, detail="No character IDs provided")
+    try:
+        chars = db.query(Character).filter(Character.id.in_(ids), Character.is_deleted.is_(True)).all()
+        restored = []
+        for c in chars:
+            c.is_deleted = False
+            c.deleted_at = None
+            restored.append(c.id)
+        db.commit()
+        return {"restored": restored}
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Restore failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to restore characters")
 
 
 @router.get("/{character_id}/portrait/")
@@ -200,7 +225,7 @@ def get_character_portrait(character_id: int, db: Session = Depends(get_db)):
     Returns:
         Dict with portrait_image (base64) and image_prompt
     """
-    character = db.query(Character).filter(Character.id == character_id).first()
+    character = db.query(Character).filter(Character.id == character_id, Character.is_deleted.is_(False)).first()
     if character is None:
         raise HTTPException(status_code=404, detail="Character not found")
     

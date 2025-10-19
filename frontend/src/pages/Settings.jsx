@@ -111,7 +111,7 @@ export default function SettingsPage() {
     }
 
     try {
-      await axios.delete(`${API_URL}/api/settings/api-keys/${provider}`);
+      await axios.delete(`${API_URL}/api/settings/api-keys/${provider}/`);
       setSuccess(`Successfully removed ${provider} API key`);
       await loadStatus();
     } catch (err) {

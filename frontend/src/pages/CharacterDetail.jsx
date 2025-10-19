@@ -99,7 +99,7 @@ export default function CharacterDetailPage() {
   const handleDelete = async () => {
     try {
       setDeleting(true);
-      await axios.delete(`${API_URL}/api/characters/${characterId}`);
+      await axios.delete(`${API_URL}/api/characters/${characterId}/`);
       navigate({ to: "/characters" });
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to delete character");

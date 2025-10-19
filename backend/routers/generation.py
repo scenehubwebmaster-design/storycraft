@@ -299,6 +299,185 @@ async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, 
         raise HTTPException(status_code=500, detail=f"LLM generation failed: {str(e)}")
 
 
+async def call_llm_with_retries_and_clarifier(
+    base_prompt: str,
+    provider: str,
+    schema_model: Type[BaseModel] | None = None,
+    model: Optional[str] = None,
+    max_attempts: int = 3,
+    initial_temperature: float = 0.95,
+    retry_temperature: float = 0.6,
+    authoritative_fields: Optional[Dict[str, Any]] = None,
+):
+    """
+    Helper that calls structured LLM output with a retry loop and an appended clarifier
+    when the model returns conflicting authoritative fields.
+
+    Returns a tuple: (parsed_structured_model_or_dict, metadata)
+    If schema_model is provided the returned structured object will be the parsed Pydantic model.
+    """
+    attempt = 0
+    prompt = base_prompt
+    last_exc = None
+    last_structured = None
+    last_metadata = None
+
+    while attempt < max_attempts:
+        attempt += 1
+        try:
+            # Use structured helper when schema_model is provided
+            if schema_model:
+                structured_obj, metadata = await call_llm_structured_inner(
+                    prompt=prompt,
+                    provider=provider,
+                    schema_model=schema_model,
+                    model=model,
+                    max_tokens=3000,
+                    temperature=(initial_temperature if attempt == 1 else retry_temperature),
+                )
+
+                # Convert to dict for validation checks
+                structured_dict = (
+                    structured_obj.model_dump()
+                    if hasattr(structured_obj, "model_dump")
+                    else (structured_obj.dict() if hasattr(structured_obj, "dict") else dict(structured_obj))
+                )
+
+                # If authoritative fields supplied, check for conflicts
+                conflict = False
+                if authoritative_fields:
+                    for key, val in authoritative_fields.items():
+                        if val is None:
+                            continue
+                        llm_val = structured_dict.get(key)
+                        if llm_val is not None and str(llm_val) != str(val):
+                            conflict = True
+                            break
+
+                if not conflict:
+                    return structured_obj, metadata
+
+                # Save last seen structured output so we can return it if retries
+                # are exhausted but we still want to surface suggestions to callers.
+                last_structured = structured_obj
+                last_metadata = metadata
+
+                # If conflict, append clarifier and retry
+                clarifier_lines = [
+                    "\n\nCLARIFICATION: The following fields were provided by the system and MUST be preserved exactly:",
+                ]
+                for k, v in (authoritative_fields or {}).items():
+                    clarifier_lines.append(f"- {k}: {v}")
+                clarifier_lines.append(
+                    "Do NOT change or replace these values. If you cannot comply, return the JSON with an explicit field 'validation_failed': true and do not invent alternatives."
+                )
+                prompt = prompt + "\n" + "\n".join(clarifier_lines)
+                # loop to retry with reduced temperature
+                continue
+            else:
+                # Fallback to plain text LLM call
+                text, metadata = await call_llm(prompt, provider, model)
+                return text, metadata
+
+        except Exception as e:
+            last_exc = e
+            logger.exception("call_llm_with_retries_and_clarifier attempt failed")
+            # On error, reduce temperature and retry if attempts remain
+            if attempt >= max_attempts:
+                break
+            prompt = prompt + "\n\nCLARIFICATION: Please respond in valid JSON and preserve authoritative fields if provided."  
+
+    # If we reach here, either last attempt raised or conflicts remained
+    if last_exc:
+        raise last_exc
+    # If we never had an exception but we did receive a structured object, return
+    # it so callers can preserve authoritative fields and record name suggestions.
+    if last_structured is not None:
+        logger.warning("LLM structured generation returned conflicting authoritative fields after retries; returning last result and letting caller handle suggestions")
+        return last_structured, last_metadata
+
+    # Otherwise fail hard
+    raise HTTPException(status_code=500, detail="LLM structured generation failed after retries")
+
+
+async def call_llm_structured_inner(**kwargs):
+    """
+    Thin wrapper that reuses existing structured output utilities.
+    This isolates the internal implementation so our higher-level helper can call it.
+    Expected kwargs: prompt, provider, schema_model, model, max_tokens, temperature
+    Returns (parsed_model_or_dict, metadata)
+    """
+    from ..structured_output_utils import parse_structured_response, get_structured_output_prompt
+
+    prompt = kwargs.get("prompt")
+    provider = kwargs.get("provider")
+    schema_model = kwargs.get("schema_model")
+    model = kwargs.get("model")
+    max_tokens = kwargs.get("max_tokens", 3000)
+    temperature = kwargs.get("temperature", 0.9)
+
+    # If a project-level helper `call_llm_structured` exists (e.g., tests patch
+    # backend.routers.generation.call_llm_structured), prefer calling it so
+    # callers and tests can override the structured behavior. It should return
+    # (parsed_obj, metadata). We try kwargs-first (most flexible) then fall
+    # back to positional forms to support a variety of test helpers.
+    existing = globals().get("call_llm_structured")
+    if existing and callable(existing):
+        # Avoid accidentally recursing into this wrapper if someone overwrote the
+        # name with the same function object; however, calling the original
+        # structured implementation is acceptable as a fallback.
+        try:
+            parsed, metadata = await existing(
+                prompt=prompt,
+                provider=provider,
+                schema_model=schema_model,
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            return parsed, metadata
+        except TypeError:
+            # Try common positional signature
+            try:
+                parsed, metadata = await existing(prompt, provider, schema_model, model, max_tokens, temperature)
+                return parsed, metadata
+            except TypeError:
+                # Try minimal signature (prompt, provider)
+                try:
+                    parsed, metadata = await existing(prompt, provider)
+                    return parsed, metadata
+                except TypeError:
+                    # Give up on calling the existing helper and fallthrough to
+                    # our own fallback implementation below.
+                    logger.debug("Existing call_llm_structured helper refused all tried signatures; falling back to local implementation")
+
+    # Build provider-specific prompt wrapper if needed. For providers that do not
+    # support structured outputs natively, get_structured_output_prompt returns
+    # a schema-aware instruction; we append the user's prompt before that schema
+    # instruction so the model has context plus a strict schema to follow.
+    # Guard against non-Pydantic schema_model objects used in tests by checking
+    # for the Pydantic marker method before attempting to convert to JSON schema.
+    if schema_model is None:
+        raise ValueError("schema_model is required for structured calls")
+
+    if not hasattr(schema_model, "model_json_schema"):
+        # The provided schema_model doesn't look like a Pydantic model. In
+        # testing scenarios this can be expected when tests supply fake classes
+        # — raise a clear error so test patches can be adjusted, or rely on the
+        # earlier attempt to call a patched helper.
+        raise TypeError("schema_model does not appear to be a Pydantic model; ensure call_llm_structured is patched in tests or provide a real Pydantic model")
+
+    schema_prompt = get_structured_output_prompt(schema_model)
+    wrapped_prompt = f"{prompt}\n\n{schema_prompt}"
+
+    # Call raw LLM
+    text, metadata = await call_llm(wrapped_prompt, provider, model)
+
+    # Parse into schema_model
+    parsed = parse_structured_response(text, schema_model)
+    return parsed, metadata
+
+
 @router.get("/options/", response_model=PromptOptionsResponse)
 async def get_prompt_options():
     """Get all available prompt options for the UI"""

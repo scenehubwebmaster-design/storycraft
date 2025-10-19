@@ -86,7 +86,7 @@ export default function StoriesPage() {
 
     try {
       setDeleting(true);
-      await axios.delete(`${API_URL}/api/stories/${storyToDelete.id}`);
+      await axios.delete(`${API_URL}/api/stories/${storyToDelete.id}/`);
       setStories(stories.filter((s) => s.id !== storyToDelete.id));
       setDeleteDialogOpen(false);
       setStoryToDelete(null);

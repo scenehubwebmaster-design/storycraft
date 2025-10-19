@@ -546,6 +546,40 @@ NARRATIVE STYLE: {style_enum.value}
 SPECIES-SPECIFIC GUIDANCE:
 """
 
+    # If the incoming character dict contains explicit fields (name, class, species, level,
+    # or short appearance text), signal to the model that these are authoritative and must
+    # not be altered. Prefer and expand any provided descriptive text rather than overwriting it.
+    provided_fields = {
+        "name": dnd_character.get("name") or dnd_character.get("character_name") or dnd_character.get("character_name"),
+        "class": dnd_character.get("dnd_class"),
+        "species": dnd_character.get("dnd_species"),
+        "level": dnd_character.get("dnd_level"),
+        "appearance": dnd_character.get("character_appearance") or dnd_character.get("appearance") or dnd_character.get("description"),
+    }
+
+    # Build an immutable-fields section the model must obey
+    immutable_lines = []
+    for k in ("name", "class", "species", "level"):
+        v = provided_fields.get(k)
+        if v:
+            immutable_lines.append(f"- {k}: {v}")
+
+    if immutable_lines:
+        prompt += "\nINPUT-PROVIDED FIELDS (TREAT AS AUTHORITATIVE):\n"
+        prompt += "\n" + "\n".join(immutable_lines) + "\n\n"
+        prompt += (
+            "IMPORTANT: Preserve the provided fields above exactly. Do NOT change the character's name, class,\n"
+            "species, or level. You may enrich and elaborate on appearance, backstory, and personality, but do not\n"
+            "contradict or overwrite any explicit input. If an 'appearance' or 'description' field is provided,\n"
+            "integrate and expand that text rather than replacing it.\n\n"
+        )
+
+        # Provide a short example to make the rule concrete
+        prompt += (
+            "EXAMPLE: If input contains: name=Kaelin Valtor, species=Goliath, class=Barbarian, level=1\n"
+            "→ DO NOT invent a different name, class, species, or level. Expand on Kaelin's supplied details.\n\n"
+        )
+
     # Add species-specific guidance
     species_lower = species.lower()
     

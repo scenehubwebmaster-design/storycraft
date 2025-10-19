@@ -89,6 +89,9 @@ class Character(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Soft-delete support
+    is_deleted = Column(Boolean, default=False, nullable=False)
+    deleted_at = Column(DateTime, nullable=True)
     
     # Relationships
     stories = relationship("Story", secondary="story_characters", back_populates="characters")
