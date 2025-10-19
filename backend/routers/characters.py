@@ -296,7 +296,8 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
     from dnd_generator import generate_dnd_character, format_character_sheet
     from dnd_narrative_prompts import build_dnd_narrative_prompt
     from schemas import DnDCharacterNarrative
-    from routers.generation import call_llm_structured
+    # Import the structured LLM helper from the sibling generation module using a relative import
+    from .generation import call_llm_structured
     
     try:
         # Generate D&D character using our generator
