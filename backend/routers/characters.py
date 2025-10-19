@@ -358,7 +358,30 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
         # Extract narrative data for legacy fields
         if narrative_dict and "error" not in narrative_dict:
             # Use generated character name if available
-            character_name = narrative_dict.get("character_name", dnd_char["name"])
+            # Protect the authoritative generated character name from being overwritten by the LLM.
+            # If the LLM returned a different 'character_name', keep the generator's canonical name
+            # and move the model's suggestion into a 'name_suggestions' field.
+            llm_name = narrative_dict.get("character_name")
+            canonical_name = dnd_char.get("name")
+            if llm_name and canonical_name and llm_name != canonical_name:
+                # Record suggested name(s) from the model but preserve canonical name
+                existing_suggestions = narrative_dict.get("name_suggestions") or []
+                # Avoid duplicating if the model returned a list later
+                if isinstance(llm_name, list):
+                    for nm in llm_name:
+                        if nm and nm != canonical_name and nm not in existing_suggestions:
+                            existing_suggestions.append(nm)
+                else:
+                    if llm_name != canonical_name and llm_name not in existing_suggestions:
+                        existing_suggestions.append(llm_name)
+
+                narrative_dict["name_suggestions"] = existing_suggestions
+                # Ensure the canonical name is used
+                character_name = canonical_name
+                # Remove the model-provided name to avoid accidental use later
+                narrative_dict.pop("character_name", None)
+            else:
+                character_name = narrative_dict.get("character_name", canonical_name)
             description = narrative_dict.get("character_appearance", dnd_char["class_description"])
             personality = narrative_dict.get("personality_traits", f"Alignment: {dnd_char['alignment']}")
             if isinstance(personality, list):
