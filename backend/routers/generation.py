@@ -1134,6 +1134,7 @@ async def generate_character_structured(request: CharacterGenerationRequest):
 
 
 @router.post("/world/structured", response_model=WorldProfile)
+@router.post("/world/structured/", response_model=WorldProfile)
 async def generate_world_structured(request: WorldGenerationRequest):
     """
     Generate a world using AI with structured output.
