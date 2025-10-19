@@ -101,6 +101,38 @@ class LocationGenerationRequest(BaseModel):
     model: Optional[str] = None
 
 
+class LocationImageRequest(BaseModel):
+    """Request to generate an image for a location.
+
+    This mirrors the fields consumed by the backend image generation helper
+    but is provided as a single JSON body so clients can POST JSON.
+    """
+    location_name: str
+    location_type: str
+    description: str
+    time_of_day: Optional[str] = "day"
+    weather: Optional[str] = "clear"
+    provider: str = Field(default="stablediffusion")
+    model: Optional[str] = None
+    style_preset: str = Field(default="realistic")
+
+
+class SaveLocationRequest(BaseModel):
+    """Request model for saving or updating a location.
+
+    Clients may POST a new location (name/content/world_id) or update an
+    existing location by providing `location_id` and the fields to update
+    (location_image, image_prompt).
+    """
+    name: Optional[str] = None
+    content: Optional[str] = None
+    world_id: Optional[int] = None
+    location_image: Optional[str] = None
+    image_prompt: Optional[str] = None
+    coordinates: Optional[str] = None
+    location_id: Optional[int] = None
+
+
 class CampaignGenerationRequest(BaseModel):
     themes: Optional[List[str]] = None
     tone: Optional[List[str]] = None

@@ -461,9 +461,7 @@ export default function CreateWorldPage() {
                           style_preset: "fantasy-art",
                         }
                       );
-                      setWorldImage(
-                        resp.data.image_base64 || resp.data.image || null
-                      );
+                      setWorldImage(resp.data.image_base64 || null);
                       setWorldImagePrompt(resp.data.prompt || null);
                     } catch (err) {
                       setError(
@@ -500,9 +498,7 @@ export default function CreateWorldPage() {
                           style_preset: "realistic",
                         }
                       );
-                      setWorldMap(
-                        resp.data.image_base64 || resp.data.image || null
-                      );
+                      setWorldMap(resp.data.image_base64 || null);
                       setWorldMapPrompt(resp.data.prompt || null);
                     } catch (err) {
                       setError(

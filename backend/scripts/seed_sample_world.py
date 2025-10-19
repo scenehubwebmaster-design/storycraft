@@ -13,7 +13,7 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from database import SessionLocal, engine, Base
-from models import World
+from ..models import World
 
 # Create a simple image using Pillow
 try:

@@ -261,6 +261,85 @@ Format the response as a well-structured character profile.
 """
         return base
 
+    @staticmethod
+    def location_prompt(world_context=None, location_type=None, importance=None,
+                       themes=None, custom_details=None):
+        """Compatibility wrapper: delegate to module-level location_prompt if present
+        or build the standard location prompt inline. This ensures older call-sites
+        that expect PromptTemplates.location_prompt continue to work.
+        """
+        # Prefer the module-level function if it exists (allow future addition)
+        module_func = globals().get('location_prompt')
+        if callable(module_func):
+            return module_func(world_context=world_context,
+                               location_type=location_type,
+                               importance=importance,
+                               themes=themes,
+                               custom_details=custom_details)
+
+        # Fallback: build the same prompt structure inline
+        base = "Design a detailed, atmospheric location with the following specifications:\n\n"
+        if world_context:
+            base += f"World/Setting Context: {world_context}\n"
+        if location_type:
+            base += f"Location Type: {location_type}\n"
+        if importance:
+            base += f"Story Importance: {importance}\n"
+        if themes:
+            base += f"Themes: {', '.join(themes)}\n"
+        if custom_details:
+            base += f"\nAdditional Requirements: {custom_details}\n"
+        base += """
+Please provide a comprehensive location description including:
+1. Name and Overview (what is this place?)
+2. Physical Description (architecture, landscape, size, layout)
+3. Atmosphere and Mood (how does it feel?)
+4. History (origin, past events, significance)
+5. Current State (who lives/works here, current conditions)
+6. Notable Features (landmarks, unique elements)
+7. Inhabitants (who frequents this place?)
+8. Sensory Details (sights, sounds, smells, textures)
+9. Secrets or Hidden Elements (mysteries, discoveries)
+10. Story Potential (how could this location be used in scenes?)
+
+Format as a rich, evocative location profile.
+"""
+        return base
+
+    @staticmethod
+    def world_prompt(themes=None, setting=None, elements=None, custom_details=None):
+        """Compatibility wrapper for world_prompt. Build a full world prompt inline
+        so call-sites like generation router can use PromptTemplates.world_prompt.
+        """
+        base = "Design a rich, immersive world with the following characteristics:\n\n"
+        if themes:
+            base += f"Genre/Theme: {', '.join(themes)}\n"
+        if setting:
+            base += f"Setting Type: {', '.join(setting)}\n"
+        if elements:
+            base += f"Focus Elements: {', '.join(elements)}\n"
+        if custom_details:
+            base += f"\nAdditional Requirements: {custom_details}\n"
+        base += """
+Please provide a comprehensive world description including:
+1. World Name and Overview (high-level description)
+2. Geography (continents, regions, notable locations)
+3. Climate and Environment (weather patterns, ecosystems)
+4. History (origin, major historical events, current era)
+5. Cultures and Societies (different groups, customs, traditions)
+6. Politics and Power Structures (governments, factions, conflicts)
+7. Economy and Trade (resources, commerce, currency)
+8. Magic/Technology Systems (how they work, limitations, impact on society)
+9. Religion and Beliefs (deities, philosophies, spiritual practices)
+10. Languages (major languages, writing systems)
+11. Notable Locations (cities, landmarks, points of interest)
+12. Flora and Fauna (unique creatures and plants)
+13. Daily Life (what it's like for average inhabitants)
+
+Format the response as a detailed world-building guide.
+"""
+        return base
+
 
 def build_landscape_prompt(world_name, description, landscape_type, style_preset):
     """Build a prompt for landscape or map generation."""
@@ -452,39 +531,7 @@ Write in a polished narrative style suitable for publication.
 """
         return base
     
-    @staticmethod
-    def location_prompt(world_context=None, location_type=None, importance=None,
-                       themes=None, custom_details=None):
-        """Generate a location creation prompt"""
-        base = "Design a detailed, atmospheric location with the following specifications:\n\n"
-        
-        if world_context:
-            base += f"World/Setting Context: {world_context}\n"
-        if location_type:
-            base += f"Location Type: {location_type}\n"
-        if importance:
-            base += f"Story Importance: {importance}\n"
-        if themes:
-            base += f"Themes: {', '.join(themes)}\n"
-        if custom_details:
-            base += f"\nAdditional Requirements: {custom_details}\n"
-        
-        base += """
-Please provide a comprehensive location description including:
-1. Name and Overview (what is this place?)
-2. Physical Description (architecture, landscape, size, layout)
-3. Atmosphere and Mood (how does it feel?)
-4. History (origin, past events, significance)
-5. Current State (who lives/works here, current conditions)
-6. Notable Features (landmarks, unique elements)
-7. Inhabitants (who frequents this place?)
-8. Sensory Details (sights, sounds, smells, textures)
-9. Secrets or Hidden Elements (mysteries, discoveries)
-10. Story Potential (how could this location be used in scenes?)
-
-Format as a rich, evocative location profile.
-"""
-        return base
+    
     
     @staticmethod
     def refinement_prompt(existing_content, refinement_instructions):

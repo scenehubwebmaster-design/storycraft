@@ -1,6 +1,6 @@
 import asyncio
-from routers.llm import LLMProvider
-from dnd_narrative_prompts import DnDNarrativePromptBuilder, NarrativeAspect, NarrativeStyle
+from backend.routers.llm import LLMProvider
+from backend.dnd_narrative_prompts import DnDNarrativePromptBuilder, NarrativeAspect, NarrativeStyle
 
 character_data = {
     "name": "",

@@ -368,7 +368,7 @@ async def generate_portrait_with_provider(
     """
     if provider.lower() == "stablediffusion":
         # Use local Stable Diffusion
-        from stablediffusion_client import generate_portrait_with_sd
+        from .stablediffusion_client import generate_portrait_with_sd
         
         logger.info(f"Using Stable Diffusion for {character_name} portrait")
         
@@ -439,7 +439,7 @@ async def generate_portrait_with_provider(
     
     elif provider.lower() == "google":
         # Use Google Imagen
-        from imagen_client import generate_character_portrait
+        from .imagen_client import generate_character_portrait
         
         imagen_model = model if model else "imagen-4.0-fast-generate-001"
         

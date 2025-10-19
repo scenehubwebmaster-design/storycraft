@@ -1,7 +1,7 @@
 import asyncio
-from routers.llm import LLMProvider
-from dnd_narrative_prompts import DnDNarrativePromptBuilder, NarrativeAspect, NarrativeStyle
-from name_generation_utils import needs_retry_from_text, extract_json_array_from_text, sanitize_name_options
+from backend.routers.llm import LLMProvider
+from backend.dnd_narrative_prompts import DnDNarrativePromptBuilder, NarrativeAspect, NarrativeStyle
+from backend.name_generation_utils import needs_retry_from_text, extract_json_array_from_text, sanitize_name_options
 
 character_data = {
     "name": "",

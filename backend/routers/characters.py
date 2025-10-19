@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
-from database import get_db
-from models import Character
+from ..database import get_db
+from ..models import Character
 from pydantic import BaseModel
 from datetime import datetime
 import logging
@@ -336,7 +336,7 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
                     narrative_dict = narrative_data.model_dump() if hasattr(narrative_data, 'model_dump') else narrative_data.dict()
                 else:
                     # Use simple text generation (fallback)
-                    from routers.llm import LLMProvider
+                    from ..routers.llm import LLMProvider
                     narrative_text = await LLMProvider.generate_text(
                         prompt=narrative_prompt,
                         provider=request.narrative_provider,

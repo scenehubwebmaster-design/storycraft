@@ -4,11 +4,11 @@ from typing import Literal
 import os
 from dotenv import load_dotenv
 import logging
-from rate_limiter import rate_limiter
-from gemini_models import fetch_available_models
-from groq_models import fetch_available_models as fetch_groq_models
-from claude_models import fetch_available_models as fetch_claude_models
-from openai_models import fetch_available_models as fetch_openai_models
+from ..rate_limiter import rate_limiter
+from ..gemini_models import fetch_available_models
+from ..groq_models import fetch_available_models as fetch_groq_models
+from ..claude_models import fetch_available_models as fetch_claude_models
+from ..openai_models import fetch_available_models as fetch_openai_models
 
 load_dotenv()
 logger = logging.getLogger(__name__)

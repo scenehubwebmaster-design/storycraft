@@ -387,9 +387,7 @@ export default function CreateLocationPage() {
                       style_preset: "realistic",
                     }
                   );
-                  setGeneratedImage(
-                    response.data.image_base64 || response.data.image || null
-                  );
+                  setGeneratedImage(response.data.image_base64 || null);
                 } catch (err) {
                   setError(
                     err.response?.data?.detail || "Failed to generate image"

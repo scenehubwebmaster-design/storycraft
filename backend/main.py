@@ -1,7 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine, Base
-from routers import characters, stories, worlds, llm, generation, settings, locations
+try:
+    # Preferred (when package is importable)
+    from .database import engine, Base
+    from .routers import characters, stories, worlds, llm, generation, settings, locations
+except Exception:
+    # Fallback to absolute imports so running `python backend/main.py` or
+    # starting uvicorn from other working directories still works. Ensure the
+    # repository root is on sys.path so the `backend` package can be imported.
+    import os
+    import sys
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+    from backend.database import engine, Base
+    from backend.routers import characters, stories, worlds, llm, generation, settings, locations
 import logging
 
 # Set up logging

@@ -187,8 +187,9 @@ class StableDiffusionClient:
                 # Get generation info if available
                 info_text = result["data"][1] if len(result["data"]) > 1 else ""
                 
+                # Normalize to 'image_base64' while keeping 'image' alias
                 return {
-                    "image": base64_image,
+                    "image_base64": base64_image,
                     "info": {
                         "prompt": prompt,
                         "negative_prompt": negative_prompt,

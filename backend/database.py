@@ -1,5 +1,10 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+try:
+    # SQLAlchemy 2.0
+    from sqlalchemy.orm import declarative_base
+except Exception:
+    # Fallback for older SQLAlchemy versions
+    from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 

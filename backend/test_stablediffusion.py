@@ -1,7 +1,7 @@
 """
 Test Stable Diffusion integration
 """
-from stablediffusion_client import StableDiffusionClient, generate_portrait_with_sd
+from .stablediffusion_client import StableDiffusionClient, generate_portrait_with_sd
 
 def test_connection():
     """Test if SD server is reachable"""
