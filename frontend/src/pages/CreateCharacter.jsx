@@ -45,6 +45,7 @@ import ModelSelector from "../components/ModelSelector";
 import StructuredCharacterDisplay from "../components/StructuredCharacterDisplay";
 import DnDCharacterCreator from "../components/DnDCharacterCreator";
 import DnDCharacterSheet from "../components/DnDCharacterSheet";
+import NamePicker from "../components/NamePicker";
 import { API_URL } from "../config/api";
 
 const steps = ["Select Traits", "Generate", "Review & Save"];
@@ -104,8 +105,8 @@ export default function CreateCharacterPage() {
   const [imagePrompt, setImagePrompt] = useState(null);
   const [generatingPortrait, setGeneratingPortrait] = useState(false);
   const [portraitError, setPortraitError] = useState(null);
-  const [imageProvider, setImageProvider] = useState("openai"); // Default to OpenAI
-  const [imageModel, setImageModel] = useState("dall-e-3"); // Default DALL-E 3 (more widely available)
+  const [imageProvider, setImageProvider] = useState("stable_diffusion"); // Default to local Stable Diffusion
+  const [imageModel, setImageModel] = useState("stable-diffusion-v1-6"); // Default SD model
   const [imageStyle, setImageStyle] = useState("realistic"); // Style preset
   const [imageQuality, setImageQuality] = useState("standard"); // Quality setting
   const [showPortraitSettings, setShowPortraitSettings] = useState(false); // Toggle for portrait settings
@@ -126,10 +127,10 @@ export default function CreateCharacterPage() {
   const loadOptions = async () => {
     console.log(
       "loadOptions called, fetching from:",
-      `${API_URL}/api/generate/options`
+      `${API_URL}/api/generate/options/`
     );
     try {
-      const response = await axios.get(`${API_URL}/api/generate/options`);
+      const response = await axios.get(`${API_URL}/api/generate/options/`);
       setOptions(response.data);
     } catch (err) {
       setError("Failed to load prompt options");
@@ -139,7 +140,7 @@ export default function CreateCharacterPage() {
 
   const loadVariations = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/generate/variations`);
+      const response = await axios.get(`${API_URL}/api/generate/variations/`);
       setVariations(response.data);
     } catch (err) {
       console.error("Failed to load variations:", err);
@@ -149,7 +150,7 @@ export default function CreateCharacterPage() {
   const loadCulturalOrigins = async () => {
     try {
       const response = await axios.get(
-        `${API_URL}/api/generate/cultural-origins`
+        `${API_URL}/api/generate/cultural-origins/`
       );
       setCulturalOrigins(response.data);
     } catch (err) {
@@ -160,8 +161,9 @@ export default function CreateCharacterPage() {
   const loadCharacterData = async (characterId) => {
     setLoading(true);
     try {
+      // Load character WITHOUT portrait to avoid 431 error
       const response = await axios.get(
-        `${API_URL}/api/characters/${characterId}`
+        `${API_URL}/api/characters/${characterId}?exclude_portrait=true`
       );
       const character = response.data;
 
@@ -173,6 +175,10 @@ export default function CreateCharacterPage() {
         console.log("Loading D&D character for editing:", character);
         setIsDnDMode(true);
         setDndCharacter(character);
+
+        // Load portrait separately
+        loadCharacterPortrait(characterId);
+
         setActiveStep(2); // Skip to review step for D&D characters
         setSuccess("D&D character data loaded for editing");
       }
@@ -198,8 +204,8 @@ export default function CreateCharacterPage() {
           setUseStructured(false);
         }
 
-        setPortraitImage(character.portrait_image || null);
-        setImagePrompt(character.image_prompt || null);
+        // Load portrait separately to avoid large response
+        loadCharacterPortrait(characterId);
 
         // Skip to review step if we have generated content
         setActiveStep(2);
@@ -208,8 +214,9 @@ export default function CreateCharacterPage() {
         // Legacy character without structured data
         setGeneratedContent(character.description || "");
         setUseStructured(false);
-        setPortraitImage(character.portrait_image || null);
-        setImagePrompt(character.image_prompt || null);
+
+        // Load portrait separately
+        loadCharacterPortrait(characterId);
 
         // Skip to review step if we have generated content
         if (character.description) {
@@ -226,14 +233,37 @@ export default function CreateCharacterPage() {
     }
   };
 
+  const loadCharacterPortrait = async (characterId) => {
+    console.log(
+      `[CreateCharacter] Loading portrait for character ${characterId}`
+    );
+    try {
+      // Fetch portrait separately to avoid 431 header size errors
+      const response = await axios.get(
+        `${API_URL}/api/characters/${characterId}/portrait/`
+      );
+      console.log(`[CreateCharacter] Portrait response:`, {
+        hasImage: !!response.data.portrait_image,
+        imageLength: response.data.portrait_image?.length || 0,
+        hasPrompt: !!response.data.image_prompt,
+      });
+      setPortraitImage(response.data.portrait_image || null);
+      setImagePrompt(response.data.image_prompt || null);
+      console.log(`[CreateCharacter] Portrait set in state`);
+    } catch (err) {
+      console.error("[CreateCharacter] Failed to load portrait:", err.message);
+      // Non-fatal error - character can be edited without portrait
+    }
+  };
+
   const handleGenerate = async () => {
     setGenerating(true);
     setError(null);
 
     try {
       const endpoint = useStructured
-        ? `${API_URL}/api/generate/character/structured`
-        : `${API_URL}/api/generate/character`;
+        ? `${API_URL}/api/generate/character/structured/`
+        : `${API_URL}/api/generate/character/`;
 
       const response = await axios.post(endpoint, {
         themes: selectedThemes.length > 0 ? selectedThemes : null,
@@ -280,8 +310,8 @@ export default function CreateCharacterPage() {
       // For structured generation, we'll regenerate with refinement instructions
       // For free-form, use the existing refinement endpoint
       const endpoint = useStructured
-        ? `${API_URL}/api/generate/character/structured`
-        : `${API_URL}/api/generate/character`;
+        ? `${API_URL}/api/generate/character/structured/`
+        : `${API_URL}/api/generate/character/`;
 
       const requestData = useStructured
         ? {
@@ -348,7 +378,7 @@ export default function CreateCharacterPage() {
               "Saving D&D character portrait using dedicated endpoint"
             );
             await axios.post(
-              `${API_URL}/api/generate/character/save-portrait`,
+              `${API_URL}/api/generate/character/save-portrait/`,
               {
                 character_id: parseInt(editId),
                 image_base64: portraitImage || "",
@@ -418,7 +448,7 @@ export default function CreateCharacterPage() {
         if (useStructured) {
           // Use structured save endpoint
           await axios.post(
-            `${API_URL}/api/generate/character/structured/save`,
+            `${API_URL}/api/generate/character/structured/save/`,
             {
               character_profile: finalContent || generatedContent,
               portrait_image: portraitImage || null,
@@ -427,7 +457,7 @@ export default function CreateCharacterPage() {
           );
         } else {
           // Use legacy save endpoint
-          await axios.post(`${API_URL}/api/generate/character/save`, null, {
+          await axios.post(`${API_URL}/api/generate/character/save/`, null, {
             params: {
               name: characterName,
               content: finalContent || generatedContent,
@@ -518,7 +548,7 @@ export default function CreateCharacterPage() {
       }
 
       const response = await axios.post(
-        `${API_URL}/api/generate/character/generate-portrait`,
+        `${API_URL}/api/generate/character/generate-portrait/`,
         {
           character_name: characterName,
           appearance_text: appearanceText,
@@ -1314,6 +1344,17 @@ export default function CreateCharacterPage() {
             sx={{ mb: 3 }}
             required
           />
+
+          {/* If structured generation provided name options, show NamePicker */}
+          {useStructured &&
+            generatedContent &&
+            Array.isArray(generatedContent.name_options) && (
+              <NamePicker
+                nameOptions={generatedContent.name_options}
+                selectedName={characterName}
+                onSelect={(name) => setCharacterName(name)}
+              />
+            )}
 
           {/* Grid Layout: Portrait on Left, Details on Right */}
           <Grid container spacing={3}>

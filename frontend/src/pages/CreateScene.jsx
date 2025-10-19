@@ -57,7 +57,7 @@ export default function CreateScenePage() {
 
   const loadOptions = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/generate/options`);
+      const response = await axios.get(`${API_URL}/api/generate/options/`);
       setOptions(response.data);
     } catch (err) {
       setError("Failed to load options");
@@ -74,7 +74,7 @@ export default function CreateScenePage() {
         .map((c) => c.trim())
         .filter((c) => c);
 
-      const response = await axios.post(`${API_URL}/api/generate/scene`, {
+      const response = await axios.post(`${API_URL}/api/generate/scene/`, {
         story_context: storyContext || null,
         characters: charactersArray.length > 0 ? charactersArray : null,
         setting: setting || null,
@@ -100,7 +100,7 @@ export default function CreateScenePage() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/generate/scene`, {
+      const response = await axios.post(`${API_URL}/api/generate/scene/`, {
         base_content: generatedContent,
         refinement_instructions: refinementInstructions,
         provider,
@@ -130,7 +130,7 @@ export default function CreateScenePage() {
     setError(null);
 
     try {
-      await axios.post(`${API_URL}/api/generate/scene/save`, null, {
+      await axios.post(`${API_URL}/api/generate/scene/save/`, null, {
         params: {
           title: sceneTitle,
           content: finalContent || generatedContent,

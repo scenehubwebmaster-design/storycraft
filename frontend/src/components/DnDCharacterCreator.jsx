@@ -122,10 +122,10 @@ export default function DnDCharacterCreator({ onCharacterGenerated, onError }) {
       // Load all D&D reference data in parallel
       const [classesRes, speciesRes, backgroundsRes, alignmentsRes] =
         await Promise.all([
-          axios.get(`${API_URL}/api/characters/dnd/classes`),
-          axios.get(`${API_URL}/api/characters/dnd/species`),
-          axios.get(`${API_URL}/api/characters/dnd/backgrounds`),
-          axios.get(`${API_URL}/api/characters/dnd/alignments`),
+          axios.get(`${API_URL}/api/characters/dnd/classes/`),
+          axios.get(`${API_URL}/api/characters/dnd/species/`),
+          axios.get(`${API_URL}/api/characters/dnd/backgrounds/`),
+          axios.get(`${API_URL}/api/characters/dnd/alignments/`),
         ]);
 
       setClasses(classesRes.data.classes || []);
@@ -197,7 +197,7 @@ export default function DnDCharacterCreator({ onCharacterGenerated, onError }) {
       };
 
       const dndResponse = await axios.post(
-        `${API_URL}/api/characters/dnd/generate`,
+        `${API_URL}/api/characters/dnd/generate/`,
         dndRequest
       );
 
@@ -397,7 +397,7 @@ Length: 2-3 distinctive quirks.`,
    */
   const generateNarrativeAspect = async (prompt, aspectName) => {
     try {
-      const response = await axios.post(`${API_URL}/api/llm/generate-text`, {
+      const response = await axios.post(`${API_URL}/api/llm/generate-text/`, {
         prompt: prompt,
         provider: provider,
         model: model || undefined, // Let backend choose default if not specified

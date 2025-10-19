@@ -403,7 +403,7 @@ async def generate_content(request: LLMRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/providers")
+@router.get("/providers/")
 async def get_available_providers():
     """Get list of available LLM providers based on installed clients and API keys"""
     # Fetch Gemini models dynamically
@@ -447,13 +447,13 @@ async def get_available_providers():
     return providers
 
 
-@router.get("/rate-limits/{provider}")
+@router.get("/rate-limits/{provider}/")
 async def get_rate_limit_status(provider: str):
     """Get current rate limit usage for a specific provider."""
     return rate_limiter.get_usage_stats(provider)
 
 
-@router.get("/rate-limits")
+@router.get("/rate-limits/")
 async def get_all_rate_limits():
     """Get rate limit usage for all providers."""
     return {
@@ -464,7 +464,7 @@ async def get_all_rate_limits():
     }
 
 
-@router.get("/google/models")
+@router.get("/google/models/")
 async def get_gemini_models():
     """
     Get list of available Gemini models with their rate limits.
@@ -481,7 +481,7 @@ async def get_gemini_models():
         raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
 
 
-@router.get("/groq/models")
+@router.get("/groq/models/")
 async def get_groq_models():
     """
     Get list of available Groq models with their rate limits.
@@ -498,8 +498,8 @@ async def get_groq_models():
         raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
 
 
-@router.get("/claude/models")
-@router.get("/anthropic/models")  # Alias for consistency
+@router.get("/claude/models/")
+@router.get("/anthropic/models/")  # Alias for consistency
 async def get_claude_models():
     """
     Get list of available Claude (Anthropic) models with their capabilities.
@@ -524,7 +524,7 @@ async def get_claude_models():
         raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
 
 
-@router.get("/openai/models")
+@router.get("/openai/models/")
 async def get_openai_models():
     """
     Get list of available OpenAI models with their capabilities.
@@ -548,7 +548,7 @@ async def get_openai_models():
         raise HTTPException(status_code=500, detail=f"Failed to fetch models: {str(e)}")
 
 
-@router.get("/models/available")
+@router.get("/models/available/")
 async def get_all_available_models():
     """
     Get all available models from all providers based on configured API keys.

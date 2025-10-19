@@ -79,7 +79,7 @@ export default function CreateLocationPage() {
 
   const loadOptions = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/generate/options`);
+      const response = await axios.get(`${API_URL}/api/generate/options/`);
       setOptions(response.data);
     } catch (err) {
       setError("Failed to load options");
@@ -91,7 +91,7 @@ export default function CreateLocationPage() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/generate/location`, {
+      const response = await axios.post(`${API_URL}/api/generate/location/`, {
         name: locationName || null,
         location_type: locationType || null,
         world_context: worldContext || null,
@@ -117,7 +117,7 @@ export default function CreateLocationPage() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/generate/location`, {
+      const response = await axios.post(`${API_URL}/api/generate/location/`, {
         base_content: generatedContent,
         refinement_instructions: refinementInstructions,
         provider,
@@ -147,7 +147,7 @@ export default function CreateLocationPage() {
     setError(null);
 
     try {
-      await axios.post(`${API_URL}/api/generate/location/save`, null, {
+      await axios.post(`${API_URL}/api/generate/location/save/`, null, {
         params: {
           name: locationName,
           description: finalContent || generatedContent,

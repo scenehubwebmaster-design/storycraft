@@ -66,7 +66,7 @@ def update_world(world_id: int, world: WorldCreate, db: Session = Depends(get_db
     db.refresh(db_world)
     return db_world
 
-@router.delete("/{world_id}")
+@router.delete("/{world_id}/")
 def delete_world(world_id: int, db: Session = Depends(get_db)):
     """Delete a world"""
     db_world = db.query(World).filter(World.id == world_id).first()

@@ -376,20 +376,30 @@ LENGTH: {length}
 Generate the secrets now:"""
 
     def _name_prompt(self, style: NarrativeStyle, length: str) -> str:
+        # Updated prompt: ask for multiple, distinct options and explicit formatting
         return f"""
-TASK: Generate an appropriate name for this D&D character.
+TASK: Generate 6 distinct and culturally appropriate name options for this D&D character.
 
 REQUIREMENTS:
-- Species-appropriate naming conventions for {self.species}
-- Reflects background ({self.background}) and social status
-- Consider cultural origins
-- If {self.class_name}, might have a title or epithet
-- Alignment may influence name choice (e.g., dark names for evil)
-- Generate: First name, surname (if appropriate), and optional title/nickname
+- Produce 6 options that are clearly different from each other (avoid reusing the same stem or obvious variations like "Thaleon" / "Thorne").
+- Each option should follow species-appropriate naming conventions for {self.species} and reflect background ({self.background}) and social status when relevant.
+- Consider cultural origins and phonetic variety (e.g., short/long names, soft/hard consonants, vowel-heavy vs consonant-heavy).
+- If the character's class ({self.class_name}) commonly has titles or epithets, include 1 option that features an epithet/title.
+- Aim for diversity across syllable structure, rhythm, and consonant/vowel patterns.
+- For each option provide very short metadata: (1) whether the name is suitable for a formal address, (2) probable cultural origin or style, and (3) a 6-10 word etymology/meaning.
 
-FORMAT: Provide name with brief explanation of its meaning or origin
+FORMAT (strict):
+- Return a JSON array of 6 objects. Each object must contain exactly these keys: `first_name`, `surname` (use empty string if not applicable), `title` (use empty string if none), `formal` (true/false), `origin`, `meaning`.
 
-Generate the name now:"""
+Example:
+[
+    {{"first_name":"Eira","surname":"Valen","title":"","formal":true,"origin":"Northern coastal dialect","meaning":"Sea-born, swift and steady"}},
+    ... (5 more objects)
+]
+
+IMPORTANT: Do not return a single combined string or conversational text — return only the JSON array so the calling code can parse it reliably.
+
+Generate the 6 name options now:"""
 
     def _get_alignment_traits(self) -> str:
         """Get personality traits associated with alignment"""
@@ -711,15 +721,12 @@ REQUIRED OUTPUT STRUCTURE (D&D 5E Character Sheet Format)
    │     - Halfling: Friendly, earthy (Alton, Roscoe, Lindal, Cade, Eldon, Corrin, Garret)
    │     - Tiefling: Infernal or virtue names (Akmenios, Damakos, Iados, Kairon, Art, Glory, Hope)
    │     - Human: Varied by culture (use diverse real-world inspirations)
-   │   • Fantasy surname examples to combine with first names:
-   │     Korvis, Thaleon, Zareth, Morak, Valdris, Kaelen, Zephrin, Loreth, Astrin, Vex,
-   │     Talon, Kasalan, Velaris, Draxen, Norin, Silvain, Mordain, Bryn, Kestrel, Zaldor,
-   │     Ashwyn, Ravenor, Theron, Galadorn, Vorin, Lyrian, Zereth, Branok, Solwyn, Vyrus,
-   │     Aldric, Corvus, Nethyr, Torin, Galvorn, Merrick, Valdor, Arlon, Kestren, Dravos,
-   │     Alvar, Faelen, Riven, Myros, Galan, Elian, Taris, Zoren, Keldon, Varyn
-   │   • Create unique combinations (e.g., "Tharen Kasalan", "Akra Valdris", "Peren Ravenor")
-   │   • Mix and match or create variations inspired by these examples
-   │   • DO NOT reuse combinations - be creative with syllable patterns
+    │   • Use surnames sparingly and invent novel surnames by combining syllables
+    │     (do not reuse any static example names or their obvious variants). The
+    │     generator must produce surnames that are not simple edits of a small
+    │     static pool. Instead of relying on pre-listed examples, create fresh
+    │     combinations by mixing syllables (consonant clusters, vowel patterns,
+    │     and cultural flavor) to maximize variety across generated characters.
    │
    ├─ age: Age appropriate for {species} (with context like "young", "seasoned", "elder")
    ├─ height: {species}-appropriate height

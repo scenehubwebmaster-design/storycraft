@@ -28,8 +28,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ClearIcon from "@mui/icons-material/Clear";
 import { API_URL } from "../config/api";
 
-// Configure axios with timeout and better error handling
-axios.defaults.timeout = 10000; // 10 second timeout
+// Note: Removed global axios timeout that was causing issues with portrait loading
+// Individual requests can set timeout via { timeout: 10000 } config if needed
 
 export default function CharactersPage() {
   const [characters, setCharacters] = useState([]);
@@ -41,6 +41,46 @@ export default function CharactersPage() {
   const [characterToDelete, setCharacterToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [apiHealthy, setApiHealthy] = useState(null);
+  const [portraits, setPortraits] = useState({}); // Cache for loaded portraits
+  const [loadingPortraits, setLoadingPortraits] = useState({}); // Track which portraits are loading
+
+  // Load portrait for a specific character - DEFINED FIRST so useEffect can call it
+  const loadPortraitForCharacter = async (characterId) => {
+    console.log(`[Characters] Loading portrait for character ${characterId}`);
+    try {
+      // Mark as loading
+      setLoadingPortraits((prev) => ({ ...prev, [characterId]: true }));
+
+      const response = await axios.get(
+        `${API_URL}/api/characters/${characterId}/portrait/`
+      );
+      console.log(`[Characters] Portrait response for ${characterId}:`, {
+        hasImage: !!response.data.portrait_image,
+        imageLength: response.data.portrait_image?.length || 0,
+      });
+
+      if (response.data.portrait_image) {
+        setPortraits((prev) => ({
+          ...prev,
+          [characterId]: response.data.portrait_image,
+        }));
+        console.log(`[Characters] Portrait loaded for ${characterId}`);
+      } else {
+        console.warn(
+          `[Characters] No portrait_image in response for ${characterId}`
+        );
+      }
+    } catch (err) {
+      // Non-fatal - character card will show placeholder icon
+      console.error(
+        `[Characters] Failed to load portrait for character ${characterId}:`,
+        err.message
+      );
+    } finally {
+      // Mark as done loading
+      setLoadingPortraits((prev) => ({ ...prev, [characterId]: false }));
+    }
+  };
 
   useEffect(() => {
     const checkApiAndLoadCharacters = async () => {
@@ -69,12 +109,27 @@ export default function CharactersPage() {
           );
         }
 
-        // Now load characters
+        // Now load characters WITHOUT portraits for fast list display
         console.log("[Characters] Loading from API URL:", API_URL);
-        const response = await axios.get(`${API_URL}/api/characters`);
+        const response = await axios.get(
+          `${API_URL}/api/characters/?exclude_portraits=true`
+        );
         console.log("[Characters] Loaded", response.data.length, "characters");
         setCharacters(response.data);
         setError(null);
+
+        // Load portraits in the background for characters that have them
+        console.log(
+          `[Characters] Starting to load portraits for ${response.data.length} characters`
+        );
+        response.data.forEach((character) => {
+          if (character.id) {
+            console.log(
+              `[Characters] Queueing portrait load for character ${character.id}`
+            );
+            loadPortraitForCharacter(character.id);
+          }
+        });
       } catch (err) {
         const errorMsg =
           err.response?.data?.detail ||
@@ -282,14 +337,26 @@ export default function CharactersPage() {
                   },
                 }}
               >
-                {character.portrait_image ? (
+                {portraits[character.id] ? (
                   <CardMedia
                     component="img"
                     height="240"
-                    image={`data:image/png;base64,${character.portrait_image}`}
+                    image={`data:image/png;base64,${portraits[character.id]}`}
                     alt={character.name}
                     sx={{ objectFit: "cover" }}
                   />
+                ) : loadingPortraits[character.id] ? (
+                  <Box
+                    sx={{
+                      height: 240,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "background.default",
+                    }}
+                  >
+                    <CircularProgress />
+                  </Box>
                 ) : (
                   <Box
                     sx={{

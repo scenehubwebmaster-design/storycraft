@@ -18,6 +18,7 @@ import {
   Grid,
   Divider,
 } from "@mui/material";
+import NamePicker from "../components/NamePicker";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -34,6 +35,10 @@ export default function CharacterDetailPage() {
   const [error, setError] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  const [success, setSuccess] = useState(null);
+  const [portraitImage, setPortraitImage] = useState(null);
+  const [loadingPortrait, setLoadingPortrait] = useState(false);
 
   useEffect(() => {
     loadCharacter();
@@ -42,8 +47,9 @@ export default function CharacterDetailPage() {
   const loadCharacter = async () => {
     try {
       setLoading(true);
+      // Load character WITHOUT portrait for fast initial display
       const response = await axios.get(
-        `${API_URL}/api/characters/${characterId}`
+        `${API_URL}/api/characters/${characterId}?exclude_portrait=true`
       );
       const characterData = response.data;
 
@@ -64,11 +70,29 @@ export default function CharacterDetailPage() {
 
       setCharacter(characterData);
       setError(null);
+
+      // Load portrait separately (non-blocking)
+      loadCharacterPortrait();
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to load character");
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCharacterPortrait = async () => {
+    try {
+      setLoadingPortrait(true);
+      const response = await axios.get(
+        `${API_URL}/api/characters/${characterId}/portrait/`
+      );
+      setPortraitImage(response.data.portrait_image);
+    } catch (err) {
+      console.warn("Failed to load portrait:", err);
+      // Non-fatal - character details can be viewed without portrait
+    } finally {
+      setLoadingPortrait(false);
     }
   };
 
@@ -94,6 +118,23 @@ export default function CharacterDetailPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const handleNameSelected = async (newName) => {
+    try {
+      setLoading(true);
+      await axios.put(`${API_URL}/api/characters/${characterId}`, {
+        name: newName,
+      });
+      setSuccess("Name updated successfully");
+      setNameDialogOpen(false);
+      await loadCharacter();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to update name");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -219,6 +260,13 @@ export default function CharacterDetailPage() {
             </Button>
             <Button
               variant="outlined"
+              startIcon={<EditIcon />}
+              onClick={() => setNameDialogOpen(true)}
+            >
+              Regenerate Name
+            </Button>
+            <Button
+              variant="outlined"
               color="error"
               startIcon={<DeleteIcon />}
               onClick={() => setDeleteDialogOpen(true)}
@@ -228,15 +276,24 @@ export default function CharacterDetailPage() {
           </Box>
         </Box>
       </Box>
+      {success && (
+        <Alert
+          severity="success"
+          sx={{ mb: 3 }}
+          onClose={() => setSuccess(null)}
+        >
+          {success}
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         {/* Portrait Card */}
         <Grid size={{ xs: 12, md: 3 }}>
           <Card>
-            {character.portrait_image ? (
+            {portraitImage ? (
               <CardMedia
                 component="img"
-                image={`data:image/png;base64,${character.portrait_image}`}
+                image={`data:image/png;base64,${portraitImage}`}
                 alt={character.name}
                 sx={{ width: "100%", height: "auto" }}
               />
@@ -250,7 +307,11 @@ export default function CharacterDetailPage() {
                   backgroundColor: "background.default",
                 }}
               >
-                <PersonIcon sx={{ fontSize: 120, color: "text.secondary" }} />
+                {loadingPortrait ? (
+                  <CircularProgress />
+                ) : (
+                  <PersonIcon sx={{ fontSize: 120, color: "text.secondary" }} />
+                )}
               </Box>
             )}
             {character.image_prompt && (
@@ -553,6 +614,27 @@ export default function CharacterDetailPage() {
           </Box>
         </Grid>
       </Grid>
+
+      <Dialog
+        open={nameDialogOpen}
+        onClose={() => setNameDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Regenerate / Select Name</DialogTitle>
+        <DialogContent>
+          <NamePicker
+            nameOptions={character?.structured_data?.name_options ?? []}
+            selectedName={character?.name}
+            onSelect={(name) => handleNameSelected(name)}
+            provider={"groq"}
+            model={null}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNameDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog

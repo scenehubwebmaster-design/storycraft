@@ -87,7 +87,7 @@ export default function CreateWorldPage() {
 
   const loadOptions = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/generate/options`);
+      const response = await axios.get(`${API_URL}/api/generate/options/`);
       setOptions(response.data);
     } catch (err) {
       setError("Failed to load options");
@@ -100,8 +100,8 @@ export default function CreateWorldPage() {
 
     try {
       const endpoint = useStructured
-        ? `${API_URL}/api/generate/world/structured`
-        : `${API_URL}/api/generate/world`;
+        ? `${API_URL}/api/generate/world/structured/`
+        : `${API_URL}/api/generate/world/`;
 
       const response = await axios.post(endpoint, {
         themes: selectedThemes.length > 0 ? selectedThemes : null,
@@ -134,8 +134,8 @@ export default function CreateWorldPage() {
 
     try {
       const endpoint = useStructured
-        ? `${API_URL}/api/generate/world/structured`
-        : `${API_URL}/api/generate/world`;
+        ? `${API_URL}/api/generate/world/structured/`
+        : `${API_URL}/api/generate/world/`;
 
       const requestData = useStructured
         ? {
@@ -197,12 +197,12 @@ export default function CreateWorldPage() {
         // Create new world
         if (useStructured) {
           // Use structured save endpoint
-          await axios.post(`${API_URL}/api/generate/world/structured/save`, {
+          await axios.post(`${API_URL}/api/generate/world/structured/save/`, {
             world_profile: finalContent || generatedContent,
           });
         } else {
           // Use legacy save endpoint
-          await axios.post(`${API_URL}/api/generate/world/save`, null, {
+          await axios.post(`${API_URL}/api/generate/world/save/`, null, {
             params: {
               name: worldName,
               content: finalContent || generatedContent,

@@ -68,7 +68,7 @@ export default function CreateStoryPage() {
 
   const loadOptions = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/generate/options`);
+      const response = await axios.get(`${API_URL}/api/generate/options/`);
       setOptions(response.data);
     } catch (err) {
       setError("Failed to load options");
@@ -104,7 +104,7 @@ export default function CreateStoryPage() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/generate/story`, {
+      const response = await axios.post(`${API_URL}/api/generate/story/`, {
         themes: selectedThemes.length > 0 ? selectedThemes : null,
         tone: selectedTones.length > 0 ? selectedTones : null,
         length: storyLength || null,
@@ -130,7 +130,7 @@ export default function CreateStoryPage() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/api/generate/story`, {
+      const response = await axios.post(`${API_URL}/api/generate/story/`, {
         base_content: generatedContent,
         refinement_instructions: refinementInstructions,
         provider,
@@ -171,7 +171,7 @@ export default function CreateStoryPage() {
         }, 1500);
       } else {
         // Create new story
-        await axios.post(`${API_URL}/api/generate/story/save`, null, {
+        await axios.post(`${API_URL}/api/generate/story/save/`, null, {
           params: {
             title: storyTitle,
             content: finalContent || generatedContent,

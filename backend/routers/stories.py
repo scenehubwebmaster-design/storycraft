@@ -62,7 +62,7 @@ def update_story(story_id: int, story: StoryCreate, db: Session = Depends(get_db
     db.refresh(db_story)
     return db_story
 
-@router.delete("/{story_id}")
+@router.delete("/{story_id}/")
 def delete_story(story_id: int, db: Session = Depends(get_db)):
     """Delete a story"""
     db_story = db.query(Story).filter(Story.id == story_id).first()

@@ -54,6 +54,10 @@ from structured_output_utils import (
     supports_structured_outputs,
     get_structured_output_prompt,
 )
+from name_generation_utils import (
+    extract_json_array_from_text,
+    needs_retry_from_text,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -106,7 +110,7 @@ async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, 
         raise HTTPException(status_code=500, detail=f"LLM generation failed: {str(e)}")
 
 
-@router.get("/options", response_model=PromptOptionsResponse)
+@router.get("/options/", response_model=PromptOptionsResponse)
 async def get_prompt_options():
     """Get all available prompt options for the UI"""
     logger.info("GET /api/generate/options - Fetching prompt options")
@@ -125,7 +129,7 @@ async def get_prompt_options():
     )
 
 
-@router.get("/variations")
+@router.get("/variations/")
 async def get_prompt_variations():
     """Get all available prompt variations organized by genre.
     
@@ -138,7 +142,7 @@ async def get_prompt_variations():
     return list_all_variation_names()
 
 
-@router.get("/cultural-origins")
+@router.get("/cultural-origins/")
 async def get_cultural_origins():
     """Get all available cultural origins for character generation, organized by region.
     
@@ -222,7 +226,75 @@ async def generate_character(request: CharacterGenerationRequest):
     )
 
 
-@router.post("/character/save")
+class NameGenerationRequest(BaseModel):
+    provider: str = "groq"
+    model: Optional[str] = None
+    # Context fields (optional) to influence naming
+    species: Optional[str] = None
+    background: Optional[str] = None
+    class_name: Optional[str] = None
+
+
+@router.post("/names/")
+async def generate_names(request: NameGenerationRequest):
+    """Generate and return a validated list of 6 distinct name options.
+
+    This endpoint will call the configured LLM provider, parse the JSON
+    array from the response, and retry up to 3 times if near-duplicate
+    names are detected.
+    """
+    # Build D&D-specific prompt when context is provided, otherwise use generic
+    try:
+        if request.species or request.class_name or request.background:
+            from dnd_narrative_prompts import DnDNarrativePromptBuilder, NarrativeAspect
+            builder = DnDNarrativePromptBuilder({
+                "dnd_species": request.species or "human",
+                "dnd_class": request.class_name or "commoner",
+                "dnd_background": request.background or "common"
+            })
+            prompt = builder.build_prompt(NarrativeAspect.NAME)
+        else:
+            # Generic name prompt
+            prompt = (
+                "Generate 6 distinct character names in JSON array format. "
+                "Return an array of objects with keys: first_name, surname, title, formal, origin, meaning. "
+                "Avoid obvious shared stems and ensure phonetic variety."
+            )
+
+        max_attempts = 3
+        attempt = 0
+        last_error = None
+
+        while attempt < max_attempts:
+            attempt += 1
+            response_text, metadata = await call_llm(prompt, request.provider, request.model)
+
+            # Try to parse JSON array
+            try:
+                options = extract_json_array_from_text(response_text)
+            except Exception as e:
+                last_error = e
+                # If parse failed, retry
+                continue
+
+            # Check for near-duplicates
+            retry_needed, pairs = needs_retry_from_text(response_text)
+            if not retry_needed:
+                return {"names": options, "provider": metadata.get("provider"), "model": metadata.get("model"), "attempts": attempt}
+
+            # If retry needed and attempts remain, loop to try again
+            last_error = RuntimeError(f"Duplicate name pairs detected: {pairs}")
+
+        # If we exit loop, all attempts failed
+        raise HTTPException(status_code=500, detail=f"Failed to generate distinct names after {max_attempts} attempts: {str(last_error)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Name generation failed")
+        raise HTTPException(status_code=500, detail=f"Name generation error: {str(e)}")
+
+
+@router.post("/character/save/")
 async def save_character(
     name: str,
     content: str,
@@ -266,7 +338,7 @@ async def save_character(
         raise HTTPException(status_code=500, detail=f"Failed to save character: {str(e)}")
 
 
-@router.post("/character/generate-portrait")
+@router.post("/character/generate-portrait/")
 async def generate_character_portrait_endpoint(request: ImageGenerationRequest):
     """
     Generate a character portrait using OpenAI (GPT Image/DALL-E) or Google Imagen.
@@ -321,7 +393,7 @@ async def generate_character_portrait_endpoint(request: ImageGenerationRequest):
         )
 
 
-@router.post("/character/save-portrait")
+@router.post("/character/save-portrait/")
 async def save_character_portrait(
     request: dict,
     db: Session = Depends(get_db)
@@ -390,7 +462,7 @@ async def generate_story(request: StoryGenerationRequest):
     )
 
 
-@router.post("/story/save")
+@router.post("/story/save/")
 async def save_story(
     title: str,
     content: str,
@@ -449,7 +521,7 @@ async def generate_world(request: WorldGenerationRequest):
     )
 
 
-@router.post("/world/save")
+@router.post("/world/save/")
 async def save_world(
     name: str,
     content: str,
@@ -510,7 +582,7 @@ async def generate_scene(request: SceneGenerationRequest):
     )
 
 
-@router.post("/scene/save")
+@router.post("/scene/save/")
 async def save_scene(
     title: str,
     content: str,
@@ -567,7 +639,7 @@ async def generate_chapter(request: ChapterGenerationRequest):
     )
 
 
-@router.post("/chapter/save")
+@router.post("/chapter/save/")
 async def save_chapter(
     title: str,
     content: str,
@@ -623,7 +695,7 @@ async def generate_location(request: LocationGenerationRequest):
     )
 
 
-@router.post("/location/save")
+@router.post("/location/save/")
 async def save_location(
     name: str,
     content: str,
@@ -886,7 +958,7 @@ class CharacterSaveRequest(BaseModel):
     story_id: Optional[int] = None
 
 
-@router.post("/character/structured/save")
+@router.post("/character/structured/save/")
 async def save_structured_character(
     request: CharacterSaveRequest,
     db: Session = Depends(get_db)
@@ -967,7 +1039,7 @@ async def save_structured_character(
         )
 
 
-@router.post("/world/structured/save")
+@router.post("/world/structured/save/")
 async def save_structured_world(
     world_profile: WorldProfile,
     story_id: int = None,
@@ -1056,7 +1128,7 @@ class DnDNarrativeRequest(BaseModel):
     model: Optional[str] = None
 
 
-@router.post("/dnd/narrative")
+@router.post("/dnd/narrative/")
 async def generate_dnd_narrative(request: DnDNarrativeRequest, db: Session = Depends(get_db)):
     """
     Generate AI-enhanced narrative aspects for a D&D character.
@@ -1168,7 +1240,7 @@ class BulkDnDNarrativeRequest(BaseModel):
     model: Optional[str] = None
 
 
-@router.post("/dnd/narrative/bulk")
+@router.post("/dnd/narrative/bulk/")
 async def generate_bulk_dnd_narrative(request: BulkDnDNarrativeRequest, db: Session = Depends(get_db)):
     """
     Generate multiple AI-enhanced narrative aspects for a D&D character in one request.
@@ -1289,7 +1361,7 @@ async def generate_bulk_dnd_narrative(request: BulkDnDNarrativeRequest, db: Sess
         )
 
 
-@router.get("/dnd/narrative/aspects")
+@router.get("/dnd/narrative/aspects/")
 async def get_narrative_aspects():
     """Get list of available D&D narrative aspects that can be generated"""
     from dnd_narrative_prompts import NarrativeAspect
@@ -1308,7 +1380,7 @@ async def get_narrative_aspects():
     }
 
 
-@router.get("/dnd/narrative/styles")
+@router.get("/dnd/narrative/styles/")
 async def get_narrative_styles():
     """Get list of available narrative generation styles"""
     from dnd_narrative_prompts import NarrativeStyle

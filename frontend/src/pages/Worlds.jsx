@@ -48,7 +48,7 @@ export default function WorldsPage() {
   const loadWorlds = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/worlds`);
+      const response = await axios.get(`${API_URL}/api/worlds/`);
       setWorlds(response.data);
       setError(null);
     } catch (err) {

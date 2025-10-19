@@ -11,22 +11,17 @@ logger = logging.getLogger(__name__)
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Create FastAPI app
 app = FastAPI(
-    title="StoryCraft API",
-    description="AI-powered story creation backend",
-    version="0.1.0"
+    title="StoryCraft API", 
+    version="1.0.0",
+    redirect_slashes=False  # Don't redirect trailing slashes (avoid 307)
 )
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",  # Vite alternate port
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-        "*",  # Allow all origins for development (network access)
-    ],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,19 +32,16 @@ app.include_router(characters.router, prefix="/api/characters", tags=["character
 app.include_router(stories.router, prefix="/api/stories", tags=["stories"])
 app.include_router(worlds.router, prefix="/api/worlds", tags=["worlds"])
 app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
-app.include_router(generation.router, tags=["generation"])
-app.include_router(settings.router, tags=["settings"])
-
-@app.get("/")
-async def root():
-    logger.info("Root endpoint accessed")
-    return {
-        "message": "Welcome to StoryCraft API",
-        "version": "0.1.0",
-        "docs": "/docs"
-    }
+app.include_router(generation.router, tags=["generation"])  # No prefix - already defined in router
+app.include_router(settings.router, tags=["settings"])  # No prefix - already defined in router
 
 @app.get("/health")
-async def health_check():
+def health_check():
+    """Health check endpoint"""
     logger.info("Health check endpoint accessed")
     return {"status": "healthy"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

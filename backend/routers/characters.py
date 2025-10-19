@@ -69,17 +69,55 @@ class CharacterResponse(CharacterBase):
         from_attributes = True
 
 @router.get("/", response_model=List[CharacterResponse])
-def get_characters(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Get all characters"""
+def get_characters(skip: int = 0, limit: int = 100, exclude_portraits: bool = True, db: Session = Depends(get_db)):
+    """
+    Get all characters.
+    
+    Args:
+        skip: Number of records to skip (pagination)
+        limit: Maximum number of records to return
+        exclude_portraits: If True (default), excludes base64 portrait images to reduce response size
+        db: Database session
+    
+    Returns:
+        List of characters (without portraits by default to avoid 431 errors)
+    """
     characters = db.query(Character).offset(skip).limit(limit).all()
+    
+    # If excluding portraits, remove them from response
+    if exclude_portraits:
+        result = []
+        for character in characters:
+            char_dict = CharacterResponse.model_validate(character).model_dump()
+            char_dict['portrait_image'] = None  # Set to None instead of full base64
+            result.append(char_dict)
+        return result
+    
     return characters
 
 @router.get("/{character_id}", response_model=CharacterResponse)
-def get_character(character_id: int, db: Session = Depends(get_db)):
-    """Get a specific character by ID"""
+def get_character(character_id: int, exclude_portrait: bool = False, db: Session = Depends(get_db)):
+    """
+    Get a specific character by ID.
+    
+    Args:
+        character_id: Character ID
+        exclude_portrait: If True, excludes the base64 portrait image to reduce response size
+        db: Database session
+    
+    Returns:
+        Character data (optionally without portrait to avoid 431 errors)
+    """
     character = db.query(Character).filter(Character.id == character_id).first()
     if character is None:
         raise HTTPException(status_code=404, detail="Character not found")
+    
+    # If excluding portrait, create response dict and remove portrait_image
+    if exclude_portrait:
+        response_data = CharacterResponse.model_validate(character).model_dump()
+        response_data['portrait_image'] = None  # Set to None instead of removing
+        return response_data
+    
     return character
 
 @router.post("/", response_model=CharacterResponse)
@@ -107,7 +145,7 @@ def update_character(character_id: int, character: CharacterUpdate, db: Session 
     db.refresh(db_character)
     return db_character
 
-@router.delete("/{character_id}")
+@router.delete("/{character_id}/")
 def delete_character(character_id: int, db: Session = Depends(get_db)):
     """Delete a character"""
     db_character = db.query(Character).filter(Character.id == character_id).first()
@@ -119,11 +157,30 @@ def delete_character(character_id: int, db: Session = Depends(get_db)):
     return {"message": "Character deleted successfully"}
 
 
+@router.get("/{character_id}/portrait/")
+def get_character_portrait(character_id: int, db: Session = Depends(get_db)):
+    """
+    Get only the portrait image for a character.
+    Separate endpoint to avoid sending large base64 images in main character responses.
+    
+    Returns:
+        Dict with portrait_image (base64) and image_prompt
+    """
+    character = db.query(Character).filter(Character.id == character_id).first()
+    if character is None:
+        raise HTTPException(status_code=404, detail="Character not found")
+    
+    return {
+        "portrait_image": character.portrait_image,
+        "image_prompt": character.image_prompt
+    }
+
+
 # ============================================================================
 # D&D 5E ENDPOINTS
 # ============================================================================
 
-@router.get("/dnd/classes")
+@router.get("/dnd/classes/")
 def get_dnd_classes():
     """Get all available D&D 5E classes with full details"""
     from dnd_data import DND_CLASSES
@@ -147,7 +204,7 @@ def get_dnd_classes():
     }
 
 
-@router.get("/dnd/species")
+@router.get("/dnd/species/")
 def get_dnd_species():
     """Get all available D&D 5E species/races with traits"""
     from dnd_data import DND_SPECIES
@@ -170,7 +227,7 @@ def get_dnd_species():
     }
 
 
-@router.get("/dnd/backgrounds")
+@router.get("/dnd/backgrounds/")
 def get_dnd_backgrounds():
     """Get all available D&D 5E backgrounds with features"""
     from dnd_data import DND_BACKGROUNDS
@@ -193,7 +250,7 @@ def get_dnd_backgrounds():
     }
 
 
-@router.get("/dnd/alignments")
+@router.get("/dnd/alignments/")
 def get_dnd_alignments():
     """Get all D&D 5E alignments"""
     from dnd_data import DND_ALIGNMENTS
@@ -381,7 +438,7 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
         raise HTTPException(status_code=500, detail=f"Failed to generate D&D character: {str(e)}")
 
 
-@router.get("/{character_id}/dnd-sheet")
+@router.get("/{character_id}/dnd-sheet/")
 def get_dnd_character_sheet(character_id: int, db: Session = Depends(get_db)):
     """
     Get a formatted D&D character sheet for a character.
@@ -438,7 +495,7 @@ def get_dnd_character_sheet(character_id: int, db: Session = Depends(get_db)):
     }
 
 
-@router.put("/{character_id}/dnd-stats")
+@router.put("/{character_id}/dnd-stats/")
 def update_dnd_stats(character_id: int, stats: Dict[str, Any], db: Session = Depends(get_db)):
     """
     Update D&D stats for a character (e.g., after leveling up, taking damage, etc.)

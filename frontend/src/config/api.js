@@ -1,26 +1,24 @@
 /**
  * API Configuration
  *
- * Dynamically determines the API base URL based on the current hostname.
- * This allows the app to work both locally and when accessed from mobile devices
- * on the same network.
- *
- * Examples:
- * - localhost:3000 → http://localhost:8000
- * - 192.168.1.100:3000 → http://192.168.1.100:8000
+ * Handles API base URL for different environments:
+ * - Development: Uses backend server on port 8000
+ * - Production: Uses same hostname as frontend
  */
 
 const getApiUrl = () => {
-  // In development, use the current hostname but port 8000
-  if (import.meta.env.DEV) {
-    const hostname = window.location.hostname;
+  // In development, Vite dev server runs on 3000, backend on 8000
+  // In production, both are served from the same origin
+  const hostname = window.location.hostname;
+  const isDev = import.meta.env.DEV;
+
+  if (isDev) {
+    // Development: point to backend server
+    return `http://${hostname}:8000`;
+  } else {
+    // Production: same origin (handled by reverse proxy or same server)
     return `http://${hostname}:8000`;
   }
-
-  // In production, you might want to use an environment variable
-  return (
-    import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`
-  );
 };
 
 export const API_URL = getApiUrl();

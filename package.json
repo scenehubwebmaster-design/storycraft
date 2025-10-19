@@ -6,11 +6,16 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "npm run dev:frontend",
+    "dev": "npm run dev:all",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:backend": "cd backend && set DEV_MODE=true && python uvicorn_config.py",
+    "dev:backend:fast": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level warning",
     "dev:all": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:all:fast": "concurrently \"npm run dev:frontend\" \"npm run dev:backend:fast\"",
+    "build": "npm run build:frontend",
     "build:frontend": "cd frontend && npm run build",
+    "start": "cd backend && set DEV_MODE=false && python uvicorn_config.py",
+    "start:prod": "cd backend && set DEV_MODE=false && python uvicorn_config.py",
     "lint": "cd frontend && npm run lint",
     "clean": "cd frontend && rimraf node_modules/.vite && rimraf dist",
     "clean:all": "cd frontend && rimraf node_modules && npm install",

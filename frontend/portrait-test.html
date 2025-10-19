@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Portrait Loading Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <h1>Portrait Loading Test</h1>
+    <div id="results"></div>
+    <div id="images"></div>
+
+    <script>
+      const API_URL = "http://localhost:8000";
+      const resultsDiv = document.getElementById("results");
+      const imagesDiv = document.getElementById("images");
+
+      async function testPortraitLoading() {
+        try {
+          // Step 1: Load characters without portraits
+          resultsDiv.innerHTML += "<p>Loading characters...</p>";
+          const response = await axios.get(
+            `${API_URL}/api/characters/?exclude_portraits=true`
+          );
+          resultsDiv.innerHTML += `<p>✅ Loaded ${response.data.length} characters</p>`;
+
+          // Step 2: Load portraits for each character
+          for (const character of response.data) {
+            resultsDiv.innerHTML += `<p>Loading portrait for character ${character.id} (${character.name})...</p>`;
+
+            try {
+              const portraitResponse = await axios.get(
+                `${API_URL}/api/characters/${character.id}/portrait/`
+              );
+
+              if (portraitResponse.data.portrait_image) {
+                resultsDiv.innerHTML += `<p>✅ Portrait loaded for ${character.name} (${portraitResponse.data.portrait_image.length} chars)</p>`;
+
+                // Display the image
+                const img = document.createElement("img");
+                img.src = `data:image/png;base64,${portraitResponse.data.portrait_image}`;
+                img.style.width = "200px";
+                img.style.margin = "10px";
+                img.alt = character.name;
+                img.title = character.name;
+                imagesDiv.appendChild(img);
+              } else {
+                resultsDiv.innerHTML += `<p>⚠️ No portrait for ${character.name}</p>`;
+              }
+            } catch (err) {
+              resultsDiv.innerHTML += `<p>❌ Failed to load portrait for ${character.name}: ${err.message}</p>`;
+            }
+          }
+
+          resultsDiv.innerHTML += "<h2>✅ Test Complete</h2>";
+        } catch (err) {
+          resultsDiv.innerHTML += `<p>❌ Error: ${err.message}</p>`;
+        }
+      }
+
+      // Run test on page load
+      testPortraitLoading();
+    </script>
+  </body>
+</html>

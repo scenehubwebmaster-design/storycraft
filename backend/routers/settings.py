@@ -38,7 +38,7 @@ def mask_api_key(key: str) -> str:
     return f"{key[:8]}...{key[-4:]}"
 
 
-@router.get("/api-keys", response_model=APIKeysResponse)
+@router.get("/api-keys/", response_model=APIKeysResponse)
 async def get_api_keys():
     """Get current API key configuration status"""
     openai_key = os.getenv("OPENAI_API_KEY")
@@ -58,7 +58,7 @@ async def get_api_keys():
     )
 
 
-@router.post("/api-keys")
+@router.post("/api-keys/")
 async def update_api_keys(keys: APIKeysModel):
     """Update API keys in .env file"""
     try:
@@ -106,7 +106,7 @@ async def update_api_keys(keys: APIKeysModel):
         raise HTTPException(status_code=500, detail=f"Failed to update API keys: {str(e)}")
 
 
-@router.delete("/api-keys/{provider}")
+@router.delete("/api-keys/{provider}/")
 async def delete_api_key(provider: str):
     """Remove an API key from .env file"""
     provider = provider.lower()
@@ -134,7 +134,7 @@ async def delete_api_key(provider: str):
         raise HTTPException(status_code=500, detail=f"Failed to remove API key: {str(e)}")
 
 
-@router.get("/providers")
+@router.get("/providers/")
 async def get_provider_status():
     """Get the availability status of all LLM providers"""
     # Check if packages are installed using importlib

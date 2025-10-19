@@ -18,7 +18,9 @@ export const useProviders = () => {
       try {
         setLoading(true);
         // Use the new unified endpoint that checks API keys
-        const response = await axios.get(`${API_URL}/api/llm/models/available`);
+        const response = await axios.get(
+          `${API_URL}/api/llm/models/available/`
+        );
 
         // Transform the response to match the expected format
         // Response format: { providers: { openai: { models: [...], count: N }, ... }, provider_status: {...} }
@@ -92,7 +94,7 @@ export const useProviderModels = (provider) => {
       try {
         setLoading(true);
         const response = await axios.get(
-          `${API_URL}/api/llm/${provider}/models`
+          `${API_URL}/api/llm/${provider}/models/`
         );
         setModels(response.data.models || []);
         setError(null);

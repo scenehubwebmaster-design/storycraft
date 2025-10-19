@@ -48,7 +48,7 @@ export default function StoriesPage() {
   const loadStories = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/stories`);
+      const response = await axios.get(`${API_URL}/api/stories/`);
       setStories(response.data);
       setError(null);
     } catch (err) {

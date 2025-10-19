@@ -52,8 +52,8 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       const [keysResponse, providersResponse] = await Promise.all([
-        axios.get(`${API_URL}/api/settings/api-keys`),
-        axios.get(`${API_URL}/api/settings/providers`),
+        axios.get(`${API_URL}/api/settings/api-keys/`),
+        axios.get(`${API_URL}/api/settings/providers/`),
       ]);
 
       setKeyStatus(keysResponse.data);
@@ -85,7 +85,7 @@ export default function SettingsPage() {
 
     try {
       const response = await axios.post(
-        `${API_URL}/api/settings/api-keys`,
+        `${API_URL}/api/settings/api-keys/`,
         keysToUpdate
       );
       setSuccess(response.data.message);
