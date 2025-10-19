@@ -397,7 +397,7 @@ Length: 2-3 distinctive quirks.`,
    */
   const generateNarrativeAspect = async (prompt, aspectName) => {
     try {
-      const response = await axios.post(`${API_URL}/api/llm/generate-text/`, {
+      const response = await axios.post(`${API_URL}/api/llm/generate/`, {
         prompt: prompt,
         provider: provider,
         model: model || undefined, // Let backend choose default if not specified
@@ -433,7 +433,11 @@ Length: 2-3 distinctive quirks.`,
     }
 
     // Build comprehensive D&D fantasy portrait prompt
-    const portraitPrompt = `A ${portraitStyle} fantasy RPG character portrait of ${character.name}, a ${speciesName} ${className}. ${appearanceDetails} Dungeons & Dragons character art style, professional fantasy illustration, detailed armor and equipment, dramatic lighting, heroic pose, high quality digital art, trending on artstation.${narrativePrompt ? ` Additional context: ${narrativePrompt}` : ""}`;
+    const portraitPrompt = `A ${portraitStyle} fantasy RPG character portrait of ${
+      character.name
+    }, a ${speciesName} ${className}. ${appearanceDetails} Dungeons & Dragons character art style, professional fantasy illustration, detailed armor and equipment, dramatic lighting, heroic pose, high quality digital art, trending on artstation.${
+      narrativePrompt ? ` Additional context: ${narrativePrompt}` : ""
+    }`;
 
     const response = await axios.post(
       `${API_URL}/api/characters/${character.id}/generate-portrait`,
