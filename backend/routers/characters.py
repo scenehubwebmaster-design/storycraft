@@ -287,6 +287,7 @@ class DnDCharacterGenerateRequest(BaseModel):
 
 
 @router.post("/dnd/generate", response_model=CharacterResponse)
+@router.post("/dnd/generate/", response_model=CharacterResponse)
 async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Session = Depends(get_db)):
     """
     Generate a complete D&D 5E character with stats, equipment, and features.
