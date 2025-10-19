@@ -79,7 +79,13 @@ export default function CreateWorldPage() {
     try {
       const response = await axios.get(`${API_URL}/api/worlds/${worldId}`);
       setWorldName(response.data.name);
-      setGeneratedContent(response.data.description);
+      // If the world has structured_data, prefer it and enable structured mode
+      if (response.data.structured_data) {
+        setUseStructured(true);
+        setGeneratedContent(response.data.structured_data);
+      } else {
+        setGeneratedContent(response.data.description);
+      }
       setActiveStep(2); // Skip to review step
     } catch (error) {
       console.error("Failed to load world:", error);
