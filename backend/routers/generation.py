@@ -8,15 +8,17 @@ from typing import Dict, Any, Type, Optional
 import json
 from pydantic import BaseModel
 
-from database import get_db
-from models import Character, Story, World, Scene, Chapter, Location
-from schemas import (
+from ..database import get_db
+from ..models import Character, Story, World, Scene, Chapter, Location
+from ..schemas import (
     CharacterGenerationRequest,
     StoryGenerationRequest,
     WorldGenerationRequest,
     SceneGenerationRequest,
     ChapterGenerationRequest,
     LocationGenerationRequest,
+    LocationImageRequest,
+    SaveLocationRequest,
     CampaignGenerationRequest,
     GenerationResponse,
     PromptOptionsResponse,
@@ -24,7 +26,7 @@ from schemas import (
     CharacterProfile,
     WorldProfile,
 )
-from prompts import (
+from ..prompts import (
     PromptTemplates,
     THEMES,
     PERSONALITY_TRAITS,
@@ -36,25 +38,25 @@ from prompts import (
     PLOT_STRUCTURES,
     WORLD_ELEMENTS,
     CHARACTER_ARCHETYPES,
-    CONFLICT_TYPES
+    CONFLICT_TYPES,
 )
-from prompt_variations import (
+from ..prompt_variations import (
     list_all_variation_names,
     build_enhanced_character_prompt,
 )
-from cultural_modules import (
+from ..cultural_modules import (
     list_cultural_origin_names,
     build_culturally_enhanced_prompt,
 )
-from routers.llm import LLMProvider
-from rate_limiter import rate_limiter
-from structured_output_utils import (
+from .llm import LLMProvider
+from ..rate_limiter import rate_limiter
+from ..structured_output_utils import (
     get_schema_for_provider,
     parse_structured_response,
     supports_structured_outputs,
     get_structured_output_prompt,
 )
-from name_generation_utils import (
+from ..name_generation_utils import (
     extract_json_array_from_text,
     needs_retry_from_text,
 )
@@ -85,8 +87,10 @@ def crop_region(request: RegionCropRequest, db: Session = Depends(get_db)):
     try:
         # Avoid selecting all model columns (some DBs may be missing migrated columns)
         # Query only the world_map column directly to be resilient against schema drift
+        from sqlalchemy import text
+
         row = db.execute(
-            "SELECT world_map FROM worlds WHERE id = :wid",
+            text("SELECT world_map FROM worlds WHERE id = :wid"),
             {"wid": request.world_id}
         ).fetchone()
         if not row or not row[0]:
@@ -165,8 +169,10 @@ async def crop_and_generate(request: CropAndGenerateRequest, db: Session = Depen
     """
     try:
         # Reuse crop logic: fetch world_map
+        from sqlalchemy import text
+
         row = db.execute(
-            "SELECT world_map FROM worlds WHERE id = :wid",
+            text("SELECT world_map FROM worlds WHERE id = :wid"),
             {"wid": request.world_id}
         ).fetchone()
         if not row or not row[0]:
@@ -220,7 +226,7 @@ async def crop_and_generate(request: CropAndGenerateRequest, db: Session = Depen
         # Now call the image generation helper to stylize/enhance using prompt
         gen_result = {}
         try:
-            from image_generation import generate_location_image
+            from ..image_generation import generate_location_image
             prompt_text = request.prompt or 'A detailed view of the selected region, detailed and high-resolution.'
             gen_result = await generate_location_image(prompt=prompt_text, provider=request.provider or 'stablediffusion', model=request.model)
             final_image = gen_result.get('image') or crop_b64
@@ -544,8 +550,8 @@ async def generate_character_portrait_endpoint(request: ImageGenerationRequest):
     - noir: Film noir black and white
     """
     try:
-        from openai_image_client import generate_portrait_with_provider
-        
+        from ..openai_image_client import generate_portrait_with_provider
+
         result = await generate_portrait_with_provider(
             character_name=request.character_name,
             appearance_text=request.appearance_text,
@@ -554,25 +560,25 @@ async def generate_character_portrait_endpoint(request: ImageGenerationRequest):
             aspect_ratio=request.aspect_ratio,
             custom_prompt=request.custom_prompt,
             style_preset=request.style_preset,
-            quality=request.quality
+            quality=request.quality,
         )
-        
+
         return {
-            "image_base64": result["image_base64"],
-            "prompt": result["prompt"],
-            "model": result["model"],
+            "image_base64": result.get("image_base64"),
+            "prompt": result.get("prompt"),
+            "model": result.get("model"),
             "provider": request.provider,
             "aspect_ratio": request.aspect_ratio,
             "style_preset": request.style_preset,
             "quality": request.quality,
-            "message": "Portrait generated successfully"
+            "message": "Portrait generated successfully",
         }
-        
+
     except Exception as e:
         logger.error(f"Portrait generation failed: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to generate portrait: {str(e)}"
+            detail=f"Failed to generate portrait: {str(e)}",
         )
 
 
@@ -705,6 +711,7 @@ async def generate_world(request: WorldGenerationRequest):
 
 
 @router.post("/world/save/")
+@router.post("/world/save")
 async def save_world(
     name: str,
     content: str,
@@ -861,6 +868,7 @@ async def save_chapter(
 
 
 @router.post("/location", response_model=GenerationResponse)
+@router.post("/location/", response_model=GenerationResponse)
 async def generate_location(request: LocationGenerationRequest):
     """Generate a location using AI"""
     prompt = PromptTemplates.location_prompt(
@@ -885,28 +893,46 @@ async def generate_location(request: LocationGenerationRequest):
 
 
 @router.post("/location/save/")
-async def save_location(
-    name: str,
-    content: str,
-    world_id: int,
-    location_image: str = None,
-    image_prompt: str = None,
-    coordinates: str | None = None,
-    db: Session = Depends(get_db)
-):
+@router.post("/location/save")
+async def save_location(request: SaveLocationRequest, db: Session = Depends(get_db)):
     """Save a generated location to the database"""
     try:
+        # Support either creating a new location or updating an existing one
+        if request.location_id:
+            # Update existing
+            loc = db.query(Location).filter(Location.id == request.location_id).first()
+            if not loc:
+                raise HTTPException(status_code=404, detail="Location not found")
+            if request.name:
+                loc.name = request.name
+            if request.content:
+                loc.description = request.content
+            if request.location_image:
+                loc.location_image = request.location_image
+            if request.image_prompt:
+                loc.image_prompt = request.image_prompt
+            if request.coordinates:
+                loc.coordinates = request.coordinates
+            loc.updated_at = datetime.now()
+            db.commit()
+            db.refresh(loc)
+            return {"id": loc.id, "message": "Location updated successfully"}
+
+        # Create new location
+        if not (request.name and request.content and request.world_id):
+            raise HTTPException(status_code=422, detail="name, content and world_id are required to create a location")
+
         location = Location(
-            name=name,
-            description=content,
-            world_id=world_id,
-            location_image=location_image,
-            image_prompt=image_prompt,
-            coordinates=coordinates,
+            name=request.name,
+            description=request.content,
+            world_id=request.world_id,
+            location_image=request.location_image,
+            image_prompt=request.image_prompt,
+            coordinates=request.coordinates,
             generation_log=json.dumps([{
                 "timestamp": datetime.now().isoformat(),
                 "action": "created",
-                "content_length": len(content)
+                "content_length": len(request.content or "")
             }])
         )
         
@@ -915,6 +941,9 @@ async def save_location(
         db.refresh(location)
         
         return {"id": location.id, "message": "Location saved successfully"}
+    except HTTPException:
+        # Let FastAPI handle HTTPExceptions (validation/404/etc.) as-is
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to save location: {str(e)}")
@@ -1158,8 +1187,8 @@ async def generate_world_landscape(
     Generate a landscape image for a world
     """
     try:
-        from prompts import build_landscape_prompt
-        from image_generation import generate_landscape_image
+        from ..prompts import build_landscape_prompt
+        from ..image_generation import generate_landscape_image
 
         prompt, negative = build_landscape_prompt(
             world_name, description, landscape_type, style_preset
@@ -1173,7 +1202,7 @@ async def generate_world_landscape(
         )
 
         return {
-            "image_base64": image_data.get("image"),
+            "image_base64": image_data.get("image_base64") or image_data.get("image"),
             "prompt": image_data.get("prompt") or prompt,
             "provider": image_data.get("provider"),
             "model": image_data.get("model"),
@@ -1184,36 +1213,34 @@ async def generate_world_landscape(
 
 
 @router.post("/location/generate-image/")
-async def generate_location_image_endpoint(
-    location_name: str,
-    location_type: str,
-    description: str,
-    time_of_day: str = "day",
-    weather: str = "clear",
-    provider: str = "stablediffusion",
-    model: str | None = None,
-    style_preset: str = "realistic",
-):
+@router.post("/location/generate-image")
+async def generate_location_image_endpoint(request: LocationImageRequest):
     """
     Generate an image for a location (city, dungeon, etc.)
+    Accepts a JSON body matching LocationImageRequest for client-friendly POSTs.
     """
     try:
-        from prompts import build_location_image_prompt
-        from image_generation import generate_location_image
+        from ..prompts import build_location_image_prompt
+        from ..image_generation import generate_location_image
 
         prompt, negative = build_location_image_prompt(
-            location_name, location_type, description, time_of_day, weather, style_preset
+            request.location_name,
+            request.location_type,
+            request.description,
+            request.time_of_day,
+            request.weather,
+            request.style_preset,
         )
 
         image_data = await generate_location_image(
             prompt=prompt,
-            provider=provider,
-            model=model,
+            provider=request.provider,
+            model=request.model,
             aspect_ratio="16:9",
         )
 
         return {
-            "image_base64": image_data.get("image"),
+            "image_base64": image_data.get("image_base64") or image_data.get("image"),
             "prompt": image_data.get("prompt") or prompt,
             "provider": image_data.get("provider"),
             "model": image_data.get("model"),
@@ -1289,7 +1316,7 @@ async def save_structured_character(
         
         # Link to story if provided
         if story_id:
-            from models import Story
+            from ..models import Story
             story = db.query(Story).filter(Story.id == story_id).first()
             if story:
                 story.characters.append(character)
@@ -1370,7 +1397,7 @@ async def save_structured_world(
         
         # Link to story if provided
         if story_id:
-            from models import Story
+            from ..models import Story
             story = db.query(Story).filter(Story.id == story_id).first()
             if story:
                 story.worlds.append(world)
