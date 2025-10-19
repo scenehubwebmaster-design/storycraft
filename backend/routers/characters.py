@@ -64,9 +64,15 @@ class CharacterResponse(CharacterBase):
     dnd_equipment: Dict[str, Any] | None = None
     dnd_spellcasting: Dict[str, Any] | None = None
     dnd_languages: List[str] | None = None
+    # Optional list of names suggested by the LLM (do not overwrite canonical name)
+    name_suggestions: List[str] | None = None
     
     class Config:
         from_attributes = True
+
+
+class BatchDeleteRequest(BaseModel):
+    ids: List[int]
 
 @router.get("/", response_model=List[CharacterResponse])
 def get_characters(skip: int = 0, limit: int = 100, exclude_portraits: bool = True, db: Session = Depends(get_db)):
@@ -155,6 +161,34 @@ def delete_character(character_id: int, db: Session = Depends(get_db)):
     db.delete(db_character)
     db.commit()
     return {"message": "Character deleted successfully"}
+
+
+@router.post("/bulk-delete/")
+def bulk_delete_characters(request: BatchDeleteRequest, db: Session = Depends(get_db)):
+    """Delete multiple characters in a single request.
+
+    Request body: { "ids": [1,2,3] }
+    Returns: { "deleted": [id, ...] }
+    """
+    ids = request.ids or []
+    if not ids:
+        raise HTTPException(status_code=400, detail="No character IDs provided")
+    try:
+        # Find matching characters
+        chars = db.query(Character).filter(Character.id.in_(ids)).all()
+        if not chars:
+            return {"deleted": [], "requested": ids}
+
+        deleted_ids = [c.id for c in chars]
+        for c in chars:
+            db.delete(c)
+
+        db.commit()
+        return {"deleted": deleted_ids}
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Bulk delete failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete characters")
 
 
 @router.get("/{character_id}/portrait/")
@@ -296,8 +330,6 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
     from dnd_generator import generate_dnd_character, format_character_sheet
     from dnd_narrative_prompts import build_dnd_narrative_prompt
     from schemas import DnDCharacterNarrative
-    # Import the structured LLM helper from the sibling generation module using a relative import
-    from .generation import call_llm_structured
     
     try:
         # Generate D&D character using our generator
@@ -312,46 +344,61 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
         )
         
         # Generate AI narrative if requested
-        narrative_data = None
+        narrative_dict = None
         if request.generate_narrative:
             try:
                 # Build narrative prompt based on D&D stats
                 narrative_prompt = build_dnd_narrative_prompt(
                     dnd_character=dnd_char,
                     style=request.narrative_style,
-                    additional_context=request.narrative_context
+                    additional_context=request.narrative_context,
                 )
-                
+
                 if request.use_structured:
                     # Use structured output for consistent narrative format
                     # Use higher temperature (0.95) for more creative/unique name generation
-                    narrative_data, metadata = await call_llm_structured(
-                        prompt=narrative_prompt,
+                    # and a retry loop with clarifier when authoritative fields conflict.
+                    from .generation import call_llm_with_retries_and_clarifier
+
+                    authoritative = {
+                        "character_name": dnd_char.get("name"),
+                        "dnd_class": dnd_char.get("class"),
+                        "dnd_species": dnd_char.get("species"),
+                        "dnd_level": dnd_char.get("level"),
+                    }
+
+                    narrative_obj, metadata = await call_llm_with_retries_and_clarifier(
+                        base_prompt=narrative_prompt,
                         provider=request.narrative_provider,
                         schema_model=DnDCharacterNarrative,
                         model=request.narrative_model,
-                        max_tokens=3000,
-                        temperature=0.95
+                        max_attempts=3,
+                        initial_temperature=0.95,
+                        retry_temperature=0.6,
+                        authoritative_fields=authoritative,
                     )
-                    
-                    # Convert to dict for storage
-                    narrative_dict = narrative_data.model_dump() if hasattr(narrative_data, 'model_dump') else narrative_data.dict()
+
+                    narrative_dict = (
+                        narrative_obj.model_dump()
+                        if hasattr(narrative_obj, "model_dump")
+                        else (narrative_obj.dict() if hasattr(narrative_obj, "dict") else dict(narrative_obj))
+                    )
                 else:
                     # Use simple text generation (fallback)
                     from ..routers.llm import LLMProvider
+
                     narrative_text = await LLMProvider.generate_text(
                         prompt=narrative_prompt,
                         provider=request.narrative_provider,
                         model=request.narrative_model,
-                        max_tokens=1500
+                        max_tokens=1500,
                     )
                     narrative_dict = {"narrative_text": narrative_text}
-                    
+
             except Exception as narrative_error:
                 logger.error(f"Narrative generation failed: {narrative_error}")
                 # Continue without narrative rather than failing entire request
                 narrative_dict = {"error": str(narrative_error)}
-                narrative_data = None
         else:
             narrative_dict = None
         

@@ -4,6 +4,7 @@ import axios from "axios";
 import {
   Typography,
   Box,
+  Checkbox,
   Button,
   Grid,
   Card,
@@ -40,6 +41,8 @@ export default function CharactersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [apiHealthy, setApiHealthy] = useState(null);
   const [portraits, setPortraits] = useState({}); // Cache for loaded portraits
   const [loadingPortraits, setLoadingPortraits] = useState({}); // Track which portraits are loading
@@ -168,12 +171,50 @@ export default function CharactersPage() {
     setDeleteDialogOpen(true);
   };
 
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedIds.size === filteredCharacters.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredCharacters.map((c) => c.id)));
+    }
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      setDeleting(true);
+      // Use batch delete endpoint for efficiency
+      const ids = Array.from(selectedIds);
+      const resp = await axios.post(`${API_URL}/api/characters/bulk-delete/`, { ids });
+      const deleted = resp.data.deleted || [];
+      setCharacters((prev) => prev.filter((c) => !deleted.includes(c.id)));
+      setSelectedIds(new Set());
+      setBulkDeleteDialogOpen(false);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail || "Failed to delete selected characters"
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!characterToDelete) return;
 
     try {
       setDeleting(true);
-      await axios.delete(`${API_URL}/api/characters/${characterToDelete.id}`);
+      // Ensure trailing slash to match FastAPI route (avoids 405 Method Not Allowed)
+      await axios.delete(`${API_URL}/api/characters/${characterToDelete.id}/`);
       setCharacters(characters.filter((c) => c.id !== characterToDelete.id));
       setDeleteDialogOpen(false);
       setCharacterToDelete(null);
@@ -235,6 +276,25 @@ export default function CharactersPage() {
           startIcon={<AddIcon />}
         >
           New Character
+        </Button>
+      </Box>
+
+      {/* Selection toolbar for bulk actions */}
+      <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 2 }}>
+        <Button variant="outlined" size="small" onClick={selectAll}>
+          {selectedIds.size === filteredCharacters.length &&
+          filteredCharacters.length > 0
+            ? "Clear selection"
+            : "Select all"}
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          size="small"
+          disabled={selectedIds.size === 0}
+          onClick={() => setBulkDeleteDialogOpen(true)}
+        >
+          Delete selected ({selectedIds.size})
         </Button>
       </Box>
 
@@ -337,6 +397,7 @@ export default function CharactersPage() {
                   },
                 }}
               >
+                {/* Checkbox moved into card header for consistent layout */}
                 {portraits[character.id] ? (
                   <CardMedia
                     component="img"
@@ -381,6 +442,12 @@ export default function CharactersPage() {
                       mb: 1,
                     }}
                   >
+                    <Checkbox
+                      checked={selectedIds.has(character.id)}
+                      onChange={() => toggleSelect(character.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      size="small"
+                    />
                     <Typography variant="h6">{character.name}</Typography>
                     {character.is_dnd && (
                       <Chip
@@ -556,6 +623,37 @@ export default function CharactersPage() {
             disabled={deleting}
           >
             {deleting ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog
+        open={bulkDeleteDialogOpen}
+        onClose={() => !deleting && setBulkDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Delete Selected Characters?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete <strong>{selectedIds.size}</strong>{" "}
+            selected character{selectedIds.size !== 1 ? "s" : ""}? This action
+            cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setBulkDeleteDialogOpen(false)}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleBulkDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={deleting || selectedIds.size === 0}
+          >
+            {deleting ? "Deleting..." : `Delete (${selectedIds.size})`}
           </Button>
         </DialogActions>
       </Dialog>
