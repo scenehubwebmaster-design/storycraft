@@ -12,7 +12,9 @@ DEV_MODE = os.getenv("DEV_MODE", "true").lower() == "true"
 
 # Server configuration
 config = {
-    "app": "main:app",
+    # Explicit package module path prevents ambiguity when starting uvicorn
+    # from the repository root or when worker processes import modules.
+    "app": "backend.main:app",
     "host": "0.0.0.0",
     "port": 8000,
     "log_level": "info",

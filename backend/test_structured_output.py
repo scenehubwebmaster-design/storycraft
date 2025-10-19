@@ -10,7 +10,9 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from schemas import CharacterGenerationRequest, WorldGenerationRequest
-from routers.generation import generate_character_structured, generate_world_structured
+# Use explicit package import to avoid top-level import issues when running
+# tests or when uvicorn starts worker processes from the repo root.
+from backend.routers.generation import generate_character_structured, generate_world_structured
 import json
 
 
