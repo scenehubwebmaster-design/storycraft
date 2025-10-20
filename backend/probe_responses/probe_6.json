@@ -1,0 +1,122 @@
+﻿{
+    "name":  "Probe_6",
+    "description":  "A scholarly magic-user of arcane power",
+    "background":  "You spent years learning the lore of the multiverse",
+    "personality":  "Alignment: Neutral",
+    "appearance":  "Versatile and numerous folk found throughout the multiverse",
+    "id":  33,
+    "portrait_image":  null,
+    "image_prompt":  null,
+    "generation_log":  {
+                           "type":  "dnd_5e_character",
+                           "generator":  "dnd_generator",
+                           "method":  "standard_array",
+                           "narrative_generated":  true,
+                           "narrative_provider":  "groq",
+                           "structured_output":  true,
+                           "timestamp":  "2025-10-20T02:25:43.082185",
+                           "character_sheet":  "\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                         D\u0026D 5E CHARACTER SHEET                        â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n\nNAME: Probe_6\nLEVEL: 1 | CLASS: Wizard | SPECIES: Human\nBACKGROUND: Sage | ALIGNMENT: Neutral\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                           ABILITY SCORES                              â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  STRENGTH        13 (+1)\n  DEXTERITY       12 (+1)\n  CONSTITUTION    14 (+2)\n  INTELLIGENCE    15 (+2)\n  WISDOM          10 (+0)\n  CHARISMA         8 (-1)\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                           COMBAT STATS                                â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  Hit Points:     8\n  Armor Class:    11\n  Initiative:     +1\n  Speed:          30 ft\n  Proficiency:    +2\n  Hit Dice:       1d6\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                          PROFICIENCIES                                â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  Saving Throws:  Intelligence, Wisdom\n  Skills:         Arcana, History, Medicine, Investigation\n  Languages:      Common, One extra language of your choice\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                           EQUIPMENT                                   â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  Weapons:\n    â¢ Quarterstaff or dagger\n  Gear:\n    â¢ Component pouch or arcane focus\n    â¢ Scholar\u0027s pack or explorer\u0027s pack\n    â¢ Spellbook\n    â¢ Bottle of black ink\n    â¢ Quill\n    â¢ Small knife\n    â¢ Letter from dead colleague with unanswered question\n    â¢ Common clothes\n    â¢ Belt pouch with 10 gp\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                          SPELLCASTING                                 â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  Spellcasting Ability:  Intelligence\n  Spell Save DC:         12\n  Spell Attack Bonus:    +4\n  Cantrips Known:        3\n  Spells Known/Prepared: 3\n  Spell Slots (Level 1): 2\n",
+                           "ai_narrative":  {
+                                                "error":  "429: {\u0027error\u0027: \u0027rate_limit_exceeded\u0027, \u0027limit_type\u0027: \u0027tokens_per_minute\u0027, \u0027current\u0027: 1304, \u0027limit\u0027: 6000, \u0027message\u0027: \u0027Token rate limit exceeded: 1304/6000 tokens/min.\u0027}"
+                                            }
+                       },
+    "structured_data":  null,
+    "created_at":  "2025-10-20T02:25:43.083187",
+    "updated_at":  "2025-10-20T02:25:43.083187",
+    "is_dnd":  true,
+    "dnd_class":  "Wizard",
+    "dnd_level":  1,
+    "dnd_species":  "Human",
+    "dnd_background":  "Sage",
+    "dnd_alignment":  "Neutral",
+    "dnd_ability_scores":  {
+                               "strength":  13,
+                               "dexterity":  12,
+                               "constitution":  14,
+                               "intelligence":  15,
+                               "wisdom":  10,
+                               "charisma":  8
+                           },
+    "dnd_hit_points":  8,
+    "dnd_armor_class":  11,
+    "dnd_initiative":  "+1",
+    "dnd_speed":  30,
+    "dnd_proficiency_bonus":  "+2",
+    "dnd_skills":  [
+                       "Arcana",
+                       "History",
+                       "Medicine",
+                       "Investigation"
+                   ],
+    "dnd_proficiencies":  {
+                              "saves":  [
+                                            "Intelligence",
+                                            "Wisdom"
+                                        ],
+                              "armor":  [
+                                            "None"
+                                        ],
+                              "weapons":  [
+                                              "Daggers",
+                                              "Darts",
+                                              "Slings",
+                                              "Quarterstaffs",
+                                              "Light crossbows"
+                                          ],
+                              "tools":  [
+
+                                        ]
+                          },
+    "dnd_features":  {
+                         "racial":  [
+                                        "Resourceful (Gain Heroic Inspiration whenever you finish a long rest)",
+                                        "Skillful (Proficiency in one skill of your choice)",
+                                        "Versatile (Gain Origin feat of your choice)"
+                                    ],
+                         "class":  [
+                                       "Spellcasting",
+                                       "Arcane Recovery"
+                                   ],
+                         "background":  {
+                                            "feature":  "Researcher",
+                                            "description":  "You know how to obtain information and where to find it"
+                                        }
+                     },
+    "dnd_equipment":  {
+                          "weapons":  [
+                                          "Quarterstaff or dagger"
+                                      ],
+                          "armor":  [
+
+                                    ],
+                          "tools":  [
+
+                                    ],
+                          "gear":  [
+                                       "Component pouch or arcane focus",
+                                       "Scholar\u0027s pack or explorer\u0027s pack",
+                                       "Spellbook",
+                                       "Bottle of black ink",
+                                       "Quill",
+                                       "Small knife",
+                                       "Letter from dead colleague with unanswered question",
+                                       "Common clothes",
+                                       "Belt pouch with 10 gp"
+                                   ]
+                      },
+    "dnd_spellcasting":  {
+                             "spellcasting_ability":  "Intelligence",
+                             "spell_save_dc":  12,
+                             "spell_attack_bonus":  4,
+                             "cantrips_known":  3,
+                             "spells_known_or_prepared":  3,
+                             "spell_slots":  {
+                                                 "level_1":  2
+                                             }
+                         },
+    "dnd_languages":  [
+                          "Common",
+                          "One extra language of your choice"
+                      ],
+    "name_suggestions":  null
+}

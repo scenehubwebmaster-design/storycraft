@@ -297,4 +297,13 @@ def generate_portrait_with_sd(
         cfg_scale=7.5
     )
     
-    return result["image"], full_prompt
+    # The generate_image() function returns a dict containing 'image_base64'
+    # (base64-encoded PNG) and 'info'. Return the base64 image string so callers
+    # receive the expected (image_base64, prompt) tuple.
+    if isinstance(result, dict) and "image_base64" in result:
+        return result["image_base64"], full_prompt
+    # Fallback: if older format returns raw image bytes or uses 'image' key,
+    # try to handle that gracefully.
+    if isinstance(result, dict) and "image" in result:
+        return result["image"], full_prompt
+    raise Exception("Unexpected Stable Diffusion client response format")

@@ -12,6 +12,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { API_URL } from "../config/api";
 
 export default function NamePicker({
@@ -152,6 +153,9 @@ export default function NamePicker({
                         color={isSelected ? "primary" : "default"}
                         onClick={() => onSelect(d.name)}
                         sx={{ fontWeight: isSelected ? 700 : 500 }}
+                        icon={
+                          opt._ai ? <AutoAwesomeIcon fontSize="small" /> : null
+                        }
                       />
                       <Box sx={{ display: "flex", flexDirection: "column" }}>
                         <Typography variant="caption">{d.subtitle}</Typography>
@@ -161,6 +165,25 @@ export default function NamePicker({
                           </Typography>
                         )}
                       </Box>
+                      {/* Small AI badge for accessibility and clarity */}
+                      {opt._ai && (
+                        <Box
+                          sx={{
+                            ml: 0.5,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <AutoAwesomeIcon fontSize="small" color="primary" />
+                          <Typography
+                            variant="caption"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            AI
+                          </Typography>
+                        </Box>
+                      )}
                     </Box>
                   </Grid>
                 );

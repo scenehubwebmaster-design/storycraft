@@ -14,6 +14,76 @@ def extract_json_array_from_text(text: str) -> List[Dict]:
     return json.loads(raw)
 
 
+def extract_json_from_text(text: str):
+    """Robustly extract the first JSON object or array from a text blob.
+
+    Attempts multiple strategies:
+    1. Find the first balanced JSON object `{...}` by scanning braces.
+    2. If that fails, fall back to looking for the first JSON array via
+       extract_json_array_from_text.
+    3. As a last resort, try to locate a substring that looks like JSON via
+       simple regex-esque heuristics and json.loads.
+
+    Returns the parsed Python object (dict or list) or raises ValueError.
+    """
+    if not isinstance(text, str):
+        raise ValueError("Input must be a string")
+
+    s = text
+    # If the first '[' appears before the first '{', prefer extracting an array first
+    first_bracket = s.find('[')
+    first_brace = s.find('{')
+    if first_bracket != -1 and (first_brace == -1 or first_bracket < first_brace):
+        try:
+            return extract_json_array_from_text(s)
+        except Exception:
+            # fall through to object scanning if array extraction fails
+            pass
+
+    # Strategy 1: find first balanced JSON object by scanning for '{' and matching '}'
+    start_idx = s.find('{')
+    if start_idx != -1:
+        depth = 0
+        for i in range(start_idx, len(s)):
+            ch = s[i]
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    candidate = s[start_idx:i+1]
+                    try:
+                        return json.loads(candidate)
+                    except Exception:
+                        # try next possible object by continuing search
+                        # find next '{' after start_idx
+                        start_idx = s.find('{', start_idx + 1)
+                        if start_idx == -1:
+                            break
+                        # reset loop to new start
+                        continue
+
+    # Strategy 2: try extracting a JSON array
+    try:
+        return extract_json_array_from_text(s)
+    except Exception:
+        pass
+
+    # Strategy 3: fallback heuristics - look for the first brace/bracey substring
+    # Try to find any substring between the first '{' and last '}'
+    first = s.find('{')
+    last = s.rfind('}')
+    if first != -1 and last != -1 and last > first:
+        candidate = s[first:last+1]
+        try:
+            return json.loads(candidate)
+        except Exception:
+            pass
+
+    # Give up
+    raise ValueError('No JSON object or array could be extracted from text')
+
+
 def name_similarity(a: str, b: str) -> float:
     """Return a similarity ratio between two names (0-1) using SequenceMatcher."""
     return difflib.SequenceMatcher(None, a.lower(), b.lower()).ratio()

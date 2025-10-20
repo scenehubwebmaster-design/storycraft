@@ -1,0 +1,122 @@
+{
+  "status_code": 200,
+  "response": {
+    "name": "Human Fighter",
+    "description": "A master of all arms and armor",
+    "background": "You have military training and experience in warfare",
+    "personality": "Alignment: Chaotic Good",
+    "appearance": "Versatile and numerous folk found throughout the multiverse",
+    "id": 41,
+    "portrait_image": null,
+    "image_prompt": null,
+    "generation_log": {
+      "type": "dnd_5e_character",
+      "generator": "dnd_generator",
+      "method": "standard_array",
+      "narrative_generated": true,
+      "narrative_provider": "groq",
+      "structured_output": true,
+      "timestamp": "2025-10-20T03:04:40.081640",
+      "character_sheet": "\n╔══════════════════════════════════════════════════════════════════════╗\n║                         D&D 5E CHARACTER SHEET                        ║\n╚══════════════════════════════════════════════════════════════════════╝\n\nNAME: Human Fighter\nLEVEL: 1 | CLASS: Fighter | SPECIES: Human\nBACKGROUND: Soldier | ALIGNMENT: Chaotic Good\n\n╔══════════════════════════════════════════════════════════════════════╗\n║                           ABILITY SCORES                              ║\n╚══════════════════════════════════════════════════════════════════════╝\n  STRENGTH        15 (+2)\n  DEXTERITY       14 (+2)\n  CONSTITUTION    13 (+1)\n  INTELLIGENCE    12 (+1)\n  WISDOM          10 (+0)\n  CHARISMA         8 (-1)\n\n╔══════════════════════════════════════════════════════════════════════╗\n║                           COMBAT STATS                                ║\n╚══════════════════════════════════════════════════════════════════════╝\n  Hit Points:     11\n  Armor Class:    16\n  Initiative:     +2\n  Speed:          30 ft\n  Proficiency:    +2\n  Hit Dice:       1d10\n\n╔══════════════════════════════════════════════════════════════════════╗\n║                          PROFICIENCIES                                ║\n╚══════════════════════════════════════════════════════════════════════╝\n  Saving Throws:  Strength, Constitution\n  Skills:         Athletics, Intimidation, Insight, Perception\n  Languages:      Common, One extra language of your choice\n\n╔══════════════════════════════════════════════════════════════════════╗\n║                           EQUIPMENT                                   ║\n╚══════════════════════════════════════════════════════════════════════╝\n  Weapons:\n    • Chain mail or leather armor, longbow, and 20 arrows\n    • Martial weapon and shield or two martial weapons\n    • Light crossbow and 20 bolts or two handaxes\n  Gear:\n    • Dungeoneer's pack or explorer's pack\n    • Insignia of rank\n    • Trophy from fallen enemy\n    • Set of bone dice or playing cards\n    • Common clothes\n    • Belt pouch with 10 gp\n",
+      "ai_narrative": {
+        "error": "429: {'error': 'rate_limit_exceeded', 'limit_type': 'tokens_per_minute', 'current': 1350, 'limit': 6000, 'message': 'Token rate limit exceeded: 1350/6000 tokens/min.'}",
+        "skin": "Tanned from battle",
+        "eyes": "Piercing blue gaze",
+        "hair": "Short brown spikes",
+        "_fallback_physical_traits": {
+          "used": true,
+          "provider": "groq",
+          "raw": {
+            "skin": "Tanned from battle",
+            "eyes": "Piercing blue gaze",
+            "hair": "Short brown spikes"
+          }
+        }
+      }
+    },
+    "structured_data": null,
+    "created_at": "2025-10-20T03:04:40.083634",
+    "updated_at": "2025-10-20T03:04:40.083634",
+    "is_dnd": true,
+    "dnd_class": "Fighter",
+    "dnd_level": 1,
+    "dnd_species": "Human",
+    "dnd_background": "Soldier",
+    "dnd_alignment": "Chaotic Good",
+    "dnd_ability_scores": {
+      "strength": 15,
+      "dexterity": 14,
+      "constitution": 13,
+      "intelligence": 12,
+      "wisdom": 10,
+      "charisma": 8
+    },
+    "dnd_hit_points": 11,
+    "dnd_armor_class": 16,
+    "dnd_initiative": "+2",
+    "dnd_speed": 30,
+    "dnd_proficiency_bonus": "+2",
+    "dnd_skills": [
+      "Athletics",
+      "Intimidation",
+      "Insight",
+      "Perception"
+    ],
+    "dnd_proficiencies": {
+      "saves": [
+        "Strength",
+        "Constitution"
+      ],
+      "armor": [
+        "All armor",
+        "Shields"
+      ],
+      "weapons": [
+        "Simple weapons",
+        "Martial weapons"
+      ],
+      "tools": [
+        "One type of gaming set",
+        "Vehicles (land)"
+      ]
+    },
+    "dnd_features": {
+      "racial": [
+        "Resourceful (Gain Heroic Inspiration whenever you finish a long rest)",
+        "Skillful (Proficiency in one skill of your choice)",
+        "Versatile (Gain Origin feat of your choice)"
+      ],
+      "class": [
+        "Fighting Style",
+        "Second Wind"
+      ],
+      "background": {
+        "feature": "Military Rank",
+        "description": "Soldiers defer to you and you can get access to military facilities"
+      }
+    },
+    "dnd_equipment": {
+      "weapons": [
+        "Chain mail or leather armor, longbow, and 20 arrows",
+        "Martial weapon and shield or two martial weapons",
+        "Light crossbow and 20 bolts or two handaxes"
+      ],
+      "armor": [],
+      "tools": [],
+      "gear": [
+        "Dungeoneer's pack or explorer's pack",
+        "Insignia of rank",
+        "Trophy from fallen enemy",
+        "Set of bone dice or playing cards",
+        "Common clothes",
+        "Belt pouch with 10 gp"
+      ]
+    },
+    "dnd_spellcasting": null,
+    "dnd_languages": [
+      "Common",
+      "One extra language of your choice"
+    ],
+    "name_suggestions": null
+  }
+}

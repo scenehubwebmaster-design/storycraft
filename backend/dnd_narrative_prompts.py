@@ -196,6 +196,15 @@ REQUIREMENTS:
 - Describe typical clothing/armor style appropriate to class
 - Account for background influences (e.g., soldier bearing, sage's bookishness)
 
+ADDITIONAL DIVERSITY GUIDANCE (MANDATORY):
+- For `skin`, `eyes`, and `hair` produce highly specific, non-repeating descriptors. Do not use the same phrasing across characters.
+  • Skin: combine tone, texture, and unique marks. Prefer concrete, varied descriptors (e.g. "russet skin weathered by sun and salt, with a crescent pale scar along the jaw", "deep umber with fine, silvery tattoos trailing from the temple", "pale, almost translucent skin flecked with tiny burn scars"). Avoid vague or overused phrases.
+  • Eyes: use patterns, textures, or anomalies (heterochromia, flecks, ringed irises, catlike pupils). Examples: "sea-glass green with a molten-gold ring", "amber eyes streaked with a coal-black vein", "one eye clouded like old glass".
+  • Hair / crests / frills: describe cut, texture, cultural styling, and accents (threaded beads, dye streaks, shaved patterns). Examples: "warrior braids threaded with brass beads", "ashy topknot streaked with copper from years at sea".
+
+- Tie at least one micro-detail to class or background (soldiers: service scars, chaplains: ritual tattoos, sailors: salt-bleached tips, scholars: ink faint on fingers).
+- When possible, include a single unique marker per character (birthmark, ritual scar, tiny rune) to make descriptions easy to distinguish in lists of characters.
+
 STYLE: {style.value}
 LENGTH: {length}
 

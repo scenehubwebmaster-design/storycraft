@@ -623,13 +623,34 @@ export default function CharacterDetailPage() {
       >
         <DialogTitle>Regenerate / Select Name</DialogTitle>
         <DialogContent>
-          <NamePicker
-            nameOptions={character?.structured_data?.name_options ?? []}
-            selectedName={character?.name}
-            onSelect={(name) => handleNameSelected(name)}
-            provider={"groq"}
-            model={null}
-          />
+          {(() => {
+            // Combine legacy name_options and LLM name_suggestions into a single list
+            const sd = character?.structured_data || {};
+            const nameOptions = [];
+            if (Array.isArray(sd.name_options)) {
+              nameOptions.push(...sd.name_options);
+            }
+            if (Array.isArray(sd.name_suggestions)) {
+              // Normalize string suggestions into the expected object shape
+              // and mark them as AI-provided with a helper flag
+              const mapped = sd.name_suggestions.map((s) =>
+                typeof s === "string"
+                  ? { first_name: s, _ai: true }
+                  : { ...s, _ai: true }
+              );
+              nameOptions.push(...mapped);
+            }
+
+            return (
+              <NamePicker
+                nameOptions={nameOptions}
+                selectedName={character?.name}
+                onSelect={(name) => handleNameSelected(name)}
+                provider={"groq"}
+                model={null}
+              />
+            );
+          })()}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setNameDialogOpen(false)}>Close</Button>

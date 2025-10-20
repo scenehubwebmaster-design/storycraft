@@ -227,7 +227,9 @@ export default function CharactersPage() {
       const restored = resp.data.restored || [];
       if (restored.length) {
         // Fetch restored characters and append to list (simple approach: refetch page)
-        const fetchResp = await axios.get(`${API_URL}/api/characters/?exclude_portraits=true`);
+        const fetchResp = await axios.get(
+          `${API_URL}/api/characters/?exclude_portraits=true`
+        );
         setCharacters(fetchResp.data);
       }
     } catch (err) {
@@ -706,7 +708,8 @@ export default function CharactersPage() {
             </Button>
           }
         >
-          Deleted {lastDeletedIds.length} character{lastDeletedIds.length !== 1 ? "s" : ""}.
+          Deleted {lastDeletedIds.length} character
+          {lastDeletedIds.length !== 1 ? "s" : ""}.
         </MuiAlert>
       </Snackbar>
     </Box>

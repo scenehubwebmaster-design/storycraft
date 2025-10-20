@@ -18,9 +18,13 @@ if repo_root not in sys.path:
 # our app's models
 from backend.database import SQLALCHEMY_DATABASE_URL
 
-# Interpret the config file for Python logging.
+# Interpret the config file for Python logging (best-effort).
 config = context.config
-fileConfig(config.config_file_name)
+try:
+    fileConfig(config.config_file_name)
+except Exception:
+    # ignore logging config errors for lightweight setup
+    pass
 
 # Provide metadata for 'autogenerate'
 from backend.database import Base

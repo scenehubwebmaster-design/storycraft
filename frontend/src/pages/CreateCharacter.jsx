@@ -124,6 +124,45 @@ export default function CreateCharacterPage() {
     }
   }, [editId, isEditMode]);
 
+  // Normalize structured profiles from different generators/providers so the
+  // UI always receives a consistent CharacterProfile shape. Some generators
+  // (notably D&D-specific ones) emit keys like `character_appearance` and
+  // `character_backstory` instead of `physical_description`/`backstory`.
+  const normalizeStructuredProfile = (raw) => {
+    if (!raw) return raw;
+
+    // If it already appears to match CharacterProfile shape, return as-is
+    if (raw.physical_description || raw.height || raw.build) return { ...raw };
+
+    const mapped = { ...raw };
+
+    // Map common DnD-style keys to CharacterProfile names
+    if (raw.character_appearance && !raw.physical_description) {
+      mapped.physical_description = raw.character_appearance;
+    }
+    if (raw.character_backstory && !raw.backstory)
+      mapped.backstory = raw.character_backstory;
+    if (raw.character_name && !raw.name) mapped.name = raw.character_name;
+    if (raw.additional_features_and_traits && !raw.unique_qualities)
+      mapped.unique_qualities = raw.additional_features_and_traits;
+    if (raw.allies_and_organizations && !mapped.key_relationships)
+      mapped.key_relationships = Array.isArray(raw.allies_and_organizations)
+        ? raw.allies_and_organizations
+        : mapped.key_relationships || [];
+
+    // Heights/weights may already be present under direct keys
+    if (raw.height && !mapped.height) mapped.height = raw.height;
+    if (raw.weight && !mapped.weight) mapped.weight = raw.weight;
+
+    // Shallow debug of keys to help when sections are missing in the UI
+    try {
+      // eslint-disable-next-line no-console
+      console.debug("[normalizeStructuredProfile] keys:", Object.keys(raw));
+    } catch (e) {}
+
+    return mapped;
+  };
+
   const loadOptions = async () => {
     console.log(
       "loadOptions called, fetching from:",
@@ -286,7 +325,9 @@ export default function CreateCharacterPage() {
       });
 
       setGeneratedContent(
-        useStructured ? response.data : response.data.content
+        useStructured
+          ? normalizeStructuredProfile(response.data)
+          : response.data.content
       );
       setActiveStep(2);
       setSuccess(
@@ -345,7 +386,9 @@ export default function CreateCharacterPage() {
       const response = await axios.post(endpoint, requestData);
 
       setGeneratedContent(
-        useStructured ? response.data : response.data.content
+        useStructured
+          ? normalizeStructuredProfile(response.data)
+          : response.data.content
       );
       setSuccess("Character refined successfully!");
     } catch (err) {
@@ -1348,25 +1391,30 @@ export default function CreateCharacterPage() {
           {/* If structured generation provided name options, show NamePicker */}
           {useStructured && generatedContent && (
             <>
-              {Array.isArray(generatedContent.name_options) && (
-                <NamePicker
-                  nameOptions={generatedContent.name_options}
-                  selectedName={characterName}
-                  onSelect={(name) => setCharacterName(name)}
-                />
-              )}
+              {(() => {
+                // Merge name_options and name_suggestions from generatedContent
+                const nc = generatedContent || {};
+                const combined = [];
+                if (Array.isArray(nc.name_options))
+                  combined.push(...nc.name_options);
+                if (Array.isArray(nc.name_suggestions)) {
+                  combined.push(
+                    ...nc.name_suggestions.map((s) =>
+                      typeof s === "string"
+                        ? { first_name: s, _ai: true }
+                        : { ...s, _ai: true }
+                    )
+                  );
+                }
 
-              {/* New: surface name_suggestions returned by backend (LLM proposals) */}
-              {generatedContent.name_suggestions &&
-                Array.isArray(generatedContent.name_suggestions) && (
+                return (
                   <NamePicker
-                    nameOptions={generatedContent.name_suggestions.map((s) =>
-                      typeof s === "string" ? { first_name: s } : s
-                    )}
+                    nameOptions={combined}
                     selectedName={characterName}
                     onSelect={(name) => setCharacterName(name)}
                   />
-                )}
+                );
+              })()}
             </>
           )}
 

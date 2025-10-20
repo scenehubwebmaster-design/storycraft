@@ -1,0 +1,158 @@
+﻿{
+    "name":  "Testbot",
+    "description":  "Testbot stands with a relaxed posture, wearing a well-worn leather tunic and carrying a sword at their side. Their dark brown hair is cropped short, with a noticeable cowlick adding a touch of ruggedness to their appearance. A scattering of freckles across their cheeks and nose adds a hint of whimsy to their otherwise average features. They exude a sense of quiet confidence, their stormy blue eyes seeming to hold a world of thought.",
+    "background":  "Testbot grew up on the outskirts of a small town, where they were trained in the art of combat by a grizzled old veteran. They showed a natural aptitude for fighting, and quickly became a skilled swordsman. As they grew older, Testbot became restless, feeling a call to adventure that couldn\u0027t be ignored. They bid farewell to their friends and family, setting out into the wider world to make a name for themselves. Their background as a Folk Hero has given them a strong sense of justice, and they are driven to protect the innocent and vanquish evil.",
+    "personality":  "Testbot has a tendency to be fiercely independent, sometimes to the point of being stubborn., Despite this, they have a strong sense of loyalty to those they consider friends.",
+    "appearance":  "Testbot stands with a relaxed posture, wearing a well-worn leather tunic and carrying a sword at their side. Their dark brown hair is cropped short, with a noticeable cowlick adding a touch of ruggedness to their appearance. A scattering of freckles across their cheeks and nose adds a hint of whimsy to their otherwise average features. They exude a sense of quiet confidence, their stormy blue eyes seeming to hold a world of thought.",
+    "id":  10,
+    "portrait_image":  null,
+    "image_prompt":  null,
+    "generation_log":  {
+                           "type":  "dnd_5e_character",
+                           "generator":  "dnd_generator",
+                           "method":  "standard_array",
+                           "narrative_generated":  true,
+                           "narrative_provider":  "groq",
+                           "structured_output":  true,
+                           "timestamp":  "2025-10-20T02:15:06.189467",
+                           "character_sheet":  "\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                         D\u0026D 5E CHARACTER SHEET                        â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n\nNAME: Testbot\nLEVEL: 1 | CLASS: Wizard | SPECIES: Human\nBACKGROUND: Sage | ALIGNMENT: neutral\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                           ABILITY SCORES                              â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  STRENGTH        13 (+1)\n  DEXTERITY       12 (+1)\n  CONSTITUTION    14 (+2)\n  INTELLIGENCE    15 (+2)\n  WISDOM          10 (+0)\n  CHARISMA         8 (-1)\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                           COMBAT STATS                                â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  Hit Points:     8\n  Armor Class:    11\n  Initiative:     +1\n  Speed:          30 ft\n  Proficiency:    +2\n  Hit Dice:       1d6\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                          PROFICIENCIES                                â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  Saving Throws:  Intelligence, Wisdom\n  Skills:         Arcana, History, Religion, Insight\n  Languages:      Common, One extra language of your choice\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                           EQUIPMENT                                   â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  Weapons:\n    â¢ Quarterstaff or dagger\n  Gear:\n    â¢ Component pouch or arcane focus\n    â¢ Scholar\u0027s pack or explorer\u0027s pack\n    â¢ Spellbook\n    â¢ Bottle of black ink\n    â¢ Quill\n    â¢ Small knife\n    â¢ Letter from dead colleague with unanswered question\n    â¢ Common clothes\n    â¢ Belt pouch with 10 gp\n\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\nâ                          SPELLCASTING                                 â\nââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ\n  Spellcasting Ability:  Intelligence\n  Spell Save DC:         12\n  Spell Attack Bonus:    +4\n  Cantrips Known:        3\n  Spells Known/Prepared: 3\n  Spell Slots (Level 1): 2\n",
+                           "ai_narrative":  {
+                                                "character_name":  "Testbot",
+                                                "age":  "young adult",
+                                                "height":  "5\u00278\"",
+                                                "weight":  "130 lbs",
+                                                "eyes":  "stormy blue with a hint of gray",
+                                                "skin":  "a warm, golden brown tone with a subtle scattering of freckles across the cheeks and nose",
+                                                "hair":  "short, dark brown with a distinctive cowlick",
+                                                "character_appearance":  "Testbot stands with a relaxed posture, wearing a well-worn leather tunic and carrying a sword at their side. Their dark brown hair is cropped short, with a noticeable cowlick adding a touch of ruggedness to their appearance. A scattering of freckles across their cheeks and nose adds a hint of whimsy to their otherwise average features. They exude a sense of quiet confidence, their stormy blue eyes seeming to hold a world of thought.",
+                                                "allies_and_organizations":  "Testbot has a loose connection to a local militia, having trained with them in the past. They also have a fondness for a nearby tavern, where they\u0027ve spent many an evening swapping stories with the patrons. Their relationships are casual, but they have a reputation as a reliable and skilled fighter.",
+                                                "character_backstory":  "Testbot grew up on the outskirts of a small town, where they were trained in the art of combat by a grizzled old veteran. They showed a natural aptitude for fighting, and quickly became a skilled swordsman. As they grew older, Testbot became restless, feeling a call to adventure that couldn\u0027t be ignored. They bid farewell to their friends and family, setting out into the wider world to make a name for themselves. Their background as a Folk Hero has given them a strong sense of justice, and they are driven to protect the innocent and vanquish evil.",
+                                                "additional_features_and_traits":  "Testbot has a distinctive habit of tapping their foot impatiently when they\u0027re waiting for something to happen. They are also prone to collecting unusual trinkets and tokens from their travels, which they wears on a leather cord around their neck. Testbot has a bit of a dry sense of humor, often making wry remarks in tense situations.",
+                                                "personality_traits":  [
+                                                                           "Testbot has a tendency to be fiercely independent, sometimes to the point of being stubborn.",
+                                                                           "Despite this, they have a strong sense of loyalty to those they consider friends."
+                                                                       ],
+                                                "ideals":  "Ideal: Balance - Testbot believes that the world should be a place of balance and harmony, where no one faction or individual holds too much power.",
+                                                "bonds":  "Testbot has a strong emotional connection to a small, intricately carved wooden box that was given to them by a close friend. They carry it with them always, as a reminder of the people and places they\u0027ve left behind.",
+                                                "flaws":  "Testbot has a tendency to act impulsively in the heat of the moment, sometimes leaping into action without thinking through the consequences."
+                                            }
+                       },
+    "structured_data":  {
+                            "character_name":  "Testbot",
+                            "age":  "young adult",
+                            "height":  "5\u00278\"",
+                            "weight":  "130 lbs",
+                            "eyes":  "stormy blue with a hint of gray",
+                            "skin":  "a warm, golden brown tone with a subtle scattering of freckles across the cheeks and nose",
+                            "hair":  "short, dark brown with a distinctive cowlick",
+                            "character_appearance":  "Testbot stands with a relaxed posture, wearing a well-worn leather tunic and carrying a sword at their side. Their dark brown hair is cropped short, with a noticeable cowlick adding a touch of ruggedness to their appearance. A scattering of freckles across their cheeks and nose adds a hint of whimsy to their otherwise average features. They exude a sense of quiet confidence, their stormy blue eyes seeming to hold a world of thought.",
+                            "allies_and_organizations":  "Testbot has a loose connection to a local militia, having trained with them in the past. They also have a fondness for a nearby tavern, where they\u0027ve spent many an evening swapping stories with the patrons. Their relationships are casual, but they have a reputation as a reliable and skilled fighter.",
+                            "character_backstory":  "Testbot grew up on the outskirts of a small town, where they were trained in the art of combat by a grizzled old veteran. They showed a natural aptitude for fighting, and quickly became a skilled swordsman. As they grew older, Testbot became restless, feeling a call to adventure that couldn\u0027t be ignored. They bid farewell to their friends and family, setting out into the wider world to make a name for themselves. Their background as a Folk Hero has given them a strong sense of justice, and they are driven to protect the innocent and vanquish evil.",
+                            "additional_features_and_traits":  "Testbot has a distinctive habit of tapping their foot impatiently when they\u0027re waiting for something to happen. They are also prone to collecting unusual trinkets and tokens from their travels, which they wears on a leather cord around their neck. Testbot has a bit of a dry sense of humor, often making wry remarks in tense situations.",
+                            "personality_traits":  [
+                                                       "Testbot has a tendency to be fiercely independent, sometimes to the point of being stubborn.",
+                                                       "Despite this, they have a strong sense of loyalty to those they consider friends."
+                                                   ],
+                            "ideals":  "Ideal: Balance - Testbot believes that the world should be a place of balance and harmony, where no one faction or individual holds too much power.",
+                            "bonds":  "Testbot has a strong emotional connection to a small, intricately carved wooden box that was given to them by a close friend. They carry it with them always, as a reminder of the people and places they\u0027ve left behind.",
+                            "flaws":  "Testbot has a tendency to act impulsively in the heat of the moment, sometimes leaping into action without thinking through the consequences."
+                        },
+    "created_at":  "2025-10-20T02:15:06.252329",
+    "updated_at":  "2025-10-20T02:15:06.252329",
+    "is_dnd":  true,
+    "dnd_class":  "Wizard",
+    "dnd_level":  1,
+    "dnd_species":  "Human",
+    "dnd_background":  "Sage",
+    "dnd_alignment":  "neutral",
+    "dnd_ability_scores":  {
+                               "strength":  13,
+                               "dexterity":  12,
+                               "constitution":  14,
+                               "intelligence":  15,
+                               "wisdom":  10,
+                               "charisma":  8
+                           },
+    "dnd_hit_points":  8,
+    "dnd_armor_class":  11,
+    "dnd_initiative":  "+1",
+    "dnd_speed":  30,
+    "dnd_proficiency_bonus":  "+2",
+    "dnd_skills":  [
+                       "Arcana",
+                       "History",
+                       "Religion",
+                       "Insight"
+                   ],
+    "dnd_proficiencies":  {
+                              "saves":  [
+                                            "Intelligence",
+                                            "Wisdom"
+                                        ],
+                              "armor":  [
+                                            "None"
+                                        ],
+                              "weapons":  [
+                                              "Daggers",
+                                              "Darts",
+                                              "Slings",
+                                              "Quarterstaffs",
+                                              "Light crossbows"
+                                          ],
+                              "tools":  [
+
+                                        ]
+                          },
+    "dnd_features":  {
+                         "racial":  [
+                                        "Resourceful (Gain Heroic Inspiration whenever you finish a long rest)",
+                                        "Skillful (Proficiency in one skill of your choice)",
+                                        "Versatile (Gain Origin feat of your choice)"
+                                    ],
+                         "class":  [
+                                       "Spellcasting",
+                                       "Arcane Recovery"
+                                   ],
+                         "background":  {
+                                            "feature":  "Researcher",
+                                            "description":  "You know how to obtain information and where to find it"
+                                        }
+                     },
+    "dnd_equipment":  {
+                          "weapons":  [
+                                          "Quarterstaff or dagger"
+                                      ],
+                          "armor":  [
+
+                                    ],
+                          "tools":  [
+
+                                    ],
+                          "gear":  [
+                                       "Component pouch or arcane focus",
+                                       "Scholar\u0027s pack or explorer\u0027s pack",
+                                       "Spellbook",
+                                       "Bottle of black ink",
+                                       "Quill",
+                                       "Small knife",
+                                       "Letter from dead colleague with unanswered question",
+                                       "Common clothes",
+                                       "Belt pouch with 10 gp"
+                                   ]
+                      },
+    "dnd_spellcasting":  {
+                             "spellcasting_ability":  "Intelligence",
+                             "spell_save_dc":  12,
+                             "spell_attack_bonus":  4,
+                             "cantrips_known":  3,
+                             "spells_known_or_prepared":  3,
+                             "spell_slots":  {
+                                                 "level_1":  2
+                                             }
+                         },
+    "dnd_languages":  [
+                          "Common",
+                          "One extra language of your choice"
+                      ],
+    "name_suggestions":  null
+}

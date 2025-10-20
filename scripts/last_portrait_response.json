@@ -1,0 +1,4 @@
+{
+  "image_base64_prefix": "iVBORw0KGgoAAAANSUhEUgAAAwAAAAMACAIAAAAc45fZAAACiXRFWHRwYXJhbWV0ZXJzAHBvcnRyYWl0IG9mIFNha3VyYSBSeWxhbiwgT3JjLCBwaWVyY2luZyB5ZWxsb3cgd2l0aA",
+  "note": "Full image_base64 saved only in memory; prefix stored here for quick inspection. The endpoint returned 200 and a base64 PNG-like string."
+}

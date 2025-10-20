@@ -56,15 +56,70 @@ from ..structured_output_utils import (
     supports_structured_outputs,
     get_structured_output_prompt,
 )
+import asyncio
 from ..name_generation_utils import (
     extract_json_array_from_text,
     needs_retry_from_text,
+    extract_json_from_text,
 )
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/generate", tags=["generation"])
+
+# Simple in-memory circuit-breaker state per provider to avoid hammering a rate-limited provider
+_provider_circuit = {}
+
+
+async def call_llm_with_provider_fallback(prompt: str, providers: list[str], model: str | None = None, max_retries: int = 2):
+    """Try a list of providers in order. On transient errors (HTTP 429), backoff and try the next provider.
+
+    Returns (response_text, metadata)
+    """
+    last_exc = None
+    for prov in providers:
+        # If provider is tripped in the circuit breaker, skip it for a short duration
+        state = _provider_circuit.get(prov, {})
+        if state.get('tripped'):
+            # skip provider if still in cooldown
+            if state.get('resume_at', 0) > asyncio.get_event_loop().time():
+                logger.info(f"Skipping provider {prov} due to circuit open until {state.get('resume_at')}")
+                continue
+            else:
+                # reset circuit for this provider
+                _provider_circuit.pop(prov, None)
+
+        attempts = 0
+        backoff = 1.0
+        while attempts <= max_retries:
+            attempts += 1
+            try:
+                text, metadata = await call_llm(prompt, prov, model)
+                return text, metadata
+            except HTTPException as he:
+                # Only handle 429 as transient; otherwise bubble up
+                detail = getattr(he, 'detail', None)
+                if isinstance(detail, dict) and detail.get('error') == 'rate_limit_exceeded':
+                    last_exc = he
+                    logger.warning(f"Provider {prov} rate-limited: {detail}")
+                    # trip circuit for this provider for a short cooldown
+                    cooldown = min(30, int(backoff * 5))
+                    _provider_circuit[prov] = {'tripped': True, 'resume_at': asyncio.get_event_loop().time() + cooldown}
+                    break  # try next provider
+                else:
+                    # non-rate-limit HTTPException: rethrow
+                    raise
+            except Exception as e:
+                last_exc = e
+                logger.exception(f"Error calling provider {prov}: {e}")
+                await asyncio.sleep(backoff)
+                backoff *= 2
+
+    # If we exhausted providers, raise the last exception
+    if last_exc:
+        raise last_exc
+    raise HTTPException(status_code=500, detail="LLM providers exhausted")
 
 
 class RegionCropRequest(BaseModel):
@@ -273,16 +328,18 @@ async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, 
                 detail=rate_limit_error
             )
         
-        if provider.lower() == "openai":
+        prov = provider.lower()
+        # Simple provider-canonicalization
+        if prov == "openai":
             response_text = await LLMProvider.generate_openai(prompt, model or "gpt-4")
             metadata = {"model": model or "gpt-4", "provider": "openai"}
-        elif provider.lower() == "anthropic":
+        elif prov == "anthropic":
             response_text = await LLMProvider.generate_anthropic(prompt, model or "claude-3-5-sonnet-20241022")
             metadata = {"model": model or "claude-3-5-sonnet-20241022", "provider": "anthropic"}
-        elif provider.lower() == "google":
+        elif prov == "google":
             response_text = await LLMProvider.generate_google(prompt, model or "gemini-2.0-flash")
             metadata = {"model": model or "gemini-2.0-flash", "provider": "google"}
-        elif provider.lower() == "groq":
+        elif prov == "groq":
             response_text = await LLMProvider.generate_groq(prompt, model or "llama-3.3-70b-versatile")
             metadata = {"model": model or "llama-3.3-70b-versatile", "provider": "groq"}
         else:
@@ -327,6 +384,7 @@ async def call_llm_with_retries_and_clarifier(
         try:
             # Use structured helper when schema_model is provided
             if schema_model:
+                # Use provider fallback-aware call for structured requests
                 structured_obj, metadata = await call_llm_structured_inner(
                     prompt=prompt,
                     provider=provider,
@@ -470,8 +528,15 @@ async def call_llm_structured_inner(**kwargs):
     schema_prompt = get_structured_output_prompt(schema_model)
     wrapped_prompt = f"{prompt}\n\n{schema_prompt}"
 
-    # Call raw LLM
-    text, metadata = await call_llm(wrapped_prompt, provider, model)
+    # Call raw LLM with provider fallback: try the requested provider first,
+    # then fall back to other providers if rate-limited.
+    providers_to_try = [provider]
+    # Append a safe secondary provider list (order of preference)
+    for p in ("openai", "google", "anthropic", "groq"):
+        if p not in providers_to_try:
+            providers_to_try.append(p)
+
+    text, metadata = await call_llm_with_provider_fallback(wrapped_prompt, providers_to_try, model=model, max_retries=1)
 
     # Parse into schema_model
     parsed = parse_structured_response(text, schema_model)
@@ -1196,40 +1261,62 @@ async def call_llm_structured(
         if supports_structured_outputs(provider):
             # Get provider-specific schema format
             schema = get_schema_for_provider(schema_model, provider)
-            
-            # Call provider with structured output
-            if provider.lower() == "openai":
-                response_text = await LLMProvider.generate_openai(
-                    prompt, 
-                    model or "gpt-4", 
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    response_format=schema
-                )
-                metadata = {"model": model or "gpt-4", "provider": "openai", "structured": True}
-            elif provider.lower() == "google" or provider.lower() == "gemini":
-                response_text = await LLMProvider.generate_google(
-                    prompt,
-                    model or "gemini-2.0-flash",
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    response_schema=schema
-                )
-                metadata = {"model": model or "gemini-2.0-flash", "provider": "google", "structured": True}
-            elif provider.lower() == "groq":
-                # Use Llama 4 Scout which supports structured outputs (json_schema)
-                # Supported models: meta-llama/llama-4-scout-17b-16e-instruct, meta-llama/llama-4-maverick-17b-128e-instruct
-                # See: https://console.groq.com/docs/structured-outputs#supported-models
-                response_text = await LLMProvider.generate_groq(
-                    prompt,
-                    model or "meta-llama/llama-4-scout-17b-16e-instruct",
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    response_format=schema
-                )
-                metadata = {"model": model or "meta-llama/llama-4-scout-17b-16e-instruct", "provider": "groq", "structured": True}
+
+            # Call provider with structured output. Add a small retry/backoff for transient 429 rate-limit errors
+            last_exc = None
+            for attempt in range(3):
+                try:
+                    if provider.lower() == "openai":
+                        response_text = await LLMProvider.generate_openai(
+                            prompt, 
+                            model or "gpt-4", 
+                            max_tokens=max_tokens,
+                            temperature=temperature,
+                            response_format=schema
+                        )
+                        metadata = {"model": model or "gpt-4", "provider": "openai", "structured": True}
+                    elif provider.lower() == "google" or provider.lower() == "gemini":
+                        response_text = await LLMProvider.generate_google(
+                            prompt,
+                            model or "gemini-2.0-flash",
+                            max_tokens=max_tokens,
+                            temperature=temperature,
+                            response_schema=schema
+                        )
+                        metadata = {"model": model or "gemini-2.0-flash", "provider": "google", "structured": True}
+                    elif provider.lower() == "groq":
+                        # Use Llama 4 Scout which supports structured outputs (json_schema)
+                        response_text = await LLMProvider.generate_groq(
+                            prompt,
+                            model or "meta-llama/llama-4-scout-17b-16e-instruct",
+                            max_tokens=max_tokens,
+                            temperature=temperature,
+                            response_format=schema
+                        )
+                        metadata = {"model": model or "meta-llama/llama-4-scout-17b-16e-instruct", "provider": "groq", "structured": True}
+                    else:
+                        raise ValueError(f"Unsupported provider: {provider}")
+
+                    # Successful call, break retry loop
+                    break
+                except HTTPException as http_e:
+                    last_exc = http_e
+                    # If rate limit, wait a bit and retry; otherwise re-raise
+                    try:
+                        status = getattr(http_e, 'status_code', None)
+                    except Exception:
+                        status = None
+                    if status == 429:
+                        wait = 1.5 * (2 ** attempt)
+                        logger.warning(f"Structured provider {provider} rate-limited (attempt {attempt+1}), sleeping {wait}s before retry")
+                        await asyncio.sleep(wait)
+                        continue
+                    else:
+                        raise
             else:
-                raise ValueError(f"Unsupported provider: {provider}")
+                # Retries exhausted
+                if last_exc:
+                    raise last_exc
         else:
             # Fallback for providers without native structured output support (e.g., Anthropic)
             logger.info(f"Provider {provider} doesn't support structured outputs, using prompt-based approach")
@@ -1466,17 +1553,38 @@ async def save_structured_character(
         
         # Convert CharacterProfile to dict for JSON storage
         structured_dict = character_profile.model_dump()
-        
+
+        # Defensive retrieval of commonly used legacy fields. Some LLMs or
+        # parsing steps may produce empty strings or omit optional fields.
+        # Use fallbacks where sensible so legacy fields are not blank.
+        phys = getattr(character_profile, "physical_description", None) or structured_dict.get("physical_description") or ""
+        pers = getattr(character_profile, "personality_description", None) or structured_dict.get("personality_description") or ""
+        backstory = getattr(character_profile, "backstory", None) or structured_dict.get("backstory") or ""
+        motivation = getattr(character_profile, "primary_motivation", None) or structured_dict.get("primary_motivation") or ""
+        relationships = getattr(character_profile, "key_relationships", None) or structured_dict.get("key_relationships") or []
+
+        # Compose a description from available pieces. If both parts are empty,
+        # fall back to backstory or leave description empty (null in DB).
+        composed_description = "".join([s for s in [phys.strip(), pers.strip()] if s])
+        if not composed_description and backstory:
+            composed_description = (backstory or "").strip()
+
+        # Log which keys we received to aid debugging when fields are missing
+        try:
+            logger.debug(f"Structured keys received for {character_profile.name}: {list(structured_dict.keys())}")
+        except Exception:
+            logger.debug("Structured keys received: (failed to list keys)")
+
         # Create character with both legacy fields and structured data
         character = Character(
             name=character_profile.name,
             # Legacy fields for backward compatibility
-            description=character_profile.physical_description + "\n\n" + character_profile.personality_description,
-            background=character_profile.backstory,
-            personality=character_profile.personality_description,
-            appearance=character_profile.physical_description,
-            motivations=character_profile.primary_motivation,
-            relationships=character_profile.key_relationships,  # Already a list of dicts
+            description=composed_description or None,
+            background=backstory or None,
+            personality=pers or None,
+            appearance=phys or None,
+            motivations=motivation or None,
+            relationships=relationships,  # Already a list of dicts or empty list
             # New structured data field
             structured_data=structured_dict,
             # Portrait data
