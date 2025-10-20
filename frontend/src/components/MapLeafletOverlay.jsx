@@ -6,7 +6,7 @@ import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 import RegionDraw from "./RegionDraw";
 import L from "leaflet";
-import MarkerClusterGroup from "react-leaflet-cluster";
+import MapClusterGroup from "./MapClusterGroup";
 
 // Fix default icon path issues with bundlers (Vite)
 try {
@@ -55,28 +55,7 @@ export default function MapLeafletOverlay({
         )}
 
         {clusterEnabled ? (
-          <MarkerClusterGroup>
-            {markers.map((m) =>
-              m.lat && m.lng ? (
-                <Marker key={m.id} position={[m.lat, m.lng]}>
-                  <Popup>
-                    <div style={{ maxWidth: 240 }}>
-                      <strong>{m.name}</strong>
-                      {m.location_image && (
-                        <div style={{ marginTop: 8 }}>
-                          <img
-                            src={`data:image/png;base64,${m.location_image}`}
-                            alt={m.name}
-                            style={{ width: "100%", borderRadius: 6 }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              ) : null
-            )}
-          </MarkerClusterGroup>
+          <MapClusterGroup markers={markers} />
         ) : (
           markers.map((m) =>
             m.lat && m.lng ? (

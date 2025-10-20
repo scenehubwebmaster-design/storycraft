@@ -1,0 +1,11 @@
+[
+  "http://localhost:8000/api/generate/options/",
+  "http://localhost:8000/api/generate/variations/",
+  "http://localhost:8000/api/generate/cultural-origins/",
+  "http://localhost:8000/api/generate/options/",
+  "http://localhost:8000/api/generate/variations/",
+  "http://localhost:8000/api/generate/cultural-origins/",
+  "http://localhost:8000/api/generate/names/",
+  "http://localhost:8000/api/generate/names/",
+  "http://localhost:8000/api/generate/character/generate-portrait/"
+]

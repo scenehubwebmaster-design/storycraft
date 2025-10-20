@@ -124,6 +124,37 @@ export default function CreateCharacterPage() {
     }
   }, [editId, isEditMode]);
 
+  // DEV ONLY: E2E test hook - allow tests to pre-populate generated content
+  // when visiting /create/character?e2e_mocks=1. This avoids flaky timing in
+  // CI/dev tests. Only enabled in development builds.
+  useEffect(() => {
+    try {
+      if (process.env.NODE_ENV === "development") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("e2e_mocks") === "1") {
+          const mock = {
+            physical_description: "A young adventurer with a friendly face.",
+            hair: "brown",
+            eyes: "green",
+            skin: "fair",
+            height: "5'8\"",
+            build: "slim",
+            name: "PlaywrightTest",
+            personality: "Brave and curious",
+          };
+          // Populate state as if generation occurred
+          setGeneratedContent(mock);
+          setCharacterName(mock.name || "PlaywrightTest");
+          setUseStructured(true);
+          setActiveStep(2);
+          setSuccess("E2E mocks applied");
+        }
+      }
+    } catch (e) {
+      // non-fatal; ignore in production or if window isn't available
+    }
+  }, []);
+
   // Normalize structured profiles from different generators/providers so the
   // UI always receives a consistent CharacterProfile shape. Some generators
   // (notably D&D-specific ones) emit keys like `character_appearance` and

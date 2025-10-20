@@ -1,0 +1,249 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "logo" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img [ref=e7]
+      - generic [ref=e10]: StoryCraft
+      - generic [ref=e11]:
+        - link "Home" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e14]
+          - text: Home
+        - link "Create" [ref=e16] [cursor=pointer]:
+          - /url: /create
+          - img [ref=e18]
+          - text: Create
+        - link "Stories" [ref=e20] [cursor=pointer]:
+          - /url: /stories
+          - img [ref=e22]
+          - text: Stories
+        - link "Characters" [ref=e24] [cursor=pointer]:
+          - /url: /characters
+          - img [ref=e26]
+          - text: Characters
+        - link "Worlds" [ref=e28] [cursor=pointer]:
+          - /url: /worlds
+          - img [ref=e30]
+          - text: Worlds
+        - link "Settings" [ref=e32] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e34]
+          - text: Settings
+  - main [ref=e36]:
+    - generic [ref=e37]:
+      - generic [ref=e38]:
+        - heading "Create a Character" [level=3] [ref=e39]
+        - paragraph [ref=e40]: Use AI to generate detailed, compelling characters for your stories
+      - generic [ref=e41]:
+        - generic [ref=e43]:
+          - img [ref=e45]
+          - generic [ref=e48]: Select Traits
+        - generic [ref=e52]:
+          - img [ref=e54]
+          - generic [ref=e57]: Generate
+        - generic [ref=e61]:
+          - img [ref=e63]:
+            - generic [ref=e65]: "3"
+          - generic [ref=e67]: Review & Save
+      - alert [ref=e68]:
+        - img [ref=e70]
+        - generic [ref=e72]: Character generated successfully using structured generation!
+        - button "Close" [ref=e74] [cursor=pointer]:
+          - img [ref=e75]
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - generic:
+            - text: Character Name
+            - generic: "*"
+          - generic [ref=e79]:
+            - textbox "Character Name" [ref=e80]:
+              - /placeholder: Enter a name for this character
+            - group:
+              - generic: Character Name *
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - generic [ref=e84]:
+              - heading "Choose a Generated Name" [level=6] [ref=e85]
+              - text: Select one of the AI-generated name options below
+            - button "Regenerate" [ref=e87] [cursor=pointer]
+          - generic [ref=e88]:
+            - generic [ref=e90]:
+              - button "Kaida Rylan" [ref=e91] [cursor=pointer]:
+                - generic [ref=e92]: Kaida Rylan
+              - generic [ref=e93]:
+                - generic [ref=e94]: Ms.
+                - generic [ref=e95]: Between the ages
+            - generic [ref=e97]:
+              - button "Sage Blackwood" [ref=e98] [cursor=pointer]:
+                - generic [ref=e99]: Sage Blackwood
+              - generic [ref=e100]:
+                - generic [ref=e101]: Dr.
+                - generic [ref=e102]: Wise one
+            - generic [ref=e104]:
+              - button "Caspian Orlov" [ref=e105] [cursor=pointer]:
+                - generic [ref=e106]: Caspian Orlov
+              - generic [ref=e107]:
+                - generic [ref=e108]: Lord
+                - generic [ref=e109]: Sea
+            - generic [ref=e111]:
+              - button "Lylah Bodnar" [ref=e112] [cursor=pointer]:
+                - generic [ref=e113]: Lylah Bodnar
+              - generic [ref=e114]:
+                - generic [ref=e115]: Prof.
+                - generic [ref=e116]: Night
+            - generic [ref=e118]:
+              - button "Thayer Ragnar" [ref=e119] [cursor=pointer]:
+                - generic [ref=e120]: Thayer Ragnar
+              - generic [ref=e121]:
+                - generic [ref=e122]: Mr.
+                - generic [ref=e123]: One who clears land
+            - generic [ref=e125]:
+              - button "Zaraea Nikolau" [ref=e126] [cursor=pointer]:
+                - generic [ref=e127]: Zaraea Nikolau
+              - generic [ref=e128]:
+                - generic [ref=e129]: Lady
+                - generic [ref=e130]: Blooming flower
+          - generic [ref=e131]:
+            - button "Clear" [ref=e132] [cursor=pointer]
+            - button "Regenerate" [ref=e133] [cursor=pointer]
+        - generic [ref=e134]:
+          - generic [ref=e137]:
+            - generic [ref=e138]:
+              - generic [ref=e139]:
+                - heading "Character Portrait" [level=6] [ref=e140]
+                - paragraph [ref=e141]: Generate an AI portrait
+              - button "Portrait Settings" [ref=e142] [cursor=pointer]:
+                - img [ref=e143]
+            - button "Generate Portrait" [disabled]:
+              - generic:
+                - img
+              - text: Generate Portrait
+          - generic [ref=e146]:
+            - generic [ref=e147]:
+              - generic [ref=e148]:
+                - heading "PlaywrightTest" [level=3] [ref=e149]
+                - heading "Age:" [level=6] [ref=e150]
+              - generic [ref=e152]:
+                - generic [ref=e153]:
+                  - img [ref=e154]
+                  - heading "Physical Appearance" [level=5] [ref=e156]
+                - generic [ref=e157]:
+                  - generic [ref=e158]:
+                    - heading "Height" [level=6] [ref=e159]
+                    - paragraph
+                  - generic [ref=e160]:
+                    - heading "Build" [level=6] [ref=e161]
+                    - paragraph
+                  - generic [ref=e162]:
+                    - heading "Hair" [level=6] [ref=e163]
+                    - paragraph
+                  - generic [ref=e164]:
+                    - heading "Eyes" [level=6] [ref=e165]
+                    - paragraph
+                - heading "Distinctive Features" [level=6] [ref=e167]
+                - generic [ref=e168]:
+                  - heading "Overall Description" [level=6] [ref=e169]
+                  - paragraph
+              - generic [ref=e171]:
+                - generic [ref=e172]:
+                  - img [ref=e173]
+                  - heading "Personality" [level=5] [ref=e176]
+                - heading "Core Traits" [level=6] [ref=e178]
+                - generic [ref=e179]:
+                  - heading "Demeanor" [level=6] [ref=e180]
+                  - paragraph
+                - generic [ref=e181]:
+                  - heading "Personality Overview" [level=6] [ref=e182]
+                  - paragraph
+              - generic [ref=e184]:
+                - generic [ref=e185]:
+                  - img [ref=e186]
+                  - heading "Background" [level=5] [ref=e188]
+                - generic [ref=e189]:
+                  - generic [ref=e190]:
+                    - heading "Birthplace" [level=6] [ref=e191]
+                    - paragraph
+                  - generic [ref=e192]:
+                    - heading "Upbringing" [level=6] [ref=e193]
+                    - paragraph
+                - generic [ref=e194]:
+                  - heading "Formative Events" [level=6] [ref=e195]
+                  - list [ref=e196]
+                - generic [ref=e197]:
+                  - heading "Full Backstory" [level=6] [ref=e198]
+                  - paragraph
+              - generic [ref=e200]:
+                - generic [ref=e201]:
+                  - img [ref=e202]
+                  - heading "Motivations & Values" [level=5] [ref=e204]
+                - generic [ref=e205]:
+                  - heading "Primary Motivation" [level=6] [ref=e206]
+                  - paragraph
+                - generic [ref=e207]:
+                  - heading "Goals" [level=6] [ref=e208]
+                  - list [ref=e209]
+                - heading "Core Values" [level=6] [ref=e211]
+              - generic [ref=e213]:
+                - generic [ref=e214]:
+                  - img [ref=e215]
+                  - heading "Fears & Weaknesses" [level=5] [ref=e217]
+                - generic [ref=e218]:
+                  - heading "Greatest Fear" [level=6] [ref=e219]
+                  - paragraph
+                - generic [ref=e220]:
+                  - generic [ref=e221]:
+                    - heading "Emotional Weaknesses" [level=6] [ref=e222]
+                    - list [ref=e223]
+                  - generic [ref=e224]:
+                    - heading "Physical Weaknesses" [level=6] [ref=e225]
+                    - list [ref=e226]
+              - generic [ref=e228]:
+                - generic [ref=e229]:
+                  - img [ref=e230]
+                  - heading "Strengths & Abilities" [level=5] [ref=e232]
+                - heading "Skills" [level=6] [ref=e234]
+                - generic [ref=e235]:
+                  - heading "Special Abilities" [level=6] [ref=e236]
+                  - paragraph
+                - generic [ref=e237]:
+                  - heading "Combat Style" [level=6] [ref=e238]
+                  - paragraph
+                - generic [ref=e239]:
+                  - heading "Strengths Overview" [level=6] [ref=e240]
+                  - paragraph
+              - generic [ref=e243]:
+                - img [ref=e244]
+                - heading "Key Relationships" [level=5] [ref=e246]
+              - generic [ref=e248]:
+                - generic [ref=e249]:
+                  - img [ref=e250]
+                  - heading "Character Arc Potential" [level=5] [ref=e252]
+                - paragraph
+              - generic [ref=e254]:
+                - generic [ref=e255]:
+                  - img [ref=e256]
+                  - heading "What Makes Them Unique" [level=5] [ref=e258]
+                - generic [ref=e259]:
+                  - heading "Distinctive Qualities" [level=6] [ref=e260]
+                  - paragraph
+                - generic [ref=e261]:
+                  - heading "Quirks & Habits" [level=6] [ref=e262]
+                  - list [ref=e263]
+            - generic [ref=e264]:
+              - button "Regenerate" [ref=e265] [cursor=pointer]
+              - button "Save Character" [disabled]
+      - generic [ref=e266]:
+        - button "Back" [ref=e267] [cursor=pointer]:
+          - img [ref=e269]
+          - text: Back
+        - button "Next" [disabled]:
+          - text: Next
+          - generic:
+            - img
+  - contentinfo [ref=e271]:
+    - paragraph [ref=e273]: StoryCraft © 2025 - AI-Powered Story Creation
+```

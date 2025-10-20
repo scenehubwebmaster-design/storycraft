@@ -1,0 +1,81 @@
+﻿[
+
+{"name":"react-leaflet-markercluster","keywords":["react","leaflet","react-leaflet","markercluster","marker","cluster"],"version":"5.0.0-rc.0","description":"React wrapper of Leaflet.markercluster for react-leaflet","sanitized_name":"react-leaflet-markercluster","publisher":{"email":"charlesrichardsonusa@gmail.com","username":"charlieforward9"},"maintainers":[{"email":"yevhen.uzhva@gmail.com","username":"yuzhva"},{"email":"charlesrichardsonusa@gmail.com","username":"charlieforward9"}],"license":"MIT","date":"2025-01-03T16:36:52.274Z","links":{"homepage":"https://github.com/YUzhva/react-leaflet-markercluster#readme","repository":"git+ssh://git@github.com/YUzhva/react-leaflet-markercluster.git","bugs":"https://github.com/YUzhva/react-leaflet-markercluster/issues","npm":"https://www.npmjs.com/package/react-leaflet-markercluster"}}
+
+,
+
+{"name":"@changey/react-leaflet-markercluster","keywords":["react","leaflet","react-leaflet","markercluster","marker","cluster"],"version":"4.0.0-rc1","description":"React wrapper of Leaflet.markercluster for react-laeflet","sanitized_name":"@changey/react-leaflet-markercluster","publisher":{"email":"eric61213@gmail.com","username":"changey"},"maintainers":[{"email":"eric61213@gmail.com","username":"changey"}],"license":"MIT","date":"2022-06-20T21:48:21.518Z","links":{"homepage":"https://github.com/changey/react-leaflet-markercluster#readme","repository":"git+ssh://git@github.com/changey/react-leaflet-markercluster.git","bugs":"https://github.com/changey/react-leaflet-markercluster/issues","npm":"https://www.npmjs.com/package/@changey/react-leaflet-markercluster"}}
+
+,
+
+{"name":"@christopherpickering/react-leaflet-markercluster","keywords":["react","leaflet","react-leaflet","markercluster","marker","cluster"],"version":"1.1.0","description":"React wrapper of Leaflet.markercluster for react-laeflet","sanitized_name":"@christopherpickering/react-leaflet-markercluster","publisher":{"email":"christopher@going.bg","username":"sur.la.route"},"maintainers":[{"email":"christopher@going.bg","username":"sur.la.route"}],"license":"MIT","date":"2022-11-30T10:09:04.809Z","links":{"homepage":"https://github.com/christopherpickering/react-leaflet-markercluster#readme","repository":"git+https://github.com/christopherpickering/react-leaflet-markercluster.git","bugs":"https://github.com/christopherpickering/react-leaflet-markercluster/issues","npm":"https://www.npmjs.com/package/@christopherpickering/react-leaflet-markercluster"}}
+
+,
+
+{"name":"dudesuh-react-leaflet-markercluster","keywords":["react","leaflet","react-leaflet","markercluster","marker","cluster"],"version":"1.1.8","description":"Fork version of YUzhva/react-leaflet-markercluster to add Cluster events. React wrapper of Leaflet.markercluster for react-leaflet","sanitized_name":"dudesuh-react-leaflet-markercluster","publisher":{"email":"ricardo_pt9@hotmail.com","username":"ponchox"},"maintainers":[{"email":"ricardo_pt9@hotmail.com","username":"ponchox"}],"license":"MIT","date":"2018-10-10T14:57:29.844Z","links":{"homepage":"https://github.com/dudesuh/react-leaflet-markercluster#readme","repository":"git+https://github.com/dudesuh/react-leaflet-markercluster.git","bugs":"https://github.com/YUzhva/react-leaflet-markercluster/issues","npm":"https://www.npmjs.com/package/dudesuh-react-leaflet-markercluster"}}
+
+,
+
+{"name":"@bluehalo/ngx-leaflet-markercluster","keywords":[],"version":"20.0.3","description":"Angular.io components for the Leaflet Markercluster plugin","sanitized_name":"@bluehalo/ngx-leaflet-markercluster","publisher":{"email":"reblace@gmail.com","actor":{"name":"reblace","type":"user","email":"reblace@gmail.com"},"username":"reblace"},"maintainers":[{"email":"reblace@gmail.com","username":"reblace"},{"email":"eugene.koon@bluehalo.com","username":"ekdeveloper"},{"email":"andrew.shin@bluehalo.com","username":"ashin-bluehalo"},{"email":"shane.oneill@bluehalo.com","username":"shane-bh"}],"license":"MIT","date":"2025-06-25T16:02:24.110Z","links":{"homepage":"https://github.com/bluehalo/ngx-leaflet-markercluster#readme","repository":"git+https://github.com/bluehalo/ngx-leaflet-markercluster.git","bugs":"https://github.com/bluehalo/ngx-leaflet-markercluster/issues","npm":"https://www.npmjs.com/package/@bluehalo/ngx-leaflet-markercluster"}}
+
+,
+
+{"name":"vue-leaflet-markercluster","keywords":["vue","vuejs","leaflet","vue-leaflet","@vue-leaflet/vue-leaflet"],"version":"0.6.1","description":"Leaflet markercluster components for Vue.js, based on leaflet.markercluster.","sanitized_name":"vue-leaflet-markercluster","publisher":{"email":"vb@poweruplink.com","username":"veitbjarsch"},"maintainers":[{"email":"vb@poweruplink.com","username":"veitbjarsch"}],"license":"MIT","date":"2024-03-27T18:10:03.913Z","links":{"homepage":"https://github.com/veitbjarsch/vue-leaflet-markercluster#readme","repository":"git+ssh://git@github.com/veitbjarsch/vue-leaflet-markercluster.git","bugs":"https://github.com/veitbjarsch/vue-leaflet-markercluster/issues","npm":"https://www.npmjs.com/package/vue-leaflet-markercluster"}}
+
+,
+
+{"name":"vue2-leaflet-markercluster","keywords":["vue2","leaflet","markercluster"],"version":"3.1.0","description":"markercluster plugin extension for vue2-leaflet package","sanitized_name":"vue2-leaflet-markercluster","publisher":{"email":"jperelli@gmail.com","username":"jperelli"},"maintainers":[{"email":"jperelli@gmail.com","username":"jperelli"}],"license":"MIT","date":"2019-10-31T19:01:24.116Z","links":{"homepage":"https://github.com/jperelli/vue2-leaflet-markercluster#readme","repository":"git+ssh://git@github.com/jperelli/vue2-leaflet-markercluster.git","bugs":"https://github.com/jperelli/vue2-leaflet-markercluster/issues","npm":"https://www.npmjs.com/package/vue2-leaflet-markercluster"}}
+
+,
+
+{"name":"react-leaflet","keywords":["react-component","react","leaflet","map"],"version":"5.0.0","description":"React components for Leaflet maps","sanitized_name":"react-leaflet","publisher":{"email":"paul@ulem.net","username":"paul_lecam"},"maintainers":[{"email":"paul@ulem.net","username":"paul_lecam"}],"license":"Hippocratic-2.1","date":"2024-12-14T08:44:03.462Z","links":{"homepage":"https://react-leaflet.js.org","repository":"git+https://github.com/PaulLeCam/react-leaflet.git","bugs":"https://github.com/PaulLeCam/react-leaflet/issues","npm":"https://www.npmjs.com/package/react-leaflet"}}
+
+,
+
+{"name":"@react-leaflet/core","keywords":["react-component","react","leaflet","map"],"version":"3.0.0","description":"React Leaflet core","sanitized_name":"@react-leaflet/core","publisher":{"email":"paul@ulem.net","username":"paul_lecam"},"maintainers":[{"email":"paul@ulem.net","username":"paul_lecam"}],"license":"Hippocratic-2.1","date":"2024-12-14T08:43:59.662Z","links":{"homepage":"https://react-leaflet.js.org/docs/core-introduction","repository":"git+https://github.com/PaulLeCam/react-leaflet.git","bugs":"https://github.com/PaulLeCam/react-leaflet/issues","npm":"https://www.npmjs.com/package/@react-leaflet/core"}}
+
+,
+
+{"name":"grommet-leaflet","keywords":[],"version":"0.5.1","description":"Map for Grommet and React using LeafletJS","sanitized_name":"grommet-leaflet","publisher":{"email":"mdglissmann@gmail.com","username":"halocline"},"maintainers":[{"email":"mdglissmann@gmail.com","username":"halocline"},{"email":"seamanstaylor@gmail.com","username":"taysea"}],"license":"ISC","date":"2024-09-12T17:16:21.907Z","links":{"npm":"https://www.npmjs.com/package/grommet-leaflet"}}
+
+,
+
+{"name":"react-leaflet-universal","keywords":[],"version":"2.2.1","description":"Simple wrapper around react-leaflet for painless universal integration","sanitized_name":"react-leaflet-universal","publisher":{"email":"masotime@gmail.com","username":"masotime"},"maintainers":[{"email":"masotime@gmail.com","username":"masotime"}],"license":"ISC","date":"2020-04-08T14:55:31.064Z","links":{"homepage":"https://github.com/masotime/react-leaflet-universal#readme","repository":"git+https://github.com/masotime/react-leaflet-universal.git","bugs":"https://github.com/masotime/react-leaflet-universal/issues","npm":"https://www.npmjs.com/package/react-leaflet-universal"}}
+
+,
+
+{"name":"marwan-yasser-react-leaflet-markercluster","keywords":["react","leaflet","react-leaflet","markercluster","marker","cluster"],"version":"5.0.4","description":"React wrapper of Leaflet.markercluster for react-leaflet","sanitized_name":"marwan-yasser-react-leaflet-markercluster","publisher":{"actor":{"name":"marwanyasser","type":"user","email":"marwanyasser@rabbit-app.com"},"email":"marwanyasser@rabbit-app.com","username":"marwanyasser"},"maintainers":[{"email":"marwanyasser@rabbit-app.com","username":"marwanyasser"}],"license":"MIT","date":"2025-07-07T14:13:35.567Z","links":{"homepage":"https://github.com/YUzhva/react-leaflet-markercluster#readme","repository":"git+ssh://git@github.com/YUzhva/react-leaflet-markercluster.git","bugs":"https://github.com/YUzhva/react-leaflet-markercluster/issues","npm":"https://www.npmjs.com/package/marwan-yasser-react-leaflet-markercluster"}}
+
+,
+
+{"name":"leaflet","keywords":["gis","map"],"version":"1.9.4","description":"JavaScript library for mobile-friendly interactive maps","sanitized_name":"leaflet","publisher":{"email":"agafonkin@gmail.com","username":"mourner"},"maintainers":[{"email":"agafonkin@gmail.com","username":"mourner"},{"email":"yohanboniface@free.fr","username":"ybon"},{"email":"ivan@sanchezortega.es","username":"ivansanchez"},{"email":"per@liedman.net","username":"liedman"},{"email":"andrew.cherniavskii@gmail.com","username":"cherniavskii"},{"email":"jonkoops@gmail.com","username":"jkoops"}],"license":"BSD-2-Clause","date":"2023-05-18T11:04:11.088Z","links":{"homepage":"https://leafletjs.com/","repository":"git://github.com/Leaflet/Leaflet.git","bugs":"https://github.com/Leaflet/Leaflet/issues","npm":"https://www.npmjs.com/package/leaflet"}}
+
+,
+
+{"name":"react-leaflet-cluster","keywords":["react","leaflet","marker-cluster","cluster","map","react-leaflet-v4"],"version":"3.1.1","description":"React-leaflet-cluster is a plugin for react-leaflet. A wrapper component of Leaflet.markercluster.","sanitized_name":"react-leaflet-cluster","publisher":{"email":"ademkursatuzun@gmail.com","username":"akursat"},"maintainers":[{"email":"ademkursatuzun@gmail.com","username":"akursat"}],"license":"SEE LICENSE IN <LICENSE>","date":"2025-08-13T08:49:58.007Z","links":{"homepage":"https://akursat.gitbook.io/marker-cluster/","repository":"git+https://github.com/akursat/react-leaflet-cluster.git","bugs":"https://github.com/akursat/react-leaflet-cluster/issues","npm":"https://www.npmjs.com/package/react-leaflet-cluster"}}
+
+,
+
+{"name":"@2plgiap/react-leaflet-markercluster","keywords":["react","leaflet","react-leaflet","markercluster","marker","cluster"],"version":"0.0.2","description":"React wrapper of Leaflet.markercluster for react-laeflet","sanitized_name":"@2plgiap/react-leaflet-markercluster","publisher":{"email":"pl@giap.pl","username":"pl_giap"},"maintainers":[{"email":"pl@giap.pl","username":"pl_giap"}],"license":"MIT","date":"2021-04-24T11:16:20.784Z","links":{"npm":"https://www.npmjs.com/package/@2plgiap/react-leaflet-markercluster"}}
+
+,
+
+{"name":"leaflet.featuregroup.subgroup","keywords":["leaflet","leaflet.markercluster","plugins","maps","subgroup"],"version":"1.0.2","description":"Creates a Leaflet Feature Group that adds its child layers into a parent group when added to a map","sanitized_name":"leaflet-featuregroup-subgroup","publisher":{"email":"ghybsy@gmail.com","username":"ghybs"},"maintainers":[{"email":"ghybs1@gmail.com","username":"ghybs"}],"license":"BSD-2-Clause","date":"2017-03-26T20:05:08.452Z","links":{"homepage":"https://github.com/ghybs/Leaflet.FeatureGroup.SubGroup#readme","repository":"git+https://github.com/ghybs/Leaflet.FeatureGroup.SubGroup.git","bugs":"https://github.com/ghybs/Leaflet.FeatureGroup.SubGroup/issues","npm":"https://www.npmjs.com/package/leaflet.featuregroup.subgroup"}}
+
+,
+
+{"name":"react-leaflet-draw","keywords":["react","leaflet","draw","editor"],"version":"0.21.0","description":"React component for leaflet-draw","sanitized_name":"react-leaflet-draw","publisher":{"email":"brennan@codexwilkes.com","username":"br.wilkes"},"maintainers":[{"email":"alexr.3165@gmail.com","username":"alex3165"},{"email":"srghma@gmail.com","username":"srghma"},{"email":"brennan@codexwilkes.com","username":"br.wilkes"},{"email":"dimasoltusyuk@gmail.com","username":"sinnrrr"}],"license":"ISC","date":"2025-09-15T21:12:21.329Z","links":{"homepage":"https://github.com/alex3165/react-leaflet-draw#readme","repository":"git+ssh://git@github.com/alex3165/react-leaflet-draw.git","bugs":"https://github.com/alex3165/react-leaflet-draw/issues","npm":"https://www.npmjs.com/package/react-leaflet-draw"}}
+
+,
+
+{"name":"@types/leaflet","keywords":[],"version":"1.9.21","description":"TypeScript definitions for leaflet","sanitized_name":"@types/leaflet","publisher":{"email":"ts-npm-types@microsoft.com","actor":{"name":"types","type":"user","email":"ts-npm-types@microsoft.com"},"username":"types"},"maintainers":[{"email":"ts-npm-types@microsoft.com","username":"types"}],"license":"MIT","date":"2025-10-11T01:29:59.238Z","links":{"homepage":"https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/leaflet","repository":"https://github.com/DefinitelyTyped/DefinitelyTyped.git","npm":"https://www.npmjs.com/package/@types/leaflet"}}
+
+,
+
+{"name":"leaflet-draw","keywords":["maps","leaflet","client","vector","drawing","draw"],"version":"1.0.4","description":"Vector drawing plugin for Leaflet","sanitized_name":"leaflet-draw","publisher":{"email":"ddproxy@gmail.com","username":"ddproxy"},"maintainers":[{"email":"ddproxy@gmail.com","username":"ddproxy"},{"email":"jacob.toye@gmail.com","username":"jacobtoye"}],"license":"MIT","date":"2018-10-24T16:44:06.725Z","links":{"homepage":"https://github.com/Leaflet/Leaflet.draw#readme","repository":"git+https://github.com/Leaflet/Leaflet.draw.git","bugs":"https://github.com/Leaflet/Leaflet.draw/issues","npm":"https://www.npmjs.com/package/leaflet-draw"}}
+
+,
+
+{"name":"react-leaflet-google-layer","keywords":["React","Leaflet","google","googlemutant","typescript","react-leaflet-v3","react-leaflet-v4"],"version":"4.0.0","description":"React leaflet wrapper of leaflet.gridlayer.googlemutant","sanitized_name":"react-leaflet-google-layer","publisher":{"email":"aviklaiman@hotmail.com","username":"avikl"},"maintainers":[{"email":"aviklaiman@hotmail.com","username":"avikl"}],"license":"MIT","date":"2025-02-22T10:45:24.537Z","links":{"homepage":"https://github.com/aviklai/react-leaflet-google-layer#readme","repository":"git+https://github.com/aviklai/react-leaflet-google-layer.git","bugs":"https://github.com/aviklai/react-leaflet-google-layer/issues","npm":"https://www.npmjs.com/package/react-leaflet-google-layer"}}
+]
+
