@@ -4,7 +4,7 @@ AI Generation Router - Endpoints for intelligent story element creation.
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import Dict, Any, Type, Optional
+from typing import Dict, Any, Type, Optional, List
 import json
 from pydantic import BaseModel
 
@@ -56,11 +56,12 @@ from ..structured_output_utils import (
     supports_structured_outputs,
     get_structured_output_prompt,
 )
+from ..model_capabilities import supports_model_structured, get_model_output_limit
 import asyncio
+from ..audit import write_audit_event
 from ..name_generation_utils import (
     extract_json_array_from_text,
     needs_retry_from_text,
-    extract_json_from_text,
 )
 import logging
 
@@ -895,6 +896,151 @@ async def generate_story(request: StoryGenerationRequest):
     )
 
 
+class FullStoryRequest(BaseModel):
+    """Request to generate a full story package: world, characters, and story."""
+    world_id: Optional[int] = None
+    world_themes: Optional[List[str]] = None
+    character_count: int = 3
+    character_provider: str = "test"
+    character_model: Optional[str] = None
+    story_provider: str = "openai"
+    story_model: Optional[str] = None
+    story_length: Optional[str] = "medium"
+    # Additional freeform details to include in prompts
+    custom_details: Optional[str] = None
+
+
+@router.post("/story/full-generate/")
+async def generate_full_story(request: FullStoryRequest, db: Session = Depends(get_db)):
+    """Generate a full story package.
+
+    Flow:
+    - If world_id provided and world has structured_data, use that; otherwise generate a structured world.
+    - Generate N structured characters using the world's context.
+    - Generate a story using the world overview and brief character bios as context.
+    """
+    try:
+        # Resolve or create world profile
+        world_profile = None
+        if request.world_id:
+            world = db.query(World).filter(World.id == request.world_id).first()
+            if world and getattr(world, "structured_data", None):
+                # If structured_data stored as dict, use directly; else leave for generation
+                try:
+                    world_profile = world.structured_data
+                except Exception:
+                    world_profile = None
+
+        # If no profile available, call structured generator
+        if not world_profile:
+            # Build world prompt using structured template if available, otherwise fall back
+            if hasattr(PromptTemplates, "world_structured_prompt") and callable(getattr(PromptTemplates, "world_structured_prompt")):
+                wprompt = PromptTemplates.world_structured_prompt(
+                    themes=request.world_themes,
+                    setting=None,
+                    elements=None,
+                    custom_details=request.custom_details,
+                )
+            else:
+                # Fallback to the compat world prompt
+                wprompt = PromptTemplates.world_prompt(
+                    themes=request.world_themes,
+                    setting=None,
+                    elements=None,
+                    custom_details=request.custom_details,
+                )
+            wp, wmeta = await call_llm_structured(
+                prompt=wprompt,
+                provider=request.story_provider,
+                schema_model=WorldProfile,
+                model=request.story_model,
+                max_tokens=3000,
+            )
+            # Convert to dict for downstream usage
+            world_profile = wp.model_dump() if hasattr(wp, "model_dump") else (wp.dict() if hasattr(wp, "dict") else dict(wp))
+
+        # Generate characters
+        characters = []
+        for i in range(max(1, min(10, int(request.character_count)))):
+            # Add world context into the character prompt
+            world_context_details = (f"World context: {world_profile.get('name', '')}. "
+                                     f"Overview: {world_profile.get('overview', '')}. "
+                                     f"Include role hooks for stories.")
+            # Use structured template when available, otherwise fall back to enhanced builder or compat prompt
+            if hasattr(PromptTemplates, "character_structured_prompt") and callable(getattr(PromptTemplates, "character_structured_prompt")):
+                char_prompt = PromptTemplates.character_structured_prompt(
+                    themes=None,
+                    personality_traits=None,
+                    physical_traits=None,
+                    archetype=None,
+                    custom_details=world_context_details
+                )
+            else:
+                try:
+                    char_prompt = build_enhanced_character_prompt(themes=None, personality_traits=None, physical_traits=None, archetype=None, custom_details=world_context_details)
+                except Exception:
+                    char_prompt = PromptTemplates.character_prompt(custom_details=world_context_details)
+            try:
+                cp, cmap = await call_llm_structured(
+                    prompt=char_prompt,
+                    provider=request.character_provider,
+                    schema_model=CharacterProfile,
+                    model=request.character_model,
+                    max_tokens=2500,
+                )
+                cdict = cp.model_dump() if hasattr(cp, "model_dump") else (cp.dict() if hasattr(cp, "dict") else dict(cp))
+            except Exception as ce:
+                # On failure, fabricate a minimal character entry as fallback
+                logging.warning(f"Character structured generation failed: {ce}")
+                cdict = {
+                    "name": f"Unnamed_{i+1}",
+                    "age": 30,
+                    "physical_description": "Unknown",
+                    "personality_description": "Underspecified",
+                    "primary_motivation": "Unknown",
+                }
+            characters.append(cdict)
+
+        # Build story prompt including world overview and brief character bios
+        char_summaries = []
+        for c in characters:
+            name = c.get("name") or c.get("character_name") or "Unknown"
+            motive = c.get("primary_motivation") or c.get("goals", [None])[0] or "driven"
+            brief = f"{name}: {motive}."
+            char_summaries.append(brief)
+
+        story_context = (
+            f"World: {world_profile.get('name','Unknown')}\nOverview: {world_profile.get('overview', world_profile.get('lore',''))}\n\n"
+            + "Characters:\n" + "\n".join(char_summaries)
+        )
+
+        story_prompt = PromptTemplates.story_prompt(
+            themes=request.world_themes,
+            tone=None,
+            length=request.story_length,
+            plot_structure=None,
+            conflict_type=None,
+            custom_details=(request.custom_details or "") + "\n\nContext:\n" + story_context,
+        )
+
+        story_text, story_meta = await call_llm(story_prompt, request.story_provider, request.story_model)
+
+        return {
+            "world": world_profile,
+            "characters": characters,
+            "story": {
+                "content": story_text,
+                "prompt_used": story_prompt,
+                "provider": story_meta.get("provider"),
+                "model": story_meta.get("model"),
+            }
+        }
+
+    except Exception as e:
+        logging.exception("Full story generation failed")
+        raise HTTPException(status_code=500, detail=f"Full story generation failed: {str(e)}")
+
+
 @router.post("/story/save/")
 async def save_story(
     title: str,
@@ -1244,6 +1390,10 @@ async def call_llm_structured(
     Raises:
         HTTPException: If rate limit exceeded, validation fails, or generation fails
     """
+    # Ensure response_text/metadata exist so we never hit UnboundLocalError
+    response_text: str = ""
+    metadata: Dict[str, Any] = {}
+
     try:
         # Estimate tokens (higher for structured outputs)
         estimated_tokens = len(prompt) // 4 + max_tokens
@@ -1256,21 +1406,30 @@ async def call_llm_structured(
                 status_code=429,
                 detail=rate_limit_error
             )
-        
-        # Check if provider supports structured outputs
-        if supports_structured_outputs(provider):
+    
+        # Determine a sensible max output token budget based on model capabilities.
+        # If the caller passed a max_tokens, use it as an upper bound; otherwise
+        # derive a recommended budget from known model limits.
+        model_limit = get_model_output_limit(provider, model, default=max_tokens if isinstance(max_tokens, int) else 3000)
+        initial_max_tokens = min(max_tokens, model_limit) if isinstance(max_tokens, int) else model_limit
+
+        # Check if provider supports structured outputs globally AND the
+        # specific model is known to accept structured params. This avoids
+        # sending `response_format` to models that will reject it.
+        if supports_structured_outputs(provider) and supports_model_structured(provider, model):
             # Get provider-specific schema format
             schema = get_schema_for_provider(schema_model, provider)
 
             # Call provider with structured output. Add a small retry/backoff for transient 429 rate-limit errors
             last_exc = None
+            structured_param_unsupported = False
             for attempt in range(3):
                 try:
                     if provider.lower() == "openai":
                         response_text = await LLMProvider.generate_openai(
                             prompt, 
                             model or "gpt-4", 
-                            max_tokens=max_tokens,
+                            max_tokens=initial_max_tokens,
                             temperature=temperature,
                             response_format=schema
                         )
@@ -1279,7 +1438,7 @@ async def call_llm_structured(
                         response_text = await LLMProvider.generate_google(
                             prompt,
                             model or "gemini-2.0-flash",
-                            max_tokens=max_tokens,
+                            max_tokens=initial_max_tokens,
                             temperature=temperature,
                             response_schema=schema
                         )
@@ -1289,7 +1448,7 @@ async def call_llm_structured(
                         response_text = await LLMProvider.generate_groq(
                             prompt,
                             model or "meta-llama/llama-4-scout-17b-16e-instruct",
-                            max_tokens=max_tokens,
+                            max_tokens=initial_max_tokens,
                             temperature=temperature,
                             response_format=schema
                         )
@@ -1299,50 +1458,267 @@ async def call_llm_structured(
 
                     # Successful call, break retry loop
                     break
-                except HTTPException as http_e:
-                    last_exc = http_e
-                    # If rate limit, wait a bit and retry; otherwise re-raise
+                except Exception as exc:
+                    # Provider SDKs (openai.BadRequestError, httpx errors, etc.) may raise
+                    # provider-specific exceptions rather than FastAPI HTTPException.
+                    last_exc = exc
+                    # Attempt to extract a status code if present on the exception
+                    status = None
                     try:
-                        status = getattr(http_e, 'status_code', None)
+                        status = getattr(exc, 'status_code', None) or getattr(exc, 'http_status', None)
                     except Exception:
                         status = None
-                    if status == 429:
+
+                    detail_str = str(exc).lower()
+
+                    # If provider explicitly rejected the structured 'response_format' param,
+                    # treat this as an unsupported feature and break to the prompt-based fallback.
+                    if 'response_format' in detail_str or 'json_schema' in detail_str:
+                        logger.warning(f"Provider {provider} rejected structured parameter (message contains 'response_format' or 'json_schema'). Falling back to prompt-based structured generation.")
+                        structured_param_unsupported = True
+                        # Audit the structured-param rejection for analysis
+                        try:
+                            write_audit_event('structured_param_rejection', {
+                                'provider': provider,
+                                'model': model,
+                                'error': detail_str[:1000]
+                            })
+                        except Exception:
+                            logger.debug('Failed to write audit event for structured_param_rejection')
+                        break
+
+                    # If rate-limited, retry with backoff
+                    if status == 429 or 'rate limit' in detail_str or 'too many requests' in detail_str:
                         wait = 1.5 * (2 ** attempt)
                         logger.warning(f"Structured provider {provider} rate-limited (attempt {attempt+1}), sleeping {wait}s before retry")
                         await asyncio.sleep(wait)
                         continue
-                    else:
-                        raise
+
+                    # Otherwise re-raise to be handled by outer logic
+                    raise
             else:
                 # Retries exhausted
                 if last_exc:
                     raise last_exc
-        else:
-            # Fallback for providers without native structured output support (e.g., Anthropic)
-            logger.info(f"Provider {provider} doesn't support structured outputs, using prompt-based approach")
-            enhanced_prompt = get_structured_output_prompt(schema_model) + "\n\n" + prompt
-            
-            if provider.lower() == "anthropic":
-                response_text = await LLMProvider.generate_anthropic(
-                    enhanced_prompt,
-                    model or "claude-3-5-sonnet-20241022",
-                    max_tokens=max_tokens,
-                    temperature=temperature
-                )
-                metadata = {"model": model or "claude-3-5-sonnet-20241022", "provider": "anthropic", "structured": False}
+
+            # If the structured param is unsupported, switch to prompt-based flow
+            if structured_param_unsupported:
+                logger.info("Switching to prompt-based structured fallback due to provider/model capability.")
+                # Record audit event for switching modes
+                try:
+                    write_audit_event('structured_fallback_switch', {
+                        'provider': provider,
+                        'model': model,
+                        'prompt_snippet': prompt[:800]
+                    })
+                except Exception:
+                    logger.debug('Failed to write audit event for structured_fallback_switch')
+                enhanced_prompt = get_structured_output_prompt(schema_model) + "\n\n" + prompt
+                if provider.lower() == "openai":
+                    response_text = await LLMProvider.generate_openai(enhanced_prompt, model or "gpt-4", max_tokens=3000)
+                    metadata = {"provider": "openai", "model": model or "gpt-4", "structured": False}
+                elif provider.lower() == "google":
+                    response_text = await LLMProvider.generate_google(enhanced_prompt, model or "gemini-2.0-flash", max_tokens=3000)
+                    metadata = {"provider": "google", "model": model or "gemini-2.0-flash", "structured": False}
+                elif provider.lower() == "groq":
+                    # Groq generally supports structured outputs but if we hit this path, do plain completion
+                    response_text = await LLMProvider.generate_groq(enhanced_prompt, model or "meta-llama/llama-4-scout-17b-16e-instruct", max_tokens=3000)
+                    metadata = {"provider": "groq", "model": model or "meta-llama/llama-4-scout-17b-16e-instruct", "structured": False}
+                else:
+                    # If we reach here with an unknown provider, use the
+                    # centralized call_llm helper to perform a plain completion
+                    # with the enhanced prompt. This prevents hard failures for
+                    # providers that weren't explicitly enumerated above.
+                    logger.info(f"Provider {provider} not explicitly enumerated for structured fallback; using call_llm")
+                    response_text, metadata = await call_llm(enhanced_prompt, provider, model)
+                    metadata = metadata or {}
+                    metadata.update({"structured": False})
             else:
-                raise ValueError(f"Unsupported provider: {provider}")
+                # Fallback for providers without native structured output support.
+                # Build the enhanced schema prompt and call the generic
+                # `call_llm` helper so provider-specific plumbing is centralized.
+                logger.info(f"Provider {provider} doesn't support structured outputs, using prompt-based approach")
+                enhanced_prompt = get_structured_output_prompt(schema_model) + "\n\n" + prompt
+
+                # Use the generic call_llm wrapper which already implements
+                # provider-specific behavior and will return text+metadata.
+                response_text, metadata = await call_llm(enhanced_prompt, provider, model)
+                metadata = metadata or {}
+                metadata.update({"structured": False})
         
+        # Defensive: if provider returned an empty or whitespace-only response,
+        # attempt a prompt-based plain completion fallback before parsing.
+        if not response_text or not str(response_text).strip():
+            logger.error("Structured provider returned empty response; attempting prompt-based plain completion fallback")
+            try:
+                enhanced_prompt = get_structured_output_prompt(schema_model) + "\n\n" + prompt
+                # Use the generic call_llm wrapper to leverage provider-specific codepaths
+                response_text, metadata = await call_llm(enhanced_prompt, provider, model)
+                metadata = metadata or {}
+                metadata.update({"structured": False})
+            except Exception:
+                logger.exception("Prompt-based plain completion fallback also failed for empty structured response")
+                # Continue; parsing below will raise and be handled by existing error handlers
+                response_text = response_text or ""
+
         # Parse and validate the response
         try:
             parsed_model = parse_structured_response(response_text, schema_model)
         except Exception as validation_error:
-            logger.error(f"Structured output validation failed: {str(validation_error)}")
-            logger.error(f"Response content: {response_text[:500]}...")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to parse structured output: {str(validation_error)}"
-            )
+            # Ensure we capture useful diagnostics for investigation
+            err_str = str(validation_error)
+            resp_excerpt = (response_text or "")[:2000]
+            logger.error(f"Structured output validation failed: {err_str}")
+            logger.error(f"Response length: {len(response_text or '')}, excerpt: {resp_excerpt[:500]}...")
+            # Audit the validation failure with truncated payload to avoid massive logs
+            try:
+                write_audit_event('structured_validation_failure', {
+                    'provider': provider,
+                    'model': model,
+                    'error': err_str[:1000],
+                    'response_excerpt': resp_excerpt
+                })
+            except Exception:
+                logger.debug('Failed to write audit event for structured_validation_failure')
+            # If validation failed, attempt a fallback: for providers/models that
+            # don't accept native structured params (e.g., OpenAI models without
+            # response_format support), construct a schema-enforcing prompt and
+            # call the provider with a plain chat completion, then parse the JSON.
+            try:
+                logger.info("Attempting prompt-based structured fallback after validation error")
+                schema_prompt = get_structured_output_prompt(schema_model)
+                enhanced_prompt = schema_prompt + "\n\n" + prompt
+                # Call plain LLM (provider-specific) without structured params
+                if provider.lower() == "openai":
+                    text = await LLMProvider.generate_openai(enhanced_prompt, model or "gpt-4", max_tokens=3000)
+                    response_text = text
+                    metadata = {"provider": "openai", "model": model or "gpt-4", "structured": False}
+                elif provider.lower() == "google":
+                    text = await LLMProvider.generate_google(enhanced_prompt, model or "gemini-2.0-flash", max_tokens=3000)
+                    response_text = text
+                    metadata = {"provider": "google", "model": model or "gemini-2.0-flash", "structured": False}
+                
+                # Groq-specific improvement: if structured json_schema failed, try json_object mode
+                elif provider.lower() == "groq":
+                    # First attempt Groq JSON Object Mode which guarantees syntactically valid JSON
+                    try:
+                        # Audit that we're switching to json_object mode
+                        try:
+                            write_audit_event('structured_switch_to_json_object', {
+                                'provider': provider,
+                                'model': model,
+                                'reason': str(validation_error)[:1000]
+                            })
+                        except Exception:
+                            logger.debug('Failed to write audit for structured_switch_to_json_object')
+
+                        # Use response_format type json_object
+                        json_object_format = {"type": "json_object"}
+                        text = await LLMProvider.generate_groq(enhanced_prompt, model or 'meta-llama/llama-4-scout-17b-16e-instruct', max_tokens=3000, response_format=json_object_format)
+                        response_text = text
+                        metadata = {'provider': 'groq', 'model': model or 'meta-llama/llama-4-scout-17b-16e-instruct', 'structured': False, 'json_object_mode': True}
+                    except Exception:
+                        logger.warning('Groq json_object mode attempt failed, falling back to plain completion')
+                        # Fallback to plain completion if json_object mode fails
+                        text = await LLMProvider.generate_groq(enhanced_prompt, model or 'meta-llama/llama-4-scout-17b-16e-instruct', max_tokens=3000)
+                        response_text = text
+                        metadata = {'provider': 'groq', 'model': model or 'meta-llama/llama-4-scout-17b-16e-instruct', 'structured': False}
+                else:
+                    # Re-raise original validation error for unsupported fallback
+                    raise HTTPException(status_code=500, detail=f"Failed to parse structured output: {str(validation_error)}")
+
+                parsed_model = parse_structured_response(response_text, schema_model)
+                return parsed_model, metadata
+            except Exception as fallback_err:
+                # Primary prompt-based fallback failed; attempt recovery strategies.
+                logger.error(f"Prompt-based structured fallback failed: {fallback_err}")
+                try:
+                    write_audit_event('structured_fallback_failed', {
+                        'provider': provider,
+                        'model': model,
+                        'error': str(fallback_err)[:1000],
+                        'response_excerpt': (response_text or '')[:2000]
+                    })
+                except Exception:
+                    logger.debug('Failed to write audit event for structured_fallback_failed')
+
+                # Strategy 1: increased max_tokens retry — pick a larger budget up to a sane cap
+                # Use model_limit to guide how much larger we should request.
+                # We'll attempt at most one enlarged retry (model_limit * 1.5 or +2000, whichever is larger),
+                # but never exceed a hard cap of 16000 tokens to avoid runaway requests.
+                try:
+                    suggested = int(max(model_limit * 1.5, (max_tokens or 0) + 2000))
+                except Exception:
+                    suggested = (max_tokens + 2000) if isinstance(max_tokens, int) else (model_limit + 2000)
+                larger_max = min(suggested, 16000)
+                try:
+                    logger.info('Attempting increased max_tokens retry for prompt-based fallback')
+                    if provider.lower() == 'openai':
+                        text2 = await LLMProvider.generate_openai(enhanced_prompt, model or 'gpt-4', max_tokens=larger_max)
+                        response_text = text2
+                        metadata = {'provider': 'openai', 'model': model or 'gpt-4', 'structured': False}
+                    elif provider.lower() == 'google':
+                        text2 = await LLMProvider.generate_google(enhanced_prompt, model or 'gemini-2.0-flash', max_tokens=larger_max)
+                        response_text = text2
+                        metadata = {'provider': 'google', 'model': model or 'gemini-2.0-flash', 'structured': False}
+                    elif provider.lower() == 'groq':
+                        text2 = await LLMProvider.generate_groq(enhanced_prompt, model or 'meta-llama/llama-4-scout-17b-16e-instruct', max_tokens=larger_max)
+                        response_text = text2
+                        metadata = {'provider': 'groq', 'model': model or 'meta-llama/llama-4-scout-17b-16e-instruct', 'structured': False}
+                    else:
+                        response_text, metadata = await call_llm(enhanced_prompt, provider, model)
+                        metadata = metadata or {}
+                        metadata.update({'structured': False})
+
+                    parsed_model = parse_structured_response(response_text, schema_model)
+                    try:
+                        write_audit_event('structured_max_tokens_retry_success', {
+                            'provider': provider,
+                            'model': model,
+                            'response_excerpt': (response_text or '')[:2000]
+                        })
+                    except Exception:
+                        logger.debug('Failed to write audit event for structured_max_tokens_retry_success')
+                    return parsed_model, metadata
+                except Exception:
+                    logger.exception('Increased max_tokens retry did not produce valid JSON')
+
+                # Strategy 2: request the model to continue/complete the partial JSON
+                try:
+                    cont_prompt = (
+                        "The previous response appears to be a partial or malformed JSON object. "
+                        "Here is the exact partial output (do not include any extra text):\n\n" + (response_text or '') + "\n\n"
+                        "Please return ONLY the complete, valid JSON object that corrects or finishes the partial output above. "
+                        "Do not include any explanatory text or code fences."
+                    )
+                    logger.info('Sending continuation prompt to provider to complete truncated JSON')
+                    cont_text, cont_meta = await call_llm(cont_prompt, provider, model)
+                    parsed_model = parse_structured_response(cont_text, schema_model)
+                    try:
+                        write_audit_event('structured_continuation_success', {
+                            'provider': provider,
+                            'model': model,
+                            'response_excerpt': (cont_text or '')[:2000]
+                        })
+                    except Exception:
+                        logger.debug('Failed to write audit event for structured_continuation_success')
+                    return parsed_model, (cont_meta or metadata)
+                except Exception as cont_err:
+                    logger.error(f'Continuation attempt failed: {cont_err}')
+                    try:
+                        write_audit_event('structured_continuation_failure', {
+                            'provider': provider,
+                            'model': model,
+                            'error': str(cont_err)[:1000],
+                            'continuation_excerpt': (cont_text or '')[:2000] if 'cont_text' in locals() else ''
+                        })
+                    except Exception:
+                        logger.debug('Failed to write audit event for structured_continuation_failure')
+                    # Re-raise to surface the combined failure
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to parse structured output: {str(validation_error)}; fallback error: {str(fallback_err)}; continuation error: {str(cont_err)}"
+                    )
         
         # Record successful request
         actual_tokens = len(response_text) // 4
@@ -1374,14 +1750,26 @@ async def generate_character_structured(request: CharacterGenerationRequest):
     
     Returns a fully validated CharacterProfile with all required fields populated.
     """
-    # Build prompt using structured output optimized template
-    prompt = PromptTemplates.character_structured_prompt(
-        themes=request.themes,
-        personality_traits=request.personality_traits,
-        physical_traits=request.physical_traits,
-        archetype=request.archetype,
-        custom_details=request.custom_details
-    )
+    # Build prompt using structured output optimized template (compat-safe)
+    try:
+        if hasattr(PromptTemplates, "character_structured_prompt") and callable(getattr(PromptTemplates, "character_structured_prompt")):
+            prompt = PromptTemplates.character_structured_prompt(
+                themes=request.themes,
+                personality_traits=request.personality_traits,
+                physical_traits=request.physical_traits,
+                archetype=request.archetype,
+                custom_details=request.custom_details
+            )
+        else:
+            prompt = build_enhanced_character_prompt(themes=request.themes, personality_traits=request.personality_traits, physical_traits=request.physical_traits, archetype=request.archetype, custom_details=request.custom_details)
+    except Exception:
+        prompt = PromptTemplates.character_prompt(
+            themes=request.themes,
+            personality_traits=request.personality_traits,
+            physical_traits=request.physical_traits,
+            archetype=request.archetype,
+            custom_details=request.custom_details
+        )
     
     # Generate with structured output
     character_profile, metadata = await call_llm_structured(

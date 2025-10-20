@@ -66,3 +66,8 @@ next-env.d.ts
 backend/test-output/
 backend/test-output/
 backend/test_portrait.png
+
+# Local test run outputs and audit artifacts
+.feedback/
+scripts/last_full_generate_response.json
+scripts/*.json
