@@ -6,7 +6,7 @@ export const darkTheme = createTheme({
     values: {
       xs: 0,
       sm: 600,
-      md: 900,
+      md: 1080, // raised md breakpoint so mobile/tabbed views apply below 1080px
       lg: 1200,
       xl: 1536,
     },

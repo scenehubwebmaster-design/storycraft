@@ -45,17 +45,50 @@ def sync_references_from_disk(db: Session = Depends(get_db)):
     for p in pathlib.Path(docs_dir).glob("*.md"):
         try:
             stem = p.stem
-            # Infer type and key: split on underscore or space
-            parts = stem.split("_")
-            if len(parts) >= 1 and parts[0]:
-                inferred = parts[0].lower()
-            else:
-                inferred = "unknown"
-
-            ref_type = inferred
-            key = stem.replace(" ", "_").lower()
-            title = parts[0].replace("-", " ")
             content = p.read_text(encoding="utf-8")
+
+            # attempt to read YAML frontmatter (simple split)
+            fm = None
+            body = content
+            if content.startswith('---'):
+                parts = content.split('---', 2)
+                if len(parts) >= 3:
+                    fm = parts[1]
+                    body = parts[2]
+
+            # key and title
+            key = stem.replace(" ", "_").lower()
+            title = stem.replace("-", " ")
+
+            # infer ref_type from frontmatter if it mentions 'class' or from filename
+            ref_type = None
+            if fm:
+                for line in fm.splitlines():
+                    if ':' not in line:
+                        continue
+                    k, v = line.split(':', 1)
+                    k = k.strip().lower()
+                    v = v.strip().lower()
+                    if k in ('chapter', 'category', 'section') and 'class' in v:
+                        ref_type = 'class'
+                        break
+
+            if not ref_type:
+                parts = stem.split("_")
+                candidate = parts[0].lower() if parts and parts[0] else ''
+                # common D&D class names -> treat as class
+                common_classes = {
+                    'barbarian','bard','cleric','druid','fighter','monk','paladin','ranger','rogue','sorcerer','warlock','wizard'
+                }
+                if candidate in common_classes:
+                    ref_type = 'class'
+                elif candidate:
+                    ref_type = candidate
+                else:
+                    ref_type = 'unknown'
+
+            # use body (no frontmatter) as stored content
+            content = body
 
             # Upsert
             existing = db.query(Reference).filter(Reference.key == key, Reference.ref_type == ref_type).first()

@@ -50,8 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--list", action="store_true", help="List references (uses --ref-type)")
     p.add_argument("--ref-type", default="class", help="Reference type to filter when listing")
     p.add_argument("--get", type=int, help="Get reference by ID")
-    p.add_argument("--sync", action="store_true", help="Trigger sync-from-disk (requires --token)")
-    p.add_argument("--token", help="Admin token for sync (X-Admin-Token header)")
+    p.add_argument("--sync", action="store_true", help="Trigger sync-from-disk (optional --token)")
+    p.add_argument("--token", help="Admin token for sync (X-Admin-Token header). Optional.")
 
     args = p.parse_args(argv)
 
@@ -83,11 +83,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.sync:
-        if not args.token:
-            print("--sync requires --token")
-            return 2
         url = f"{base}/api/references/sync-from-disk"
-        headers = {"X-Admin-Token": args.token}
+        headers = None
+        if args.token:
+            headers = {"X-Admin-Token": args.token}
         code, data = http_post(url, headers=headers)
         if code is None:
             return 2

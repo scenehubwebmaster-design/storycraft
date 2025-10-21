@@ -437,7 +437,7 @@ export default function CharactersPage() {
                     height="240"
                     image={`data:image/png;base64,${portraits[character.id]}`}
                     alt={character.name}
-                    sx={{ objectFit: "cover" }}
+                    sx={{ objectFit: "contain" }}
                   />
                 ) : loadingPortraits[character.id] ? (
                   <Box
