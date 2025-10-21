@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import Optional
 import os
@@ -28,20 +28,14 @@ def get_reference(ref_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/sync-from-disk", summary="Sync Markdown reference files from disk into DB")
-def sync_references_from_disk(db: Session = Depends(get_db), x_admin_token: str = Header(None)):
+def sync_references_from_disk(db: Session = Depends(get_db)):
     """
     Scan the repository's `documents/` folder for Markdown files and upsert them into the references table.
     Filenames should be like `ClassName_PHB2024.md` or `Species_PHB2024.md`.
     The ref_type will be inferred from the filename prefix (lowercased).
     """
-    # Simple admin protection: require env key to be set and passed in X-Admin-Token header
-    required = os.environ.get("REF_SYNC_KEY")
-    if not required:
-        # If no key configured, disallow the endpoint by default in production setups
-        raise HTTPException(status_code=403, detail="Reference sync is disabled on this server")
-    if x_admin_token != required:
-        raise HTTPException(status_code=403, detail="Invalid admin token for reference sync")
-
+    # NOTE: For personal/dev use this endpoint is intentionally open and will
+    # import Markdown files from the repository `documents/` folder.
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     docs_dir = os.path.join(repo_root, "documents")
     if not os.path.isdir(docs_dir):
