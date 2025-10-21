@@ -355,6 +355,106 @@ export default function CharacterDetailPage() {
                 )}
               </Box>
             )}
+
+            {/* Compact D&D stats summary under portrait */}
+            {character.is_dnd && (
+              <CardContent>
+                {/* Ability Scores - compact inline list */}
+                {character.dnd_ability_scores && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 0.5 }}
+                    >
+                      <strong>Ability Scores</strong>
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                      {[
+                        ["strength", "STR"],
+                        ["dexterity", "DEX"],
+                        ["constitution", "CON"],
+                        ["intelligence", "INT"],
+                        ["wisdom", "WIS"],
+                        ["charisma", "CHA"],
+                      ].map(([key, label]) => {
+                        const score = character.dnd_ability_scores[key];
+                        if (typeof score === "undefined" || score === null)
+                          return null;
+                        const mod = Math.floor((score - 10) / 2);
+                        return (
+                          <Box
+                            key={key}
+                            sx={{
+                              bgcolor: "action.hover",
+                              px: 1,
+                              py: 0.4,
+                              borderRadius: 1,
+                              minWidth: 56,
+                              textAlign: "center",
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              sx={{ fontWeight: 700 }}
+                            >
+                              {label}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{ display: "block" }}
+                            >
+                              {score} {mod >= 0 ? `(+${mod})` : `(${mod})`}
+                            </Typography>
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  </Box>
+                )}
+
+                {/* Combat / derived stats - compact list */}
+                <Box>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mb: 0.5 }}
+                  >
+                    <strong>Combat Stats</strong>
+                  </Typography>
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                  >
+                    {typeof character.dnd_hit_points !== "undefined" && (
+                      <Typography variant="body2">
+                        HP: {character.dnd_hit_points}
+                      </Typography>
+                    )}
+                    {typeof character.dnd_armor_class !== "undefined" && (
+                      <Typography variant="body2">
+                        AC: {character.dnd_armor_class}
+                      </Typography>
+                    )}
+                    {typeof character.dnd_initiative !== "undefined" && (
+                      <Typography variant="body2">
+                        Initiative: {character.dnd_initiative}
+                      </Typography>
+                    )}
+                    {typeof character.dnd_speed !== "undefined" && (
+                      <Typography variant="body2">
+                        Speed: {character.dnd_speed} ft
+                      </Typography>
+                    )}
+                    {typeof character.dnd_proficiency_bonus !== "undefined" && (
+                      <Typography variant="body2">
+                        Prof: {character.dnd_proficiency_bonus}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </CardContent>
+            )}
+
             {character.image_prompt && (
               <CardContent>
                 <Typography variant="caption" color="text.secondary">
@@ -479,9 +579,10 @@ export default function CharacterDetailPage() {
           >
             {/* Check if character is a D&D character */}
             {character.is_dnd ? (
-              // Display D&D character sheet
+              // Display D&D character sheet (hide the basic stats header/blocks
+              // because a compact summary is shown under the portrait)
               <Box>
-                <DnDCharacterSheet character={character} />
+                <DnDCharacterSheet character={character} hideBasicStats={true} />
               </Box>
             ) : character.structured_data ? (
               // Display structured character profile
