@@ -91,11 +91,11 @@ def get_character(character_id: int, exclude_portrait: bool = False, db: Session
     character = db.query(Character).filter(Character.id == character_id, Character.is_deleted.is_(False)).first()
     if character is None:
         raise HTTPException(status_code=404, detail="Character not found")
+    # Always validate/serialize via CharacterResponse to ensure consistent fields
+    response_data = CharacterResponse.model_validate(character).model_dump()
     if exclude_portrait:
-        response_data = CharacterResponse.model_validate(character).model_dump()
         response_data["portrait_image"] = None
-        return response_data
-    return character
+    return response_data
 
 
 @router.post("/", response_model=CharacterResponse)

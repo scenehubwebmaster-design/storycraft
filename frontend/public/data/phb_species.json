@@ -1,0 +1,106 @@
+{
+  "species": [
+    {
+      "key": "aasimar",
+      "name": "Aasimar",
+      "description": "Mortals with a spark of the Upper Planes; celestial features, resistances, and special revelations.",
+      "ability_bonuses": { "charisma": 2 },
+      "subraces": [],
+      "traits": [
+        "Celestial Resistance",
+        "Darkvision",
+        "Healing Hands",
+        "Light Bearer",
+        "Celestial Revelation"
+      ]
+    },
+    {
+      "key": "dragonborn",
+      "name": "Dragonborn",
+      "description": "Dragon-like humanoids with draconic ancestry, breath weapon, and damage resistance.",
+      "ability_bonuses": { "strength": 2, "charisma": 1 },
+      "subraces": [],
+      "traits": [
+        "Draconic Ancestry",
+        "Breath Weapon",
+        "Damage Resistance",
+        "Darkvision"
+      ]
+    },
+    {
+      "key": "dwarf",
+      "name": "Dwarf",
+      "description": "Sturdy, long-lived folk with affinity for stone and metal. Dwarven resilience and stonecunning.",
+      "ability_bonuses": { "constitution": 2 },
+      "subraces": ["hill_dwarf", "mountain_dwarf"],
+      "traits": [
+        "Darkvision",
+        "Dwarven Resilience",
+        "Dwarven Toughness",
+        "Stonecunning"
+      ]
+    },
+    {
+      "key": "elf",
+      "name": "Elf",
+      "description": "Graceful, long-lived beings connected to the Feywild with keen senses and trance.",
+      "ability_bonuses": { "dexterity": 2 },
+      "subraces": ["high_elf", "wood_elf", "drow"],
+      "traits": [
+        "Darkvision",
+        "Elven Lineage",
+        "Fey Ancestry",
+        "Keen Senses",
+        "Trance"
+      ]
+    },
+    {
+      "key": "gnome",
+      "name": "Gnome",
+      "description": "Small, clever tinkerers with gnomish cunning and lineage choices.",
+      "ability_bonuses": { "intelligence": 2 },
+      "subraces": ["forest_gnome", "rock_gnome"],
+      "traits": ["Darkvision", "Gnomish Cunning", "Gnomish Lineage"]
+    },
+    {
+      "key": "goliath",
+      "name": "Goliath",
+      "description": "Descendants of giants with supernatural boons and powerful build.",
+      "ability_bonuses": { "strength": 2, "constitution": 1 },
+      "subraces": [],
+      "traits": ["Giant Ancestry", "Large Form", "Powerful Build"]
+    },
+    {
+      "key": "halfling",
+      "name": "Halfling",
+      "description": "Small, lucky folk known for nimbleness and bravery.",
+      "ability_bonuses": { "dexterity": 2 },
+      "subraces": ["lightfoot", "stout"],
+      "traits": ["Brave", "Halfling Nimbleness", "Lucky", "Naturally Stealthy"]
+    },
+    {
+      "key": "human",
+      "name": "Human",
+      "description": "Adaptable and diverse, humans gain flexible bonuses and inspiration.",
+      "ability_bonuses": { "any": 1 },
+      "subraces": [],
+      "traits": ["Resourceful", "Skillful", "Versatile"]
+    },
+    {
+      "key": "orc",
+      "name": "Orc",
+      "description": "Hardy, determined wanderers with adrenaline-driven abilities and endurance.",
+      "ability_bonuses": { "strength": 2 },
+      "subraces": [],
+      "traits": ["Adrenaline Rush", "Darkvision", "Relentless Endurance"]
+    },
+    {
+      "key": "tiefling",
+      "name": "Tiefling",
+      "description": "Mortals with fiendish ancestry, fiendish legacies, and darkvision.",
+      "ability_bonuses": { "charisma": 2 },
+      "subraces": [],
+      "traits": ["Darkvision", "Fiendish Legacy", "Otherworldly Presence"]
+    }
+  ]
+}

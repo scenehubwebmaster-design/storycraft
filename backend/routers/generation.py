@@ -1922,6 +1922,12 @@ class CharacterSaveRequest(BaseModel):
     portrait_image: Optional[str] = None
     image_prompt: Optional[str] = None
     story_id: Optional[int] = None
+    # Optional convenience fields (frontend may send these at top-level)
+    species: Optional[str] = None
+    background: Optional[str] = None
+    dnd_class: Optional[str] = None
+    dnd_level: Optional[int] = None
+    dnd_ability_scores: Optional[dict] = None
 
 
 @router.post("/character/structured/save/")
@@ -1974,7 +1980,48 @@ async def save_structured_character(
         except Exception:
             logger.debug("Structured keys received: (failed to list keys)")
 
+        # Helper: try multiple possible keys in structured_dict and return the first present
+        def get_first(d: dict, candidates: list, default=None):
+            for k in candidates:
+                if k in d and d[k] is not None and d[k] != "":
+                    return d[k]
+            return default
+
         # Create character with both legacy fields and structured data
+        # Derive D&D-specific legacy fields from structured data when present
+        # Prefer top-level convenience fields on the request if provided by frontend
+        dnd_class = request.dnd_class or get_first(structured_dict, ["dnd_class", "class", "character_class", "class_name"])
+        dnd_level = (request.dnd_level if getattr(request, "dnd_level", None) is not None
+                     else get_first(structured_dict, ["dnd_level", "level", "character_level"]))
+        dnd_species = request.species or get_first(structured_dict, ["dnd_species", "species", "race", "character_race"])
+        dnd_background = request.background or get_first(structured_dict, ["dnd_background", "background", "background_name"])
+        dnd_alignment = get_first(structured_dict, ["dnd_alignment", "alignment"])
+        dnd_ability_scores = request.dnd_ability_scores or get_first(structured_dict, ["dnd_ability_scores", "ability_scores", "abilities"])
+        dnd_hp = get_first(structured_dict, ["dnd_hit_points", "hit_points", "hp"])
+        dnd_ac = get_first(structured_dict, ["dnd_armor_class", "armor_class", "ac"])
+        dnd_initiative = get_first(structured_dict, ["dnd_initiative", "initiative"])
+        dnd_proficiency = get_first(structured_dict, ["dnd_proficiency_bonus", "proficiency_bonus", "proficiency"])
+        dnd_skills = get_first(structured_dict, ["dnd_skills", "skills"])
+        dnd_proficiencies = get_first(structured_dict, ["dnd_proficiencies", "proficiencies"])
+        dnd_features = get_first(structured_dict, ["dnd_features", "features"])
+        dnd_equipment = get_first(structured_dict, ["dnd_equipment", "equipment"])
+        dnd_spellcasting = get_first(structured_dict, ["dnd_spellcasting", "spellcasting"])
+        dnd_languages = get_first(structured_dict, ["dnd_languages", "languages"])
+
+        is_dnd_flag = bool(dnd_species or dnd_class or dnd_background or dnd_ability_scores)
+
+        # Debug log which source provided key values (convenience vs structured)
+        try:
+            logger.debug("D&D convenience fields from request: %s", {
+                "species": request.species,
+                "background": request.background,
+                "dnd_class": request.dnd_class,
+                "dnd_level": request.dnd_level,
+                "dnd_ability_scores": request.dnd_ability_scores,
+            })
+        except Exception:
+            pass
+
         character = Character(
             name=character_profile.name,
             # Legacy fields for backward compatibility
@@ -1989,6 +2036,24 @@ async def save_structured_character(
             # Portrait data
             portrait_image=portrait_image,
             image_prompt=image_prompt,
+            # D&D legacy columns (populate when structured profile contains them)
+            is_dnd=is_dnd_flag,
+            dnd_class=dnd_class,
+            dnd_level=(int(dnd_level) if isinstance(dnd_level, (int, str)) and str(dnd_level).isdigit() else None),
+            dnd_species=dnd_species,
+            dnd_background=dnd_background,
+            dnd_alignment=dnd_alignment,
+            dnd_ability_scores=dnd_ability_scores,
+            dnd_hit_points=(int(dnd_hp) if isinstance(dnd_hp, (int, str)) and str(dnd_hp).isdigit() else None),
+            dnd_armor_class=(int(dnd_ac) if isinstance(dnd_ac, (int, str)) and str(dnd_ac).isdigit() else None),
+            dnd_initiative=dnd_initiative,
+            dnd_proficiency_bonus=dnd_proficiency,
+            dnd_skills=dnd_skills,
+            dnd_proficiencies=dnd_proficiencies,
+            dnd_features=dnd_features,
+            dnd_equipment=dnd_equipment,
+            dnd_spellcasting=dnd_spellcasting,
+            dnd_languages=dnd_languages,
             generation_log=[{
                 "timestamp": datetime.now().isoformat(),
                 "action": "created_structured",

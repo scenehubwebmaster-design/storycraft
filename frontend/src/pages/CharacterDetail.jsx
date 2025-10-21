@@ -582,7 +582,10 @@ export default function CharacterDetailPage() {
               // Display D&D character sheet (hide the basic stats header/blocks
               // because a compact summary is shown under the portrait)
               <Box>
-                <DnDCharacterSheet character={character} hideBasicStats={true} />
+                <DnDCharacterSheet
+                  character={character}
+                  hideBasicStats={true}
+                />
               </Box>
             ) : character.structured_data ? (
               // Display structured character profile

@@ -29,6 +29,10 @@ import {
   IconButton,
   Card,
   CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -83,6 +87,13 @@ export default function CreateCharacterPage() {
   const [selectedCulturalOrigin, setSelectedCulturalOrigin] = useState("");
   const [variations, setVariations] = useState(null);
   const [culturalOrigins, setCulturalOrigins] = useState(null);
+  // PHB Character Origins (backgrounds)
+  const [phbBackgrounds, setPhbBackgrounds] = useState([]);
+  const [selectedBackground, setSelectedBackground] = useState("");
+  // PHB species (races)
+  const [phbSpecies, setPhbSpecies] = useState([]);
+  const [selectedSpecies, setSelectedSpecies] = useState("");
+  const [backgroundModalOpen, setBackgroundModalOpen] = useState(false);
 
   // Structured generation toggle
   const [useStructured, setUseStructured] = useState(true);
@@ -118,6 +129,24 @@ export default function CreateCharacterPage() {
     loadOptions();
     loadVariations();
     loadCulturalOrigins();
+
+    // Load PHB backgrounds JSON from public data
+    (async () => {
+      try {
+        const res = await fetch("/data/phb_character_origins.json");
+        const j = await res.json();
+        setPhbBackgrounds(j.backgrounds || []);
+      } catch (e) {
+        console.warn("Failed to load PHB backgrounds:", e);
+      }
+      try {
+        const sres = await fetch("/data/phb_species.json");
+        const sj = await sres.json();
+        setPhbSpecies(sj.species || []);
+      } catch (e) {
+        console.warn("Failed to load PHB species:", e);
+      }
+    })();
 
     // Load existing character data if in edit mode
     if (isEditMode && editId) {
@@ -338,6 +367,8 @@ export default function CreateCharacterPage() {
 
       const response = await axios.post(endpoint, {
         themes: selectedThemes.length > 0 ? selectedThemes : null,
+        background: selectedBackground || null,
+        species: selectedSpecies || null,
         personality_traits:
           selectedPersonalityTraits.length > 0
             ? selectedPersonalityTraits
@@ -389,6 +420,8 @@ export default function CreateCharacterPage() {
       const requestData = useStructured
         ? {
             themes: selectedThemes.length > 0 ? selectedThemes : null,
+            background: selectedBackground || null,
+            species: selectedSpecies || null,
             personality_traits:
               selectedPersonalityTraits.length > 0
                 ? selectedPersonalityTraits
@@ -558,6 +591,9 @@ export default function CreateCharacterPage() {
               character_profile: finalContent || generatedContent,
               portrait_image: portraitImage || null,
               image_prompt: imagePrompt || null,
+              // Provide convenience fields so backend can populate D&D columns
+              species: selectedSpecies || null,
+              background: selectedBackground || null,
             }
           );
           createdId = resp.data?.id || null;
@@ -923,6 +959,88 @@ export default function CreateCharacterPage() {
                       {options.character_archetypes.map((archetype) => (
                         <MenuItem key={archetype} value={archetype}>
                           {archetype}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* PHB Background Selector */}
+                <Grid size={{ xs: 12 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Background (PHB)</InputLabel>
+                    <Select
+                      value={selectedBackground}
+                      onChange={(e) => setSelectedBackground(e.target.value)}
+                      label="Background (PHB)"
+                      renderValue={(val) => {
+                        const b = phbBackgrounds.find((x) => x.key === val);
+                        return b ? b.name : "";
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {phbBackgrounds.map((b) => (
+                        <MenuItem key={b.key} value={b.key}>
+                          <Box>
+                            <Typography variant="body2">{b.name}</Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {b.description}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
+                      <Button
+                        size="small"
+                        onClick={() => setBackgroundModalOpen(true)}
+                        startIcon={<InfoOutlinedIcon />}
+                        disabled={!selectedBackground}
+                      >
+                        View Background Details
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => setSelectedBackground("")}
+                      >
+                        Clear
+                      </Button>
+                    </Box>
+                  </FormControl>
+                </Grid>
+
+                {/* PHB Species Selector */}
+                <Grid size={{ xs: 12 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Species / Race (PHB)</InputLabel>
+                    <Select
+                      value={selectedSpecies}
+                      onChange={(e) => setSelectedSpecies(e.target.value)}
+                      label="Species / Race (PHB)"
+                      renderValue={(val) => {
+                        const s = phbSpecies.find((x) => x.key === val);
+                        return s ? s.name : "";
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {phbSpecies.map((s) => (
+                        <MenuItem key={s.key} value={s.key}>
+                          <Box>
+                            <Typography variant="body2">{s.name}</Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {s.description}
+                            </Typography>
+                          </Box>
                         </MenuItem>
                       ))}
                     </Select>
@@ -1447,6 +1565,24 @@ export default function CreateCharacterPage() {
                 <Typography variant="subtitle2">Personality:</Typography>
                 <Typography variant="body2">
                   {selectedPersonalityTraits.join(", ")}
+                </Typography>
+              </Box>
+            )}
+            {selectedBackground && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2">Background (PHB):</Typography>
+                <Typography variant="body2">
+                  {phbBackgrounds.find((b) => b.key === selectedBackground)
+                    ?.name || selectedBackground}
+                </Typography>
+              </Box>
+            )}
+            {selectedSpecies && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2">Species (PHB):</Typography>
+                <Typography variant="body2">
+                  {phbSpecies.find((s) => s.key === selectedSpecies)?.name ||
+                    selectedSpecies}
                 </Typography>
               </Box>
             )}
@@ -2538,6 +2674,79 @@ export default function CreateCharacterPage() {
             </Grid>
           </Grid>
         </Box>
+      )}
+
+      {/* Background Details Modal */}
+      {backgroundModalOpen && (
+        <Dialog
+          open={backgroundModalOpen}
+          onClose={() => setBackgroundModalOpen(false)}
+          fullWidth
+          maxWidth="md"
+        >
+          <DialogTitle>Background Details</DialogTitle>
+          <DialogContent dividers>
+            {(() => {
+              const b = phbBackgrounds.find(
+                (x) => x.key === selectedBackground
+              );
+              if (!b) return <Typography>No background selected.</Typography>;
+              return (
+                <Box>
+                  <Typography variant="h6">{b.name}</Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {b.description}
+                  </Typography>
+                  {b.ability_scores && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2">
+                        Ability Score Advice
+                      </Typography>
+                      <Typography variant="body2">
+                        {b.ability_scores}
+                      </Typography>
+                    </Box>
+                  )}
+                  {b.skill_proficiencies && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2">
+                        Skill Proficiencies
+                      </Typography>
+                      <Typography variant="body2">
+                        {Array.isArray(b.skill_proficiencies)
+                          ? b.skill_proficiencies.join(", ")
+                          : b.skill_proficiencies}
+                      </Typography>
+                    </Box>
+                  )}
+                  {b.equipment && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2">
+                        Starting Equipment
+                      </Typography>
+                      <Typography variant="body2">
+                        {Array.isArray(b.equipment)
+                          ? b.equipment.join(", ")
+                          : b.equipment}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              );
+            })()}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setBackgroundModalOpen(false)}>Close</Button>
+            <Button
+              onClick={() => {
+                setBackgroundModalOpen(false);
+              }}
+              color="primary"
+            >
+              Done
+            </Button>
+          </DialogActions>
+        </Dialog>
       )}
 
       {/* Navigation Buttons */}

@@ -1,0 +1,212 @@
+{
+  "backgrounds": [
+    {
+      "key": "acolyte",
+      "name": "Acolyte",
+      "description": "You devoted yourself to service in a temple, performing rites in honor of the gods.",
+      "ability_scores": ["Intelligence", "Wisdom", "Charisma"],
+      "feat": "Magic Initiate (Cleric)",
+      "skill_proficiencies": ["Insight", "Religion"],
+      "tool_proficiency": "Calligrapher's Supplies",
+      "equipment": {
+        "A": "Calligrapher's Supplies, Book of Prayers, Holy Symbol, 10 sheets of parchment, Robe, 8 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "artisan",
+      "name": "Artisan",
+      "description": "You began your career in a workshop, learning your trade from the ground up.",
+      "ability_scores": ["Strength", "Dexterity", "Intelligence"],
+      "feat": "Crafter",
+      "skill_proficiencies": ["Investigation", "Persuasion"],
+      "tool_proficiency": "One type of Artisan's Tools",
+      "equipment": {
+        "A": "Artisan's Tools, 2 Pouches, Traveler's Clothes, 32 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "charlatan",
+      "name": "Charlatan",
+      "description": "A master of deception, you survive through wit and guile.",
+      "ability_scores": ["Dexterity", "Constitution", "Charisma"],
+      "feat": "Skilled",
+      "skill_proficiencies": ["Deception", "Sleight of Hand"],
+      "tool_proficiency": "Forgery Kit",
+      "equipment": {
+        "A": "Forgery Kit, Costume, Fine Clothes, 15 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "criminal",
+      "name": "Criminal",
+      "description": "You've lived a life in the shadows — stealing, smuggling, or running cons.",
+      "ability_scores": ["Dexterity", "Constitution", "Intelligence"],
+      "feat": "Alert",
+      "skill_proficiencies": ["Sleight of Hand", "Stealth"],
+      "tool_proficiency": "Thieves' Tools",
+      "equipment": {
+        "A": "2 Daggers, Thieves' Tools, Crowbar, 2 Pouches, Traveler's Clothes, 16 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "entertainer",
+      "name": "Entertainer",
+      "description": "You thrive on applause and attention. Trained among traveling performers.",
+      "ability_scores": ["Strength", "Dexterity", "Charisma"],
+      "feat": "Musician",
+      "skill_proficiencies": ["Acrobatics", "Performance"],
+      "tool_proficiency": "One Musical Instrument",
+      "equipment": {
+        "A": "Musical Instrument, 2 Costumes, Mirror, Perfume, Traveler's Clothes, 11 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "farmer",
+      "name": "Farmer",
+      "description": "You were raised close to the land, tending animals and crops.",
+      "ability_scores": ["Strength", "Constitution", "Wisdom"],
+      "feat": "Tough",
+      "skill_proficiencies": ["Animal Handling", "Nature"],
+      "tool_proficiency": "Carpenter's Tools",
+      "equipment": {
+        "A": "Sickle, Carpenter's Tools, Healer's Kit, Iron Pot, Shovel, Traveler's Clothes, 30 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "guard",
+      "name": "Guard",
+      "description": "You served as a sentinel, keeping watch for trouble.",
+      "ability_scores": ["Strength", "Intelligence", "Wisdom"],
+      "feat": "Alert",
+      "skill_proficiencies": ["Athletics", "Perception"],
+      "tool_proficiency": "One Gaming Set",
+      "equipment": {
+        "A": "Spear, Light Crossbow (20 bolts), Gaming Set, Hooded Lantern, Manacles, Quiver, Traveler's Clothes, 12 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "guide",
+      "name": "Guide",
+      "description": "Your home was the wilderness; you learned to survive and guide others.",
+      "ability_scores": ["Dexterity", "Constitution", "Wisdom"],
+      "feat": "Magic Initiate (Druid)",
+      "skill_proficiencies": ["Stealth", "Survival"],
+      "tool_proficiency": "Cartographer's Tools",
+      "equipment": {
+        "A": "Shortbow, Cartographer's Tools, Bedroll, Tent, Traveler's Clothes, 3 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "hermit",
+      "name": "Hermit",
+      "description": "You spent years in isolation — meditating and studying.",
+      "ability_scores": ["Constitution", "Wisdom", "Charisma"],
+      "feat": "Healer",
+      "skill_proficiencies": ["Medicine", "Religion"],
+      "tool_proficiency": "Herbalism Kit",
+      "equipment": {
+        "A": "Quarterstaff, Herbalism Kit, Bedroll, Book of Philosophy, Lamp, 3 Flasks of Oil, Traveler's Clothes, 16 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "merchant",
+      "name": "Merchant",
+      "description": "You apprenticed under a trader or shopkeeper, mastering commerce.",
+      "ability_scores": ["Constitution", "Intelligence", "Charisma"],
+      "feat": "Lucky",
+      "skill_proficiencies": ["Animal Handling", "Persuasion"],
+      "tool_proficiency": "Navigator's Tools",
+      "equipment": {
+        "A": "Navigator's Tools, 2 Pouches, Traveler's Clothes, 22 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "noble",
+      "name": "Noble",
+      "description": "Raised in luxury and privilege; learned courtly manners and leadership.",
+      "ability_scores": ["Strength", "Intelligence", "Charisma"],
+      "feat": "Skilled",
+      "skill_proficiencies": ["History", "Persuasion"],
+      "tool_proficiency": "One Gaming Set",
+      "equipment": {
+        "A": "Gaming Set, Fine Clothes, Perfume, 29 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "sage",
+      "name": "Sage",
+      "description": "A scholar and seeker of knowledge, spending life among books.",
+      "ability_scores": ["Constitution", "Intelligence", "Wisdom"],
+      "feat": "Magic Initiate (Wizard)",
+      "skill_proficiencies": ["Arcana", "History"],
+      "tool_proficiency": "Calligrapher's Supplies",
+      "equipment": {
+        "A": "Quarterstaff, Calligrapher's Supplies, History Book, 8 Sheets of Parchment, Robe, 8 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "sailor",
+      "name": "Sailor",
+      "description": "You lived your life at sea — weathering storms and exploring ports.",
+      "ability_scores": ["Strength", "Dexterity", "Wisdom"],
+      "feat": "Tavern Brawler",
+      "skill_proficiencies": ["Acrobatics", "Perception"],
+      "tool_proficiency": "Navigator's Tools",
+      "equipment": {
+        "A": "Dagger, Navigator's Tools, Rope, Traveler's Clothes, 20 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "scribe",
+      "name": "Scribe",
+      "description": "A meticulous writer and record keeper, transcribing texts with precision.",
+      "ability_scores": ["Dexterity", "Intelligence", "Wisdom"],
+      "feat": "Skilled",
+      "skill_proficiencies": ["Investigation", "Perception"],
+      "tool_proficiency": "Calligrapher's Supplies",
+      "equipment": {
+        "A": "Calligrapher's Supplies, Fine Clothes, Lamp, 3 Flasks of Oil, 12 Sheets of Parchment, 23 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "soldier",
+      "name": "Soldier",
+      "description": "Trained for war from youth; battle is second nature to you.",
+      "ability_scores": ["Strength", "Dexterity", "Constitution"],
+      "feat": "Savage Attacker",
+      "skill_proficiencies": ["Athletics", "Intimidation"],
+      "tool_proficiency": "One Gaming Set",
+      "equipment": {
+        "A": "Spear, Shortbow (20 arrows), Gaming Set, Healer's Kit, Quiver, Traveler's Clothes, 14 GP",
+        "B": "50 GP"
+      }
+    },
+    {
+      "key": "wayfarer",
+      "name": "Wayfarer",
+      "description": "You grew up on the streets, surviving through wits, courage, and luck.",
+      "ability_scores": ["Dexterity", "Wisdom", "Charisma"],
+      "feat": "Lucky",
+      "skill_proficiencies": ["Insight", "Stealth"],
+      "tool_proficiency": "Thieves' Tools",
+      "equipment": {
+        "A": "2 Daggers, Thieves' Tools, Gaming Set (any), Bedroll, 2 Pouches, Traveler's Clothes, 16 GP",
+        "B": "50 GP"
+      }
+    }
+  ]
+}

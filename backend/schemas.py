@@ -173,6 +173,8 @@ class PromptOptionsResponse(BaseModel):
 # Structured Output Schemas for Character Profiles
 class CharacterProfile(BaseModel):
     """Structured character profile with all essential details"""
+    # Allow extra keys (LLM structured outputs may include D&D helper fields)
+    model_config = {"extra": "allow"}
     name: str = Field(..., description="Character's full name")
     age: int = Field(..., description="Character's age in years", ge=0, le=10000)
     

@@ -22,11 +22,32 @@
     "fresh": "npm run clean && npm run dev:all",
     "fresh:full": "npm run clean:all && npm run dev:all"
   },
+  "scripts": {
+    "dev": "npm run dev:all",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && set DEV_MODE=true && python uvicorn_config.py",
+    "dev:backend:fast": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level warning",
+    "dev:all": "concurrently \"npm:dev:frontend\" \"npm:dev:backend:fast\" -k -n frontend,backend -c blue,green",
+    "dev:all:fast": "concurrently \"npm:dev:frontend\" \"npm:dev:backend:fast\" -k -n frontend,backend -c blue,green",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "start": "cd backend && set DEV_MODE=false && python uvicorn_config.py",
+    "start:prod": "cd backend && set DEV_MODE=false && python uvicorn_config.py",
+    "lint": "cd frontend && npm run lint",
+    "clean": "cd frontend && rimraf node_modules/.vite && rimraf dist",
+    "clean:all": "cd frontend && rimraf node_modules && npm install",
+    "fresh": "npm run clean && npm run dev:all",
+    "fresh:full": "npm run clean:all && npm run dev:all",
+    "test:read-pdf": "node ./scripts/read_pdf_test_wait.js",
+    "extract:pdf": "node ./scripts/extract_pdf_pages.js",
+    "extract:phb": "python ./scripts/extract_phb.py --pdf ./documents/PlayersHandbook2024.pdf --pages 1 --out ./data/phb/raw_pages.json"
+  },
   "devDependencies": {
     "concurrently": "^9.1.2",
     "rimraf": "^6.0.1"
   },
   "dependencies": {
+    "@sylphlab/pdf-reader-mcp": "^0.3.23",
     "leaflet-draw": "^1.0.4"
   }
 }

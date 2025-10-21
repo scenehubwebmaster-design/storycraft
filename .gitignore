@@ -71,3 +71,5 @@ backend/test_portrait.png
 .feedback/
 scripts/last_full_generate_response.json
 scripts/*.json
+documents/Dungeons & Dragons - Player's Handbook 2024.pdf
+documents/PlayersHandbook2024.pdf
