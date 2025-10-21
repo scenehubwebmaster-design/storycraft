@@ -29,7 +29,7 @@ export default function ReferenceViewer({ refType: initialRefType = "class" }) {
     let mounted = true;
     setLoading(true);
     setError(null);
-    fetch(`/api/references?ref_type=${encodeURIComponent(refType)}`)
+    fetch(`/api/references/?ref_type=${encodeURIComponent(refType)}`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -52,7 +52,11 @@ export default function ReferenceViewer({ refType: initialRefType = "class" }) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((it) => (it.title || "").toLowerCase().includes(q) || (it.key || "").toLowerCase().includes(q));
+    return items.filter(
+      (it) =>
+        (it.title || "").toLowerCase().includes(q) ||
+        (it.key || "").toLowerCase().includes(q)
+    );
   }, [items, query]);
 
   return (
@@ -87,7 +91,9 @@ export default function ReferenceViewer({ refType: initialRefType = "class" }) {
         <Divider sx={{ mb: 1 }} />
 
         {loading && <Typography>Loading references...</Typography>}
-        {error && <Typography color="error">Error loading: {String(error)}</Typography>}
+        {error && (
+          <Typography color="error">Error loading: {String(error)}</Typography>
+        )}
 
         <List disablePadding>
           {filtered.map((it) => (
