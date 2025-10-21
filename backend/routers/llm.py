@@ -9,6 +9,7 @@ from ..gemini_models import fetch_available_models
 from ..groq_models import fetch_available_models as fetch_groq_models
 from ..claude_models import fetch_available_models as fetch_claude_models
 from ..openai_models import fetch_available_models as fetch_openai_models
+from ..model_capabilities import supports_model_structured
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -82,9 +83,12 @@ class LLMProvider:
             "temperature": temperature
         }
         
-        # Add structured output format if provided
+        # Add structured output format if provided and the model supports it
         if response_format:
-            request_params["response_format"] = response_format
+            if supports_model_structured("openai", model):
+                request_params["response_format"] = response_format
+            else:
+                logger.warning(f"OpenAI model {model} not known to support 'response_format'; skipping structured param.")
         
         response = client.chat.completions.create(**request_params)
         
@@ -211,10 +215,13 @@ class LLMProvider:
             "temperature": temperature,
         }
         
-        # Add structured output if provided
+        # Add structured output if provided and the model supports it
         if response_schema:
-            generation_config["response_mime_type"] = "application/json"
-            generation_config["response_schema"] = response_schema
+            if supports_model_structured("google", model):
+                generation_config["response_mime_type"] = "application/json"
+                generation_config["response_schema"] = response_schema
+            else:
+                logger.warning(f"Google model {model} not known to support 'response_schema'; skipping structured param.")
         
         response = model_instance.generate_content(
             prompt,
@@ -326,9 +333,12 @@ class LLMProvider:
             "temperature": temperature,
         }
         
-        # Add structured output format if provided
+        # Add structured output format if provided and model is known to support it
         if response_format:
-            request_params["response_format"] = response_format
+            if supports_model_structured("groq", model):
+                request_params["response_format"] = response_format
+            else:
+                logger.warning(f"Groq model {model} not known to support 'response_format'; skipping structured param.")
         
         response = client.chat.completions.create(**request_params)
         

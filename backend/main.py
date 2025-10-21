@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+import sys
 try:
     # Preferred (when package is importable)
     from .database import engine, Base
@@ -8,8 +10,6 @@ except Exception:
     # Fallback to absolute imports so running `python backend/main.py` or
     # starting uvicorn from other working directories still works. Ensure the
     # repository root is on sys.path so the `backend` package can be imported.
-    import os
-    import sys
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 # Optionally run local development migrations (non-production safe)
 # Controlled by env var RUN_LOCAL_MIGRATIONS=true
-import os
 if os.environ.get("RUN_LOCAL_MIGRATIONS", "false").lower() == "true":
     try:
         # Import and run the lightweight migration helper via package import
@@ -45,13 +44,25 @@ app = FastAPI(
 )
 
 # Configure CORS
-# Use explicit origins when allow_credentials=True; wildcard '*' may be omitted by some browsers
-FRONTEND_ORIGINS = [
+# FRONTEND_ORIGINS can be set via environment variable as a comma-separated
+# list of origins (e.g. "http://localhost:3000,http://192.168.250.11:3000").
+# If the env var is not set, fall back to a sensible local-dev default.
+_default_frontend_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    # Local network dev host - add your machine IP/hostname as needed
+    "http://192.168.250.11:3000",
 ]
+
+_env_val = os.environ.get("FRONTEND_ORIGINS", "").strip()
+if _env_val:
+    # Split on comma, trim whitespace, and ignore empty parts
+    FRONTEND_ORIGINS = [o.strip() for o in _env_val.split(",") if o.strip()]
+else:
+    FRONTEND_ORIGINS = _default_frontend_origins
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=FRONTEND_ORIGINS,

@@ -1,4 +1,78 @@
 #!/usr/bin/env python3
+"""Simple feedback loop orchestrator that asks LM Studio for the next action and writes an audit.
+
+This reuses the LMStudioClient and the SUMMARY pattern from feedback_loop_normalized.py.
+It stores the raw LM response and the parsed JSON into `.feedback/audit/` with timestamps.
+"""
+import os
+import sys
+import json
+from datetime import datetime
+from lm_studio_client import LMStudioClient
+
+LM_URL = os.environ.get('LM_STUDIO_URL', 'http://100.120.44.114:1234/v1')
+MODEL = os.environ.get('LM_MODEL', 'gpt-4o-mini')
+
+SUMMARY = {
+    "project": "storycraft",
+    "branch": "sd-integration",
+    "recent_changes": [],
+    "open_tasks": [],
+    "constraints": [
+        "Do not push code to remote without human approval",
+        "Limit changes to low-risk edits (tests, small fixes) unless approved",
+    ],
+}
+
+
+def ensure_audit_dir():
+    d = os.path.join(os.getcwd(), '.feedback', 'audit')
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def write_audit(raw_content, parsed=None):
+    d = ensure_audit_dir()
+    ts = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+    raw_path = os.path.join(d, f'lm_raw_{ts}.txt')
+    with open(raw_path, 'w', encoding='utf-8') as f:
+        f.write(raw_content)
+    if parsed is not None:
+        parsed_path = os.path.join(d, f'lm_parsed_{ts}.json')
+        with open(parsed_path, 'w', encoding='utf-8') as f:
+            json.dump(parsed, f, indent=2)
+    return raw_path
+
+
+def run_orchestrator(extra_summary=None):
+    client = LMStudioClient(base_url=LM_URL)
+    system = {"role": "system", "content": "You are a disciplined engineering reviewer that replies only in JSON. Always respond with a single JSON object containing exactly these keys: next_action (string), rationale (string), commands (array of shell commands to run locally, optional), files_to_edit (array of objects {path, change_description}), risk (low|medium|high)."}
+    user = {"role": "user", "content": f"Here is the project summary:\n{json.dumps(SUMMARY, indent=2)}\n\nQuestion: Given the summary and constraints, what is the SINGLE next action you recommend for the developer? Respond with the required JSON structure only."}
+
+    print('Sending summary to LM...')
+    resp = client.chat(MODEL, [system, user], max_tokens=400)
+    content = resp['choices'][0]['message']['content']
+    print('Raw content received from LM.')
+    parsed = None
+    try:
+        import re
+        content_clean = re.sub(r"^\s*```(?:json)?\n", "", content)
+        content_clean = re.sub(r"\n```\s*$", "", content_clean)
+        m = re.search(r"\{[\s\S]*\}$", content_clean)
+        json_text = m.group(0) if m else content_clean
+        parsed = json.loads(json_text)
+        print('Parsed JSON from LM.')
+    except Exception as e:
+        print('Failed to parse LM JSON:', e)
+
+    write_audit(content, parsed)
+    return content, parsed
+
+
+if __name__ == '__main__':
+    content, parsed = run_orchestrator()
+    print('Orchestrator finished. Check .feedback/audit for saved traces.')
+#!/usr/bin/env python3
 """
 Minimal feedback orchestrator.
 - Calls `feedback_loop_normalized.py` to get the LM's next action.

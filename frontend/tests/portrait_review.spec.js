@@ -43,10 +43,10 @@ test("create -> review shows portrait and physical traits", async ({
   );
 
   await page.route("**/api/characters/**", (route) => {
-    // Return empty character list for fast load (matches ?exclude_portraits=true)
+    // Return empty character list for fast load (matches ?exclude_portrait=true)
     const url = route.request().url();
     if (
-      url.includes("?exclude_portraits=true") ||
+      url.includes("?exclude_portrait=true") ||
       url.endsWith("/api/characters/")
     ) {
       route.fulfill({

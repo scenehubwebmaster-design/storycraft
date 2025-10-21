@@ -36,6 +36,9 @@ export default function WorldsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [worldToDelete, setWorldToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [generatingStory, setGeneratingStory] = useState(false);
+  const [storyDialogOpen, setStoryDialogOpen] = useState(false);
+  const [generatedStory, setGeneratedStory] = useState(null);
 
   useEffect(() => {
     loadWorlds();
@@ -152,6 +155,34 @@ export default function WorldsPage() {
         >
           New World
         </Button>
+        <Button
+          variant="outlined"
+          color="primary"
+          sx={{ ml: 2 }}
+          onClick={async () => {
+            setGeneratingStory(true);
+            try {
+              // Call backend full story generation endpoint
+              const res = await axios.post(
+                `${API_URL}/api/generate/story/full-generate/`,
+                {
+                  world_themes: [],
+                  character_count: 3,
+                }
+              );
+              setGeneratedStory(res.data);
+              setStoryDialogOpen(true);
+            } catch (err) {
+              setError(
+                err.response?.data?.detail || "Failed to generate story"
+              );
+            } finally {
+              setGeneratingStory(false);
+            }
+          }}
+        >
+          {generatingStory ? "Generating..." : "Generate Full Story"}
+        </Button>
       </Box>
 
       {/* Search Bar */}
@@ -219,7 +250,7 @@ export default function WorldsPage() {
       ) : (
         <Grid container spacing={3}>
           {filteredWorlds.map((world) => (
-            <Grid key={world.id} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Grid key={world.id} item xs={12} sm={6} md={4}>
               <Card
                 sx={{
                   height: "100%",
@@ -327,6 +358,35 @@ export default function WorldsPage() {
           >
             {deleting ? "Deleting..." : "Delete"}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Generated Story Dialog */}
+      <Dialog
+        open={storyDialogOpen}
+        onClose={() => setStoryDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Generated Story</DialogTitle>
+        <DialogContent dividers>
+          {generatedStory ? (
+            <Box
+              sx={{
+                whiteSpace: "pre-wrap",
+                fontFamily: "monospace",
+                fontSize: 13,
+              }}
+            >
+              {generatedStory.story?.content ||
+                JSON.stringify(generatedStory, null, 2)}
+            </Box>
+          ) : (
+            <Typography>No story generated yet.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setStoryDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

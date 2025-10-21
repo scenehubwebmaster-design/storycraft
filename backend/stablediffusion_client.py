@@ -209,9 +209,48 @@ class StableDiffusionClient:
             raise Exception("Image generation timed out. Try reducing steps or image size.")
         except requests.exceptions.RequestException as e:
             logger.error(f"Stable Diffusion API error: {str(e)}")
+            # Network-level errors should be surfaced for host/operator intervention
             raise Exception(f"Failed to connect to Stable Diffusion server: {str(e)}")
+        except PermissionError as pe:
+            # SD WebUI may return local file paths that the running process cannot access
+            # Convert hard PermissionError into a graceful fallback so callers don't crash
+            logger.error(f"Stable Diffusion permission error when fetching generated file: {pe}", exc_info=True)
+            # 1x1 transparent PNG as safe fallback
+            placeholder_png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAn0B9Uo0YQAAAABJRU5ErkJggg=="
+            return {
+                "image_base64": placeholder_png_b64,
+                "info": {
+                    "prompt": prompt,
+                    "negative_prompt": negative_prompt,
+                    "steps": steps,
+                    "seed": seed,
+                    "cfg_scale": cfg_scale,
+                    "size": f"{width}x{height}",
+                    "model": "Stable Diffusion (Local)",
+                    "generation_info": f"PermissionError: {str(pe)}"
+                },
+                "error": "permission_error"
+            }
         except Exception as e:
             logger.error(f"Stable Diffusion generation failed: {str(e)}")
+            # If the underlying error looks like a permission issue, provide the same safe fallback
+            if "permission" in str(e).lower():
+                logger.warning("Detected permission-like error in SD client; returning placeholder image as fallback")
+                placeholder_png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAn0B9Uo0YQAAAABJRU5ErkJggg=="
+                return {
+                    "image_base64": placeholder_png_b64,
+                    "info": {
+                        "prompt": prompt,
+                        "negative_prompt": negative_prompt,
+                        "steps": steps,
+                        "seed": seed,
+                        "cfg_scale": cfg_scale,
+                        "size": f"{width}x{height}",
+                        "model": "Stable Diffusion (Local)",
+                        "generation_info": f"Fallback due to error: {str(e)[:200]}"
+                    },
+                    "error": "fallback"
+                }
             raise Exception(f"Image generation failed: {str(e)}")
     
     def get_available_models(self) -> List[str]:

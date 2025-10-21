@@ -241,6 +241,29 @@ def get_dnd_alignments():
     return {"alignments": DND_ALIGNMENTS, "count": len(DND_ALIGNMENTS)}
 
 
+@router.get("/dnd/equipment/")
+def get_dnd_equipment_packs():
+    """Return curated equipment packs for the frontend to display.
+
+    Exposes a small, read-only view of the canonical packs.
+    """
+    try:
+        from ..dnd_equipment import EQUIPMENT_PACKS
+    except Exception:
+        # If the module isn't available for some reason, return empty list
+        return {"packs": [], "count": 0}
+
+    packs = []
+    for pid, p in EQUIPMENT_PACKS.items():
+        packs.append({
+            "id": p.get("id", pid),
+            "name": p.get("name"),
+            "price_gp": p.get("price_gp"),
+            "items": p.get("items", []),
+        })
+    return {"packs": packs, "count": len(packs)}
+
+
 # Pydantic schema for D&D character generation
 class DnDCharacterGenerateRequest(BaseModel):
     name: str | None = None
@@ -259,6 +282,10 @@ class DnDCharacterGenerateRequest(BaseModel):
     genre: str | None = None
     variation: str | None = None
     cultural_origin: str | None = None
+    # Starting equipment options
+    starting_equipment_method: str | None = "class_default"  # class_default | buy_with_gp | pack
+    starting_pack: str | None = None
+    starting_gold_override: int | None = None
 
 
 @router.post("/dnd/generate", response_model=CharacterResponse)
@@ -476,6 +503,52 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
             appearance = dnd_char.get("species_description")
             background_text = dnd_char.get("background_description")
 
+        # Validate starting equipment inputs
+        valid_methods = {"class_default", "pack", "buy_with_gp"}
+        if request.starting_equipment_method not in valid_methods:
+            raise HTTPException(status_code=400, detail=f"Invalid starting_equipment_method: {request.starting_equipment_method}")
+
+        # Sanitize requested pack id against known packs (if provided)
+        try:
+            from ..dnd_equipment import EQUIPMENT_PACKS as _EQUIP_PACKS
+        except Exception:
+            _EQUIP_PACKS = {}
+
+        if request.starting_pack and request.starting_pack not in _EQUIP_PACKS:
+            raise HTTPException(status_code=400, detail=f"Invalid starting_pack id: {request.starting_pack}")
+
+        # Determine starting equipment (use backend helper if none provided)
+        try:
+            from ..dnd_equipment import (
+                roll_starting_gold,
+                get_pack,
+                choose_equipment_for_class,
+            )
+        except Exception:
+            roll_starting_gold = None
+            get_pack = None
+            choose_equipment_for_class = None
+
+        # Compute dnd_equipment payload
+        dnd_equipment_payload = None
+        try:
+            if request.starting_equipment_method == "buy_with_gp":
+                starting_gp = request.starting_gold_override or (
+                    roll_starting_gold(request.dnd_class)
+                    if roll_starting_gold
+                    else None
+                )
+                pack = get_pack(request.starting_pack) if (get_pack and request.starting_pack) else None
+                dnd_equipment_payload = {"pack": pack, "gold_remaining": starting_gp - (pack["price_gp"] if pack else 0) if starting_gp is not None else None}
+            elif request.starting_equipment_method == "pack" and request.starting_pack:
+                pack = get_pack(request.starting_pack) if get_pack else None
+                dnd_equipment_payload = {"pack": pack, "gold_remaining": 0}
+            else:
+                # class_default fallback
+                dnd_equipment_payload = choose_equipment_for_class(request.dnd_class) if choose_equipment_for_class else None
+        except Exception:
+            dnd_equipment_payload = None
+
         db_character = Character(
             name=character_name,
             description=description,
@@ -510,7 +583,9 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
                     "description": dnd_char.get("background_feature_description"),
                 },
             },
-            dnd_equipment=dnd_char.get("equipment"),
+            # Prefer explicit equipment included by the generator, but fall
+            # back to computed payload if the generator didn't provide one.
+            dnd_equipment=(dnd_char.get("equipment") or dnd_equipment_payload),
             dnd_spellcasting=dnd_char.get("spellcasting"),
             dnd_languages=dnd_char.get("languages"),
             structured_data=narrative_dict if (narrative_dict and "error" not in narrative_dict) else None,

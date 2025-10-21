@@ -105,9 +105,10 @@ export default function CreateCharacterPage() {
   const [imagePrompt, setImagePrompt] = useState(null);
   const [generatingPortrait, setGeneratingPortrait] = useState(false);
   const [portraitError, setPortraitError] = useState(null);
-  const [imageProvider, setImageProvider] = useState("stable_diffusion"); // Default to local Stable Diffusion
-  const [imageModel, setImageModel] = useState("stable-diffusion-v1-6"); // Default SD model
-  const [imageStyle, setImageStyle] = useState("realistic"); // Style preset
+  // Default to local Stable Diffusion (match Select option values)
+  const [imageProvider, setImageProvider] = useState("stablediffusion");
+  const [imageModel, setImageModel] = useState("sd-local"); // Default local SD model
+  const [imageStyle, setImageStyle] = useState("fantasy_art"); // Style preset (default to fantasy)
   const [imageQuality, setImageQuality] = useState("standard"); // Quality setting
   const [showPortraitSettings, setShowPortraitSettings] = useState(false); // Toggle for portrait settings
 
@@ -509,8 +510,37 @@ export default function CreateCharacterPage() {
           dndCharacter && dndCharacter.id && dndCharacter.is_dnd;
 
         if (isDndAlreadySaved) {
-          // D&D character was already saved when generated, just show success
+          // D&D character was already saved when generated. However, the
+          // user may have generated a portrait in the UI after generation.
+          // Persist the portrait using the dedicated endpoint before
+          // navigating to the detail page so users don't need to open edit
+          // flow to save the image.
           setSuccess("D&D character already saved!");
+
+          if (portraitImage || imagePrompt) {
+            try {
+              console.debug(
+                `[CreateCharacter] Persisting portrait for D&D character ${dndCharacter.id}`
+              );
+              await axios.post(
+                `${API_URL}/api/generate/character/save-portrait/`,
+                {
+                  character_id: dndCharacter.id,
+                  image_base64: portraitImage || "",
+                  image_prompt: imagePrompt || "",
+                }
+              );
+              console.debug(
+                `[CreateCharacter] Portrait persisted for D&D character ${dndCharacter.id}`
+              );
+            } catch (portraitErr) {
+              console.warn(
+                `[CreateCharacter] Failed to persist portrait for D&D character ${dndCharacter.id}:`,
+                portraitErr?.message || portraitErr
+              );
+              // Don't block navigation if portrait save fails
+            }
+          }
 
           // Navigate to the character detail page after 1.5 seconds
           setTimeout(() => {
@@ -519,9 +549,10 @@ export default function CreateCharacterPage() {
           return;
         }
 
+        let createdId = null;
         if (useStructured) {
           // Use structured save endpoint
-          await axios.post(
+          const resp = await axios.post(
             `${API_URL}/api/generate/character/structured/save/`,
             {
               character_profile: finalContent || generatedContent,
@@ -529,17 +560,49 @@ export default function CreateCharacterPage() {
               image_prompt: imagePrompt || null,
             }
           );
+          createdId = resp.data?.id || null;
         } else {
           // Use legacy save endpoint
-          await axios.post(`${API_URL}/api/generate/character/save/`, null, {
-            params: {
-              name: characterName,
-              content: finalContent || generatedContent,
-              portrait_image: portraitImage || null,
-              image_prompt: imagePrompt || null,
-            },
-          });
+          const resp = await axios.post(
+            `${API_URL}/api/generate/character/save/`,
+            null,
+            {
+              params: {
+                name: characterName,
+                content: finalContent || generatedContent,
+                portrait_image: portraitImage || null,
+                image_prompt: imagePrompt || null,
+              },
+            }
+          );
+          createdId = resp.data?.id || null;
         }
+
+        // If the backend didn't persist the portrait for any reason during the
+        // initial create/save call, ensure it's persisted by calling the
+        // dedicated portrait save endpoint with the returned character id.
+        if (portraitImage && createdId) {
+          try {
+            await axios.post(
+              `${API_URL}/api/generate/character/save-portrait/`,
+              {
+                character_id: createdId,
+                image_base64: portraitImage,
+                image_prompt: imagePrompt || "",
+              }
+            );
+            console.debug(
+              `[CreateCharacter] Portrait persisted for character ${createdId}`
+            );
+          } catch (portraitErr) {
+            console.warn(
+              "Failed to persist portrait after create:",
+              portraitErr?.message || portraitErr
+            );
+            // Don't fail the save flow just because the portrait save failed
+          }
+        }
+
         setSuccess("Character saved successfully!");
 
         // Reset form after 2 seconds
@@ -1527,7 +1590,13 @@ export default function CreateCharacterPage() {
                         <FormControl fullWidth size="small">
                           <InputLabel>Provider</InputLabel>
                           <Select
-                            value={imageProvider}
+                            value={
+                              ["google", "openai", "stablediffusion"].includes(
+                                imageProvider
+                              )
+                                ? imageProvider
+                                : ""
+                            }
                             onChange={(e) => {
                               const newProvider = e.target.value;
                               setImageProvider(newProvider);
@@ -1552,7 +1621,18 @@ export default function CreateCharacterPage() {
                         <FormControl fullWidth size="small">
                           <InputLabel>Model</InputLabel>
                           <Select
-                            value={imageModel}
+                            value={
+                              [
+                                "imagen-4.0-fast-generate-001",
+                                "imagen-4.0-generate-001",
+                                "imagen-4.0-ultra-generate-001",
+                                "dall-e-3",
+                                "dall-e-2",
+                                "sd-local",
+                              ].includes(imageModel)
+                                ? imageModel
+                                : ""
+                            }
                             onChange={(e) => setImageModel(e.target.value)}
                             label="Model"
                           >
@@ -1809,7 +1889,15 @@ export default function CreateCharacterPage() {
                               <FormControl fullWidth size="small">
                                 <InputLabel>Provider</InputLabel>
                                 <Select
-                                  value={imageProvider}
+                                  value={
+                                    [
+                                      "google",
+                                      "openai",
+                                      "stablediffusion",
+                                    ].includes(imageProvider)
+                                      ? imageProvider
+                                      : ""
+                                  }
                                   onChange={(e) => {
                                     const newProvider = e.target.value;
                                     setImageProvider(newProvider);
@@ -1840,7 +1928,18 @@ export default function CreateCharacterPage() {
                               <FormControl fullWidth size="small">
                                 <InputLabel>Model</InputLabel>
                                 <Select
-                                  value={imageModel}
+                                  value={
+                                    [
+                                      "imagen-4.0-fast-generate-001",
+                                      "imagen-4.0-generate-001",
+                                      "imagen-4.0-ultra-generate-001",
+                                      "dall-e-3",
+                                      "dall-e-2",
+                                      "sd-local",
+                                    ].includes(imageModel)
+                                      ? imageModel
+                                      : ""
+                                  }
                                   onChange={(e) =>
                                     setImageModel(e.target.value)
                                   }

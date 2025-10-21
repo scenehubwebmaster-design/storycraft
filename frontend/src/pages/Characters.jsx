@@ -119,7 +119,7 @@ export default function CharactersPage() {
         // Now load characters WITHOUT portraits for fast list display
         console.log("[Characters] Loading from API URL:", API_URL);
         const response = await axios.get(
-          `${API_URL}/api/characters/?exclude_portraits=true`
+          `${API_URL}/api/characters/?exclude_portrait=true`
         );
         console.log("[Characters] Loaded", response.data.length, "characters");
         setCharacters(response.data);

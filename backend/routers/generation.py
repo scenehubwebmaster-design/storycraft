@@ -57,6 +57,7 @@ from ..structured_output_utils import (
     get_structured_output_prompt,
 )
 from ..model_capabilities import supports_model_structured, get_model_output_limit
+from ..structured_normalizer import normalize_and_validate
 import asyncio
 from ..audit import write_audit_event
 from ..name_generation_utils import (
@@ -1561,9 +1562,19 @@ async def call_llm_structured(
                 # Continue; parsing below will raise and be handled by existing error handlers
                 response_text = response_text or ""
 
-        # Parse and validate the response
+        # Parse and validate the response (normalize first for json_object outputs)
         try:
-            parsed_model = parse_structured_response(response_text, schema_model)
+            # If our metadata indicates we used json_object mode or plain structured=False,
+            # attempt normalization before strict parsing.
+            try:
+                if isinstance(metadata, dict) and (metadata.get('json_object_mode') or metadata.get('structured') is False):
+                    parsed_model = normalize_and_validate(response_text, schema_model, provider=provider, model_name=model)
+                else:
+                    parsed_model = parse_structured_response(response_text, schema_model)
+            except Exception:
+                # If normalization didn't succeed, fall back to the strict parser which will
+                # raise a JSON/validation error to trigger the fallback flow below.
+                parsed_model = parse_structured_response(response_text, schema_model)
         except Exception as validation_error:
             # Ensure we capture useful diagnostics for investigation
             err_str = str(validation_error)

@@ -77,6 +77,12 @@ export default function DnDCharacterCreator({ onCharacterGenerated, onError }) {
   const [generatePortrait, setGeneratePortrait] = useState(false);
   const [portraitStyle, setPortraitStyle] = useState("fantasy_art");
 
+  // Starting equipment UI
+  const [startingEquipmentMethod, setStartingEquipmentMethod] =
+    useState("class_default");
+  const [startingPack, setStartingPack] = useState("dungeoneer");
+  const [equipmentPacks, setEquipmentPacks] = useState([]);
+
   // Loading States
   const [loadingData, setLoadingData] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -90,7 +96,20 @@ export default function DnDCharacterCreator({ onCharacterGenerated, onError }) {
   // Load D&D reference data on mount
   useEffect(() => {
     loadDnDData();
+    loadEquipmentPacks();
   }, []);
+
+  const loadEquipmentPacks = async () => {
+    try {
+      const resp = await axios.get(`${API_URL}/api/characters/dnd/equipment/`);
+      setEquipmentPacks(resp.data.packs || []);
+      if (!startingPack && resp.data.packs && resp.data.packs.length > 0) {
+        setStartingPack(resp.data.packs[0].id);
+      }
+    } catch (e) {
+      console.warn("Failed to load equipment packs:", e);
+    }
+  };
 
   // Update details when selections change
   useEffect(() => {
@@ -128,10 +147,31 @@ export default function DnDCharacterCreator({ onCharacterGenerated, onError }) {
           axios.get(`${API_URL}/api/characters/dnd/alignments/`),
         ]);
 
-      setClasses(classesRes.data.classes || []);
-      setSpecies(speciesRes.data.species || []);
-      setBackgrounds(backgroundsRes.data.backgrounds || []);
-      setAlignments(alignmentsRes.data.alignments || []);
+      const classesData = classesRes.data.classes || [];
+      const speciesData = speciesRes.data.species || [];
+      const backgroundsData = backgroundsRes.data.backgrounds || [];
+      const alignmentsData = alignmentsRes.data.alignments || [];
+
+      setClasses(classesData);
+      setSpecies(speciesData);
+      setBackgrounds(backgroundsData);
+      setAlignments(alignmentsData);
+
+      // Populate sensible defaults on first load so selects aren't empty-looking
+      // Only set if the user hasn't already made a choice.
+      if (!selectedClass && classesData.length > 0) {
+        setSelectedClass(classesData[0].id);
+      }
+      if (!selectedSpecies && speciesData.length > 0) {
+        setSelectedSpecies(speciesData[0].id);
+      }
+      if (!selectedBackground && backgroundsData.length > 0) {
+        setSelectedBackground(backgroundsData[0].id);
+      }
+      // Alignment is optional, but default to the first alignment to avoid an empty select
+      if (!selectedAlignment && alignmentsData.length > 0) {
+        setSelectedAlignment(alignmentsData[0]);
+      }
 
       setLoadingData(false);
     } catch (error) {
@@ -194,6 +234,10 @@ export default function DnDCharacterCreator({ onCharacterGenerated, onError }) {
         use_structured: useStructured,
         narrative_style: narrativeStyle,
         narrative_context: narrativePrompt || null,
+        // Equipment choices
+        starting_equipment_method: startingEquipmentMethod,
+        starting_pack: startingPack,
+        starting_gold_override: null,
       };
 
       const dndResponse = await axios.post(
@@ -510,7 +554,7 @@ Length: 2-3 distinctive quirks.`,
 
         <Grid container spacing={3}>
           {/* Character Name */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <TextField
               fullWidth
               label="Character Name (Optional)"
@@ -522,7 +566,7 @@ Length: 2-3 distinctive quirks.`,
           </Grid>
 
           {/* Class Selection */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <FormControl fullWidth required>
               <InputLabel>Class</InputLabel>
               <Select
@@ -563,7 +607,7 @@ Length: 2-3 distinctive quirks.`,
           </Grid>
 
           {/* Species Selection */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <FormControl fullWidth required>
               <InputLabel>Species</InputLabel>
               <Select
@@ -598,7 +642,7 @@ Length: 2-3 distinctive quirks.`,
           </Grid>
 
           {/* Background Selection */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <FormControl fullWidth required>
               <InputLabel>Background</InputLabel>
               <Select
@@ -637,7 +681,7 @@ Length: 2-3 distinctive quirks.`,
           </Grid>
 
           {/* Alignment Selection */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <FormControl fullWidth>
               <InputLabel>Alignment (Optional)</InputLabel>
               <Select
@@ -658,7 +702,7 @@ Length: 2-3 distinctive quirks.`,
           </Grid>
 
           {/* Level & Ability Score Method */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <FormControl fullWidth>
               <InputLabel>Level</InputLabel>
               <Select
@@ -675,7 +719,7 @@ Length: 2-3 distinctive quirks.`,
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <FormControl fullWidth>
               <InputLabel>Ability Score Method</InputLabel>
               <Select
@@ -689,6 +733,116 @@ Length: 2-3 distinctive quirks.`,
                 <MenuItem value="random">Random (4d6 drop lowest)</MenuItem>
               </Select>
             </FormControl>
+          </Grid>
+
+          {/* Starting Equipment Options */}
+          <Grid size={{ xs: 12 }}>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Starting Equipment
+            </Typography>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Method</InputLabel>
+              <Select
+                value={startingEquipmentMethod}
+                onChange={(e) => setStartingEquipmentMethod(e.target.value)}
+                label="Method"
+              >
+                <MenuItem value="class_default">Class Default Pack</MenuItem>
+                <MenuItem value="pack">Choose Pack</MenuItem>
+                <MenuItem value="buy_with_gp">Buy with Starting Gold</MenuItem>
+              </Select>
+            </FormControl>
+
+            {startingEquipmentMethod === "pack" && (
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Pack</InputLabel>
+                <Select
+                  value={startingPack}
+                  onChange={(e) => setStartingPack(e.target.value)}
+                  label="Pack"
+                >
+                  {equipmentPacks.length > 0 ? (
+                    equipmentPacks.map((p) => (
+                      <MenuItem key={p.id} value={p.id}>
+                        {p.name} ({p.price_gp} gp)
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <>
+                      <MenuItem value="dungeoneer">Dungeoneer's Pack</MenuItem>
+                      <MenuItem value="burglar">Burglar's Pack</MenuItem>
+                      <MenuItem value="explorer">Explorer's Pack</MenuItem>
+                    </>
+                  )}
+                </Select>
+              </FormControl>
+            )}
+            {/* Pack preview: show items, item prices/weights, and totals */}
+            {(startingEquipmentMethod === "pack" ||
+              startingEquipmentMethod === "buy_with_gp") && (
+              <Box
+                sx={{ mb: 2, p: 2, bgcolor: "action.hover", borderRadius: 1 }}
+              >
+                <Typography variant="subtitle2">Pack Preview</Typography>
+                {equipmentPacks.length > 0 ? (
+                  (() => {
+                    const pack = equipmentPacks.find(
+                      (p) => p.id === startingPack
+                    );
+                    if (!pack)
+                      return (
+                        <Typography variant="body2">
+                          No pack selected.
+                        </Typography>
+                      );
+                    const items = Array.isArray(pack.items) ? pack.items : [];
+                    let totalPrice = 0;
+                    let totalWeight = 0;
+                    items.forEach((it) => {
+                      if (typeof it === "object") {
+                        totalPrice += Number(it.price_gp || 0);
+                        totalWeight += Number(it.weight || 0);
+                      }
+                    });
+
+                    return (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          display="block"
+                          sx={{ mb: 1 }}
+                        >
+                          {pack.name} — Pack price: {pack.price_gp} gp
+                        </Typography>
+                        {items.map((it, i) => (
+                          <Typography key={i} variant="body2">
+                            •{" "}
+                            {typeof it === "string"
+                              ? it
+                              : `${it.name}${
+                                  it.price_gp ? ` — ${it.price_gp} gp` : ""
+                                }${it.weight ? ` — ${it.weight} lb` : ""}`}
+                          </Typography>
+                        ))}
+                        <Divider sx={{ my: 1 }} />
+                        <Typography variant="caption">
+                          Total items price (sum of item estimates):{" "}
+                          {totalPrice} gp
+                        </Typography>
+                        <Typography variant="caption" sx={{ display: "block" }}>
+                          Total items weight: {totalWeight} lb
+                        </Typography>
+                      </Box>
+                    );
+                  })()
+                ) : (
+                  <Typography variant="body2">
+                    Pack preview unavailable.
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Grid>
         </Grid>
 
@@ -799,7 +953,7 @@ Length: 2-3 distinctive quirks.`,
                 </Typography>
 
                 <Grid container spacing={1}>
-                  <Grid item xs={6} sm={4}>
+                  <Grid size={{ xs: 6, sm: 4 }}>
                     <FormControlLabel
                       control={
                         <Switch
@@ -813,7 +967,7 @@ Length: 2-3 distinctive quirks.`,
                       label="Appearance"
                     />
                   </Grid>
-                  <Grid item xs={6} sm={4}>
+                  <Grid size={{ xs: 6, sm: 4 }}>
                     <FormControlLabel
                       control={
                         <Switch
@@ -827,7 +981,7 @@ Length: 2-3 distinctive quirks.`,
                       label="Personality"
                     />
                   </Grid>
-                  <Grid item xs={6} sm={4}>
+                  <Grid size={{ xs: 6, sm: 4 }}>
                     <FormControlLabel
                       control={
                         <Switch
@@ -841,7 +995,7 @@ Length: 2-3 distinctive quirks.`,
                       label="Backstory"
                     />
                   </Grid>
-                  <Grid item xs={6} sm={4}>
+                  <Grid size={{ xs: 6, sm: 4 }}>
                     <FormControlLabel
                       control={
                         <Switch
@@ -855,7 +1009,7 @@ Length: 2-3 distinctive quirks.`,
                       label="Motivations"
                     />
                   </Grid>
-                  <Grid item xs={6} sm={4}>
+                  <Grid size={{ xs: 6, sm: 4 }}>
                     <FormControlLabel
                       control={
                         <Switch

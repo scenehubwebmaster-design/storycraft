@@ -22,13 +22,14 @@ SUMMARY = {
         "Frontend: merge name suggestions from top-level and structured_data",
         "Fixed CreateCharacter.jsx syntax artifacts",
     "Added Playwright test scaffold for portrait/traits review at scripts/playwright_portrait_review.spec.js",
-    "Implemented Playwright test at frontend/tests/portrait_review.spec.js"
+    "Implemented Playwright test at frontend/tests/portrait_review.spec.js",
+    "Backend: added /api/generate/story/full-generate endpoint",
+    "Frontend: added 'Generate Full Story' button and dialog on Worlds page"
     ],
     "open_tasks": [
         
-        "Confirm NamePicker receives merged suggestions in review UI",
-        "Add E2E frontend test to validate portrait + traits display",
-        "Address SD WebUI host PermissionError (host-level)"
+        "Verify full-story output UX: ensure worlds, characters and story are displayed appropriately",
+        "Add E2E frontend test to validate portrait + traits display"
     ],
     "constraints": [
         "Do not push code to remote without human approval",

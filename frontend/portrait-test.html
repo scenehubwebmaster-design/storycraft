@@ -19,7 +19,7 @@
           // Step 1: Load characters without portraits
           resultsDiv.innerHTML += "<p>Loading characters...</p>";
           const response = await axios.get(
-            `${API_URL}/api/characters/?exclude_portraits=true`
+            `${API_URL}/api/characters/?exclude_portrait=true`
           );
           resultsDiv.innerHTML += `<p>✅ Loaded ${response.data.length} characters</p>`;
 

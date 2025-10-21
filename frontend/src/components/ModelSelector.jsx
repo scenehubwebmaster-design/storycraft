@@ -195,7 +195,7 @@ export default function ModelSelector({
       <FormControl fullWidth>
         <InputLabel>Model</InputLabel>
         <Select
-          value={model || ""}
+          value={availableModels.includes(model) ? model : ""}
           onChange={(e) => onModelChange(e.target.value)}
           label="Model"
           disabled={modelsLoading || availableModels.length === 0}
@@ -206,41 +206,48 @@ export default function ModelSelector({
               Loading models...
             </MenuItem>
           ) : (
-            availableModels.map((modelId) => {
-              const details = getModelDetails(modelId);
-              const isRecommended = modelId === recommendedModel;
+            [
+              <MenuItem key="__none__" value="">
+                <em>Select a model</em>
+              </MenuItem>,
+              ...availableModels.map((modelId) => {
+                const details = getModelDetails(modelId);
+                const isRecommended = modelId === recommendedModel;
 
-              return (
-                <MenuItem key={modelId} value={modelId}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      width: "100%",
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography sx={{ flexGrow: 1 }}>
-                        {details?.name || modelId}
-                      </Typography>
-                      {isRecommended && (
-                        <Chip
-                          label="Recommended"
-                          size="small"
-                          color="primary"
-                          sx={{ height: 20 }}
-                        />
+                return (
+                  <MenuItem key={modelId} value={modelId}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        width: "100%",
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <Typography sx={{ flexGrow: 1 }}>
+                          {details?.name || modelId}
+                        </Typography>
+                        {isRecommended && (
+                          <Chip
+                            label="Recommended"
+                            size="small"
+                            color="primary"
+                            sx={{ height: 20 }}
+                          />
+                        )}
+                      </Box>
+                      {details?.rate_limits && (
+                        <Typography variant="caption" color="text.secondary">
+                          {formatRateLimits(details.rate_limits)}
+                        </Typography>
                       )}
                     </Box>
-                    {details?.rate_limits && (
-                      <Typography variant="caption" color="text.secondary">
-                        {formatRateLimits(details.rate_limits)}
-                      </Typography>
-                    )}
-                  </Box>
-                </MenuItem>
-              );
-            })
+                  </MenuItem>
+                );
+              }),
+            ]
           )}
         </Select>
       </FormControl>

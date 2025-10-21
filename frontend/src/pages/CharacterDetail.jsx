@@ -210,6 +210,47 @@ export default function CharacterDetailPage() {
                 />
               )}
             </Box>
+            {/* Show starting equipment for D&D characters */}
+            {character.is_dnd && character.dnd_equipment && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="h6">Starting Equipment</Typography>
+                {character.dnd_equipment.pack ? (
+                  <Box>
+                    <Typography variant="subtitle2">
+                      {character.dnd_equipment.pack.name}{" "}
+                      {character.dnd_equipment.pack.price_gp
+                        ? `- ${character.dnd_equipment.pack.price_gp} gp`
+                        : ""}
+                    </Typography>
+                    <Box>
+                      {Array.isArray(character.dnd_equipment.pack.items) ? (
+                        character.dnd_equipment.pack.items.map((it, i) => (
+                          <Typography key={i} variant="body2">
+                            •{" "}
+                            {typeof it === "string"
+                              ? it
+                              : `${it.name || JSON.stringify(it)}${
+                                  it.price_gp ? ` (${it.price_gp} gp)` : ""
+                                }${it.weight ? ` - ${it.weight} lb` : ""}`}
+                          </Typography>
+                        ))
+                      ) : (
+                        <Typography variant="body2">
+                          {JSON.stringify(character.dnd_equipment.pack)}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                ) : (
+                  <Typography variant="body2">No pack recorded.</Typography>
+                )}
+                {typeof character.dnd_equipment.gold_remaining === "number" && (
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    Gold remaining: {character.dnd_equipment.gold_remaining} gp
+                  </Typography>
+                )}
+              </Box>
+            )}
             {character.is_dnd && (
               <Box sx={{ mb: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
                 {character.dnd_level && (

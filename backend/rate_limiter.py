@@ -50,7 +50,8 @@ class RateLimiter:
             },
             "groq": {
                 "requests_per_minute": 30,  # Free tier default
-                "tokens_per_minute": 6_000,  # Conservative default
+                # Raise default token ceiling for Groq to allow larger structured requests
+                "tokens_per_minute": 10_000,
                 "requests_per_day": 14_400,  # Free tier default
             }
         }
@@ -137,13 +138,15 @@ class RateLimiter:
         
         # Check tokens per minute
         tokens_last_minute = sum(tokens for _, tokens in self.token_history[provider])
-        if tokens_last_minute + estimated_tokens > limits["tokens_per_minute"]:
+        projected_tokens = tokens_last_minute + estimated_tokens
+        if projected_tokens > limits["tokens_per_minute"]:
             return {
                 "error": "rate_limit_exceeded",
                 "limit_type": "tokens_per_minute",
                 "current": tokens_last_minute,
+                "projected": projected_tokens,
                 "limit": limits["tokens_per_minute"],
-                "message": f"Token rate limit exceeded: {tokens_last_minute}/{limits['tokens_per_minute']} tokens/min."
+                "message": f"Token rate limit exceeded: current={tokens_last_minute}, estimated_request={estimated_tokens}, projected={projected_tokens}/{limits['tokens_per_minute']} tokens/min."
             }
         
         # Check requests per day

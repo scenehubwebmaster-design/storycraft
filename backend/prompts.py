@@ -339,6 +339,45 @@ Please provide a comprehensive world description including:
 Format the response as a detailed world-building guide.
 """
         return base
+    @staticmethod
+    def story_prompt(themes=None, tone=None, length=None, plot_structure=None, 
+                    conflict_type=None, custom_details=None):
+        """Generate a story creation prompt"""
+        base = "Create a compelling story outline with the following specifications:\n\n"
+        
+        if themes:
+            base += f"Genre/Theme: {', '.join(themes)}\n"
+        if tone:
+            base += f"Tone: {', '.join(tone)}\n"
+        if length:
+            base += f"Length: {length}\n"
+        if plot_structure:
+            base += f"Plot Structure: {plot_structure}\n"
+        if conflict_type:
+            base += f"Main Conflict: {conflict_type}\n"
+        if custom_details:
+            base += f"\nAdditional Requirements: {custom_details}\n"
+        
+        base += """
+Please provide a comprehensive story outline including:
+1. Title (compelling and thematic)
+2. Premise (one-paragraph hook)
+3. Setting (time, place, atmosphere)
+4. Main Characters (brief descriptions of key players)
+5. Plot Outline:
+   - Opening/Hook
+   - Rising Action (key plot points)
+   - Climax (turning point)
+   - Falling Action
+   - Resolution
+6. Themes and Subtext (deeper meanings)
+7. Tone and Style notes
+8. Potential Scenes (3-5 key scenes to develop)
+9. Ending (satisfying conclusion)
+
+Format the response as a detailed story outline ready for development.
+"""
+        return base
 
 
 def build_landscape_prompt(world_name, description, landscape_type, style_preset):
