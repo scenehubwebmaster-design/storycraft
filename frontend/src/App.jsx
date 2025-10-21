@@ -53,6 +53,7 @@ import CharacterDetailPage from "./pages/CharacterDetail";
 import WorldsPage from "./pages/Worlds";
 import WorldDetailPage from "./pages/WorldDetail";
 import SettingsPage from "./pages/Settings";
+import ReferencesPage from "./pages/References";
 
 function NotFound() {
   return (
@@ -82,6 +83,7 @@ function Layout({ children }) {
   const navigationItems = [
     { label: "Home", path: "/", icon: <HomeIcon /> },
     { label: "Create", path: "/create", icon: <CreateIcon />, highlight: true },
+    { label: "References", path: "/references", icon: <MenuBookIcon /> },
     { label: "Stories", path: "/stories", icon: <AutoStoriesIcon /> },
     { label: "Characters", path: "/characters", icon: <PeopleIcon /> },
     { label: "Worlds", path: "/worlds", icon: <PublicIcon /> },
@@ -273,6 +275,7 @@ export default function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/references" element={<ReferencesPage />} />
             <Route path="/create" element={<CreatePage />} />
             <Route path="/create/character" element={<CreateCharacterPage />} />
             <Route path="/create/story" element={<CreateStoryPage />} />

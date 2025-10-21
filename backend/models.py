@@ -174,3 +174,29 @@ story_worlds = Table(
     Column('story_id', Integer, ForeignKey('stories.id'), primary_key=True),
     Column('world_id', Integer, ForeignKey('worlds.id'), primary_key=True)
 )
+
+
+# Reference table for official documentation (classes, species, equipment, etc.)
+class Reference(Base):
+    __tablename__ = "references"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ref_type = Column(String(100), nullable=False, index=True)  # e.g., 'class', 'species', 'equipment', 'origin'
+    key = Column(String(255), nullable=False, index=True)  # machine key/slug
+    title = Column(String(255), nullable=False)
+    content = Column(Text)  # Markdown or HTML content
+    source_url = Column(String(1024))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "ref_type": self.ref_type,
+            "key": self.key,
+            "title": self.title,
+            "content": self.content,
+            "source_url": self.source_url,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

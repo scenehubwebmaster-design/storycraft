@@ -5,7 +5,7 @@ import sys
 try:
     # Preferred (when package is importable)
     from .database import engine, Base
-    from .routers import characters, stories, worlds, llm, generation, settings, locations
+    from .routers import characters, stories, worlds, llm, generation, settings, locations, references
 except Exception:
     # Fallback to absolute imports so running `python backend/main.py` or
     # starting uvicorn from other working directories still works. Ensure the
@@ -14,7 +14,7 @@ except Exception:
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     from backend.database import engine, Base
-    from backend.routers import characters, stories, worlds, llm, generation, settings, locations
+    from backend.routers import characters, stories, worlds, llm, generation, settings, locations, references
 import logging
 
 # Set up logging
@@ -79,6 +79,7 @@ app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
 app.include_router(generation.router, tags=["generation"])  # No prefix - already defined in router
 app.include_router(settings.router, tags=["settings"])  # No prefix - already defined in router
 app.include_router(locations.router, tags=["locations"])  # /api/locations/
+app.include_router(references.router, tags=["references"])  # /api/references/
 
 @app.get("/health")
 def health_check():
