@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { useState } from "react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { darkTheme } from "./theme/darkTheme";
 import {
   AppBar,
   Toolbar,
@@ -258,12 +259,10 @@ function Layout({ children }) {
 }
 
 export default function App() {
-  // Create MUI theme using Poppins as the main font
-  const theme = createTheme({
+  // Merge darkTheme with Poppins typography so we keep the dark palette
+  const theme = createTheme(darkTheme, {
     typography: {
-      fontFamily: ['"Poppins", "Helvetica", "Arial", sans-serif'].join(
-        ","
-      ),
+      fontFamily: ['"Poppins", "Helvetica", "Arial", sans-serif'].join(","),
     },
   });
 
@@ -275,7 +274,8 @@ export default function App() {
       const link = document.createElement("link");
       link.id = id;
       link.rel = "stylesheet";
-      link.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap";
+      link.href =
+        "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap";
       document.head.appendChild(link);
     }
   }
@@ -284,24 +284,24 @@ export default function App() {
       <BrowserRouter>
         <Layout>
           <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/create" element={<CreatePage />} />
-          <Route path="/create/character" element={<CreateCharacterPage />} />
-          <Route path="/create/story" element={<CreateStoryPage />} />
-          <Route path="/create/world" element={<CreateWorldPage />} />
-          <Route path="/create/scene" element={<CreateScenePage />} />
-          <Route path="/create/location" element={<CreateLocationPage />} />
-          <Route path="/stories" element={<StoriesPage />} />
-          <Route path="/stories/:storyId" element={<StoryDetailPage />} />
-          <Route path="/characters" element={<CharactersPage />} />
-          <Route
-            path="/characters/:characterId"
-            element={<CharacterDetailPage />}
-          />
-          <Route path="/worlds" element={<WorldsPage />} />
-          <Route path="/worlds/:worldId" element={<WorldDetailPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="*" element={<NotFound />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/create" element={<CreatePage />} />
+            <Route path="/create/character" element={<CreateCharacterPage />} />
+            <Route path="/create/story" element={<CreateStoryPage />} />
+            <Route path="/create/world" element={<CreateWorldPage />} />
+            <Route path="/create/scene" element={<CreateScenePage />} />
+            <Route path="/create/location" element={<CreateLocationPage />} />
+            <Route path="/stories" element={<StoriesPage />} />
+            <Route path="/stories/:storyId" element={<StoryDetailPage />} />
+            <Route path="/characters" element={<CharactersPage />} />
+            <Route
+              path="/characters/:characterId"
+              element={<CharacterDetailPage />}
+            />
+            <Route path="/worlds" element={<WorldsPage />} />
+            <Route path="/worlds/:worldId" element={<WorldDetailPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
       </BrowserRouter>
