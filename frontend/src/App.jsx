@@ -266,19 +266,7 @@ export default function App() {
     },
   });
 
-  // Ensure Poppins font is loaded via Google Fonts link in the document head
-  // (This is lightweight and safe for client-side apps)
-  if (typeof document !== "undefined") {
-    const id = "poppins-font-link";
-    if (!document.getElementById(id)) {
-      const link = document.createElement("link");
-      link.id = id;
-      link.rel = "stylesheet";
-      link.href =
-        "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap";
-      document.head.appendChild(link);
-    }
-  }
+  // Font is preloaded via index.html (preload + stylesheet). No runtime injection needed.
   return (
     <ThemeProvider theme={theme}>
       <BrowserRouter>

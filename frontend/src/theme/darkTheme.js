@@ -47,66 +47,66 @@ export const darkTheme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    // Responsive typography - scales down on mobile
+    fontFamily: '"Poppins", "Helvetica", "Arial", sans-serif',
+    // Adjusted typography scales for Poppins: slightly tighter headings, higher weight
     h1: {
-      fontSize: "2.5rem",
-      fontWeight: 500,
-      letterSpacing: "-0.01562em",
+      fontSize: "2.25rem",
+      fontWeight: 600,
+      letterSpacing: "-0.02em",
       "@media (max-width:600px)": {
-        fontSize: "2rem", // Smaller on mobile
+        fontSize: "1.9rem",
       },
     },
     h2: {
-      fontSize: "2rem",
-      fontWeight: 500,
-      letterSpacing: "-0.00833em",
+      fontSize: "1.9rem",
+      fontWeight: 600,
+      letterSpacing: "-0.01em",
       "@media (max-width:600px)": {
-        fontSize: "1.75rem",
+        fontSize: "1.6rem",
       },
     },
     h3: {
-      fontSize: "1.75rem",
-      fontWeight: 500,
+      fontSize: "1.6rem",
+      fontWeight: 600,
       letterSpacing: "0em",
       "@media (max-width:600px)": {
-        fontSize: "1.5rem",
+        fontSize: "1.35rem",
       },
     },
     h4: {
-      fontSize: "1.5rem",
-      fontWeight: 500,
-      letterSpacing: "0.00735em",
+      fontSize: "1.35rem",
+      fontWeight: 600,
+      letterSpacing: "0.005em",
       "@media (max-width:600px)": {
-        fontSize: "1.25rem",
+        fontSize: "1.15rem",
       },
     },
     h5: {
-      fontSize: "1.25rem",
-      fontWeight: 500,
+      fontSize: "1.15rem",
+      fontWeight: 600,
       letterSpacing: "0em",
       "@media (max-width:600px)": {
-        fontSize: "1.1rem",
+        fontSize: "1rem",
       },
     },
     h6: {
       fontSize: "1rem",
-      fontWeight: 500,
-      letterSpacing: "0.0075em",
+      fontWeight: 600,
+      letterSpacing: "0.01em",
       "@media (max-width:600px)": {
         fontSize: "0.95rem",
       },
     },
     body1: {
-      fontSize: "1rem",
-      letterSpacing: "0.00938em",
+      fontSize: "0.98rem",
+      letterSpacing: "0.01em",
       "@media (max-width:600px)": {
         fontSize: "0.95rem",
       },
     },
     body2: {
-      fontSize: "0.875rem",
-      letterSpacing: "0.01071em",
+      fontSize: "0.86rem",
+      letterSpacing: "0.01em",
     },
   },
   spacing: 8, // Default spacing unit (1 spacing = 8px)
