@@ -6,6 +6,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useState } from "react";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 import {
   AppBar,
   Toolbar,
@@ -257,10 +258,32 @@ function Layout({ children }) {
 }
 
 export default function App() {
+  // Create MUI theme using Poppins as the main font
+  const theme = createTheme({
+    typography: {
+      fontFamily: ['"Poppins", "Helvetica", "Arial", sans-serif'].join(
+        ","
+      ),
+    },
+  });
+
+  // Ensure Poppins font is loaded via Google Fonts link in the document head
+  // (This is lightweight and safe for client-side apps)
+  if (typeof document !== "undefined") {
+    const id = "poppins-font-link";
+    if (!document.getElementById(id)) {
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap";
+      document.head.appendChild(link);
+    }
+  }
   return (
-    <BrowserRouter>
-      <Layout>
-        <Routes>
+    <ThemeProvider theme={theme}>
+      <BrowserRouter>
+        <Layout>
+          <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/create" element={<CreatePage />} />
           <Route path="/create/character" element={<CreateCharacterPage />} />
@@ -279,8 +302,9 @@ export default function App() {
           <Route path="/worlds/:worldId" element={<WorldDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
