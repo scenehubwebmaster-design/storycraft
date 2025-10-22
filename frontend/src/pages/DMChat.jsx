@@ -49,6 +49,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   VolumeUp as VolumeUpIcon,
+  PlayArrow as PlayArrowIcon,
 } from "@mui/icons-material";
 import { darkTheme } from "../theme/darkTheme";
 import ReactMarkdown from "react-markdown";
@@ -702,6 +703,55 @@ export default function DMChatPage() {
                   icon={<MenuBookIcon />}
                   label="RAG Enabled"
                   color="secondary"
+                  size="small"
+                />
+              )}
+
+              <Divider orientation="vertical" flexItem />
+
+              {/* TTS Controls */}
+              <Tooltip title="Enable voice narration for DM responses">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={ttsEnabled}
+                      onChange={(e) => setTtsEnabled(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <VolumeUpIcon fontSize="small" />
+                      <Typography variant="body2">Voice</Typography>
+                    </Stack>
+                  }
+                />
+              </Tooltip>
+
+              <Tooltip title="Automatically play voice narration">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={ttsAutoPlay}
+                      onChange={(e) => setTtsAutoPlay(e.target.checked)}
+                      disabled={!ttsEnabled}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <PlayArrowIcon fontSize="small" />
+                      <Typography variant="body2">Auto-play</Typography>
+                    </Stack>
+                  }
+                />
+              </Tooltip>
+
+              {ttsEnabled && (
+                <Chip
+                  icon={<VolumeUpIcon />}
+                  label={ttsAutoPlay ? "Voice: Auto" : "Voice: Manual"}
+                  color="primary"
                   size="small"
                 />
               )}
