@@ -23,11 +23,13 @@ try:
     from ..game.session_manager import SessionManager
     from ..game.dice_roller import DiceRoller, AdvantageType
     from ..game.combat_engine import CombatEngine, CombatantData
+    from ..game.narrative_engine import NarrativeEngine, PlayerChoice
 except ImportError:
     from backend.database import get_db
     from backend.game.session_manager import SessionManager
     from backend.game.dice_roller import DiceRoller, AdvantageType
     from backend.game.combat_engine import CombatEngine, CombatantData
+    from backend.game.narrative_engine import NarrativeEngine, PlayerChoice
 
 
 router = APIRouter(prefix="/api/game", tags=["game"])
@@ -799,4 +801,238 @@ def end_combat(
     
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+# ============================================================================
+# NARRATIVE SYSTEM
+# ============================================================================
+
+class GenerateSceneRequest(BaseModel):
+    """Request model for opening scene generation"""
+    adventure_type: str = Field(default="fantasy_adventure", description="Type of adventure")
+    starting_location: Optional[str] = Field(None, description="Optional starting location")
+
+
+class PlayerChoiceRequest(BaseModel):
+    """Request model for player choice"""
+    choice_id: int
+    choice_text: str
+    choice_type: str = Field(..., description="exploration, social, combat_trigger, skill_check")
+
+
+class NPCDialogueRequest(BaseModel):
+    """Request model for NPC dialogue"""
+    npc_name: str
+    player_message: str
+
+
+class SceneResponse(BaseModel):
+    """Response model for scene"""
+    description: str
+    location: str
+    choices: List[Dict[str, Any]]
+    detected_events: List[str]
+    atmosphere: Optional[str] = None
+    npcs_present: Optional[List[str]] = None
+    combat_id: Optional[int] = None
+
+
+@router.post("/sessions/{session_id}/scene/start", response_model=SceneResponse)
+async def generate_opening_scene(
+    session_id: int,
+    request: GenerateSceneRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Generate opening scene for adventure
+    
+    Creates an immersive opening scene with party context,
+    adventure guidance from RAG, and meaningful player choices.
+    
+    Request:
+    {
+        "adventure_type": "fantasy_adventure",
+        "starting_location": "The Crossroads Tavern"
+    }
+    
+    Returns scene with description and 3-4 choices
+    """
+    try:
+        # Get game session
+        manager = SessionManager(db)
+        game_session = manager.get_session(session_id)
+        
+        if not game_session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Game session {session_id} not found"
+            )
+        
+        # Generate opening scene
+        engine = NarrativeEngine(db)
+        scene = await engine.generate_opening_scene(
+            game_session=game_session,
+            adventure_type=request.adventure_type,
+            starting_location=request.starting_location
+        )
+        
+        return SceneResponse(
+            description=scene.description,
+            location=scene.location,
+            choices=scene.choices,
+            detected_events=scene.detected_events,
+            atmosphere=scene.atmosphere,
+            npcs_present=scene.npcs_present
+        )
+    
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/sessions/{session_id}/scene/choice", response_model=SceneResponse)
+async def process_player_choice(
+    session_id: int,
+    request: PlayerChoiceRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Process player choice and generate next scene
+    
+    Takes player's chosen action, queries RAG for context,
+    generates next scene, and may trigger combat or skill checks.
+    
+    Request:
+    {
+        "choice_id": 1,
+        "choice_text": "Investigate the mysterious door",
+        "choice_type": "exploration"
+    }
+    
+    Returns next scene or combat initiation
+    """
+    try:
+        # Get game session
+        manager = SessionManager(db)
+        game_session = manager.get_session(session_id)
+        
+        if not game_session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Game session {session_id} not found"
+            )
+        
+        # Create player choice object
+        choice = PlayerChoice(
+            choice_id=request.choice_id,
+            choice_text=request.choice_text,
+            choice_type=request.choice_type
+        )
+        
+        # Process choice and generate next scene
+        engine = NarrativeEngine(db)
+        scene = await engine.process_player_choice(
+            game_session=game_session,
+            choice=choice
+        )
+        
+        # Check if combat was initiated
+        combat_id = None
+        current_state = manager.load_state(session_id)
+        if "combat_id" in current_state:
+            combat_id = current_state["combat_id"]
+        
+        return SceneResponse(
+            description=scene.description,
+            location=scene.location,
+            choices=scene.choices,
+            detected_events=scene.detected_events,
+            atmosphere=scene.atmosphere,
+            npcs_present=scene.npcs_present,
+            combat_id=combat_id
+        )
+    
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/sessions/{session_id}/npc/{npc_name}/dialogue")
+async def generate_npc_dialogue(
+    session_id: int,
+    npc_name: str,
+    request: NPCDialogueRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Generate NPC dialogue response
+    
+    Takes player message and generates contextual NPC response
+    with personality consistency and dialogue history.
+    
+    Request:
+    {
+        "npc_name": "Innkeeper",
+        "player_message": "What do you know about the ruins?"
+    }
+    
+    Returns NPC's response
+    """
+    try:
+        # Get game session
+        manager = SessionManager(db)
+        game_session = manager.get_session(session_id)
+        
+        if not game_session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Game session {session_id} not found"
+            )
+        
+        # Generate dialogue
+        engine = NarrativeEngine(db)
+        response = await engine.generate_npc_dialogue(
+            game_session=game_session,
+            npc_name=npc_name,
+            player_message=request.player_message
+        )
+        
+        return {"npc_name": npc_name, "response": response}
+    
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/sessions/{session_id}/scene/current")
+async def get_current_scene(
+    session_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get current scene from game state
+    
+    Returns the most recent scene description and available choices.
+    """
+    try:
+        manager = SessionManager(db)
+        game_state = manager.load_state(session_id)
+        
+        current_scene = game_state.get("current_scene", {})
+        
+        if not current_scene:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No active scene. Generate an opening scene first."
+            )
+        
+        return SceneResponse(
+            description=current_scene.get("description", ""),
+            location=current_scene.get("location", "unknown"),
+            choices=current_scene.get("choices", []),
+            detected_events=[],
+            atmosphere=current_scene.get("atmosphere"),
+            npcs_present=current_scene.get("npcs_present", [])
+        )
+    
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 
