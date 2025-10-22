@@ -31,6 +31,11 @@ from backend.game.dice_roller import DiceRoller
 from backend.game.combat_engine import CombatEngine
 from backend.game.narrative_engine import NarrativeEngine
 
+try:
+    from backend.services.dnd_mcp_client import DndMcpClient
+except ImportError:
+    DndMcpClient = None  # MCP client not available
+
 
 class IntentType(Enum):
     """Types of player intents that can be detected"""
@@ -141,6 +146,9 @@ class DMChatHandler:
         self.combat_engine = CombatEngine(db)
         self.narrative_engine = NarrativeEngine(db)
         
+        # Initialize MCP client if available
+        self.mcp_client = DndMcpClient() if DndMcpClient else None
+        
         # Conversation context (per session)
         self.conversation_history: Dict[int, List[Dict[str, str]]] = {}
         
@@ -188,6 +196,22 @@ class DMChatHandler:
         # Check for slash commands first
         if user_message.strip().startswith('/'):
             return await self._handle_command(game_session, user_message)
+        
+        # Detect spell casting (auto-lookup if MCP available)
+        if self.mcp_client:
+            spell_detected, spell_name = await self._detect_spell_cast(user_message)
+            if spell_detected:
+                # Prepend spell info to response
+                spell_info = await self._lookup_spell(spell_name)
+                user_message = f"{user_message}\n\n[Auto-looked up spell: {spell_name}]\n{spell_info}"
+        
+        # Detect monster mentions (auto-suggest spawn if MCP available)
+        if self.mcp_client:
+            monster_detected, monster_name = await self._detect_monster_mention(user_message)
+            if monster_detected:
+                # Add monster info as context hint
+                monster_info = await self._lookup_monster(monster_name)
+                user_message = f"{user_message}\n\n[Auto-looked up monster: {monster_name}]\n{monster_info}"
         
         # Parse intent using LLM
         intent = await self._parse_intent(game_session, user_message)
@@ -382,8 +406,35 @@ Return JSON format:
             
             message = "\n".join(lines)
         
+        elif command == '/spell':
+            # Look up D&D spell
+            if not self.mcp_client:
+                message = "❌ D&D MCP client not available. Cannot look up spells."
+            elif not args:
+                message = "Please specify a spell name. Example: /spell Fireball"
+            else:
+                message = await self._lookup_spell(args.strip())
+        
+        elif command == '/monster':
+            # Look up D&D monster
+            if not self.mcp_client:
+                message = "❌ D&D MCP client not available. Cannot look up monsters."
+            elif not args:
+                message = "Please specify a monster name. Example: /monster Goblin"
+            else:
+                message = await self._lookup_monster(args.strip())
+        
+        elif command == '/item':
+            # Look up D&D magic item
+            if not self.mcp_client:
+                message = "❌ D&D MCP client not available. Cannot look up items."
+            elif not args:
+                message = "Please specify an item name. Example: /item Bag of Holding"
+            else:
+                message = await self._lookup_item(args.strip())
+        
         else:
-            message = f"Unknown command: {command}\nAvailable: /roll, /hp, /status"
+            message = f"Unknown command: {command}\nAvailable: /roll, /hp, /status, /spell, /monster, /item"
         
         return DMResponse(
             message=message,
@@ -641,3 +692,302 @@ Keep it concise (2-3 sentences). Stay in character as the DM. Guide the player o
         """Clear conversation history for a session"""
         if session_id in self.conversation_history:
             del self.conversation_history[session_id]
+    
+    # ============================================================================
+    # D&D CONTENT LOOKUP - Phase 4 Integration
+    # ============================================================================
+    
+    async def _lookup_spell(self, spell_name: str) -> str:
+        """
+        Look up D&D spell details via MCP.
+        
+        Args:
+            spell_name: Name of spell to look up
+            
+        Returns:
+            str: Formatted spell information
+        """
+        try:
+            spell_data = await self.mcp_client.get_spell(spell_name)
+            
+            if not spell_data or "error" in spell_data:
+                return f"❌ Spell '{spell_name}' not found in D&D 5e database."
+            
+            spell = spell_data.get("spell", {})
+            
+            # Extract key details
+            name = spell.get("name", spell_name)
+            level = spell.get("level", 0)
+            school = spell.get("school", {}).get("name", "")
+            casting_time = spell.get("casting_time", "")
+            spell_range = spell.get("range", "")
+            components = spell.get("components", [])
+            duration = spell.get("duration", "")
+            desc = spell.get("desc", [""])
+            
+            # Format level
+            level_str = "Cantrip" if level == 0 else f"Level {level}"
+            
+            # Format components
+            components_str = ", ".join(components) if components else "None"
+            
+            # Build formatted response
+            lines = [
+                f"📜 **{name}**",
+                f"*{level_str} {school}*",
+                "",
+                f"**Casting Time:** {casting_time}",
+                f"**Range:** {spell_range}",
+                f"**Components:** {components_str}",
+                f"**Duration:** {duration}",
+                "",
+            ]
+            
+            # Add description (first paragraph only)
+            if desc and desc[0]:
+                description = desc[0]
+                if len(description) > 300:
+                    description = description[:297] + "..."
+                lines.append(f"**Description:** {description}")
+            
+            # Add damage if available
+            if spell.get("damage"):
+                damage_type = spell["damage"].get("damage_type", {}).get("name", "")
+                damage_at_slot = spell["damage"].get("damage_at_slot_level", {})
+                if damage_at_slot:
+                    first_level = list(damage_at_slot.values())[0]
+                    lines.append(f"**Damage:** {first_level} {damage_type}")
+            
+            # Add saving throw if available
+            if spell.get("dc"):
+                save_type = spell["dc"].get("dc_type", {}).get("name", "")
+                lines.append(f"**Save:** {save_type} DC")
+            
+            return "\n".join(lines)
+        
+        except Exception as e:
+            return f"❌ Error looking up spell '{spell_name}': {e}"
+    
+    async def _lookup_monster(self, monster_name: str) -> str:
+        """
+        Look up D&D monster stats via MCP.
+        
+        Args:
+            monster_name: Name of monster to look up
+            
+        Returns:
+            str: Formatted monster stat block
+        """
+        try:
+            monster_data = await self.mcp_client.get_monster(monster_name)
+            
+            if not monster_data or "error" in monster_data:
+                return f"❌ Monster '{monster_name}' not found in D&D 5e database."
+            
+            monster = monster_data.get("monster", {})
+            
+            # Extract key stats
+            name = monster.get("name", monster_name)
+            size = monster.get("size", "")
+            monster_type = monster.get("type", "")
+            alignment = monster.get("alignment", "")
+            ac = monster.get("armor_class", [{}])[0].get("value", 10) if monster.get("armor_class") else 10
+            hp = monster.get("hit_points", 0)
+            hp_dice = monster.get("hit_points_roll", "")
+            cr = monster.get("challenge_rating", 0)
+            
+            # Ability scores
+            str_score = monster.get("strength", 10)
+            dex_score = monster.get("dexterity", 10)
+            con_score = monster.get("constitution", 10)
+            int_score = monster.get("intelligence", 10)
+            wis_score = monster.get("wisdom", 10)
+            cha_score = monster.get("charisma", 10)
+            
+            # Calculate modifiers
+            def mod(score): return (score - 10) // 2
+            str_mod = f"+{mod(str_score)}" if mod(str_score) >= 0 else str(mod(str_score))
+            dex_mod = f"+{mod(dex_score)}" if mod(dex_score) >= 0 else str(mod(dex_score))
+            con_mod = f"+{mod(con_score)}" if mod(con_score) >= 0 else str(mod(con_score))
+            
+            # Build stat block
+            lines = [
+                f"⚔️ **{name}**",
+                f"*{size} {monster_type}, {alignment}*",
+                "",
+                f"**AC:** {ac} | **HP:** {hp} ({hp_dice}) | **CR:** {cr}",
+                "",
+                f"**STR:** {str_score} ({str_mod}) | **DEX:** {dex_score} ({dex_mod}) | **CON:** {con_score} ({con_mod})",
+                f"**INT:** {int_score} ({mod(int_score):+d}) | **WIS:** {wis_score} ({mod(wis_score):+d}) | **CHA:** {cha_score} ({mod(cha_score):+d})",
+                "",
+            ]
+            
+            # Add speed
+            speed = monster.get("speed", {})
+            if speed:
+                speed_strs = []
+                for move_type, distance in speed.items():
+                    if isinstance(distance, dict):
+                        distance = distance.get("distance", 0)
+                    if move_type == "walk":
+                        speed_strs.append(f"{distance} ft")
+                    else:
+                        speed_strs.append(f"{move_type} {distance} ft")
+                lines.append(f"**Speed:** {', '.join(speed_strs)}")
+            
+            # Add actions (first 2 only)
+            actions = monster.get("actions", [])
+            if actions:
+                lines.append("")
+                lines.append("**Actions:**")
+                for action in actions[:2]:
+                    action_name = action.get("name", "Unknown")
+                    action_desc = action.get("desc", "")
+                    if action_desc:
+                        short_desc = action_desc[:150] + "..." if len(action_desc) > 150 else action_desc
+                        lines.append(f"• **{action_name}:** {short_desc}")
+            
+            return "\n".join(lines)
+        
+        except Exception as e:
+            return f"❌ Error looking up monster '{monster_name}': {e}"
+    
+    async def _lookup_item(self, item_name: str) -> str:
+        """
+        Look up D&D magic item via MCP.
+        
+        Args:
+            item_name: Name of magic item to look up
+            
+        Returns:
+            str: Formatted item information
+        """
+        try:
+            # Search for item (MCP doesn't have direct get_item, use search_all)
+            search_data = await self.mcp_client.search_all(item_name)
+            
+            if not search_data or "error" in search_data:
+                return f"❌ Item '{item_name}' not found in D&D 5e database."
+            
+            # Find magic items in results
+            magic_items = search_data.get("results", {}).get("magic-items", [])
+            
+            if not magic_items:
+                return f"❌ No magic items found matching '{item_name}'."
+            
+            # Take first match
+            item = magic_items[0]
+            name = item.get("name", item_name)
+            url = item.get("url", "")
+            
+            # For now, just return basic info
+            # Full item details would require another API call
+            lines = [
+                f"💎 **{name}**",
+                f"*Magic Item*",
+                "",
+                f"Use `/spell` or `/monster` for full stat blocks.",
+                f"Item details: {url}"
+            ]
+            
+            return "\n".join(lines)
+        
+        except Exception as e:
+            return f"❌ Error looking up item '{item_name}': {e}"
+    
+    async def _detect_spell_cast(self, message: str) -> tuple[bool, str]:
+        """
+        Detect if message contains spell casting and extract spell name.
+        
+        Looks for patterns like:
+        - "I cast Fireball"
+        - "Casting Magic Missile at the goblin"
+        - "I use Cure Wounds on the fighter"
+        
+        Args:
+            message: User message
+            
+        Returns:
+            tuple[bool, str]: (detected, spell_name)
+        """
+        msg_lower = message.lower()
+        
+        # Spell casting patterns
+        cast_patterns = [
+            'i cast ',
+            'casting ',
+            'i use ',
+            'using ',
+            'i throw ',
+            'i shoot ',
+        ]
+        
+        for pattern in cast_patterns:
+            if pattern in msg_lower:
+                # Extract spell name (next 1-3 words after pattern)
+                idx = msg_lower.index(pattern) + len(pattern)
+                remaining = message[idx:].strip()
+                
+                # Take up to 3 words (most spells are 1-3 words)
+                words = remaining.split()[:3]
+                
+                # Try each combination
+                for i in range(len(words), 0, -1):
+                    potential_spell = ' '.join(words[:i])
+                    # Remove trailing punctuation
+                    potential_spell = potential_spell.rstrip('.,!?;:')
+                    
+                    # Return potential spell name
+                    return True, potential_spell.title()
+        
+        return False, ""
+    
+    async def _detect_monster_mention(self, message: str) -> tuple[bool, str]:
+        """
+        Detect if message mentions a monster spawn.
+        
+        Looks for patterns like:
+        - "A goblin appears"
+        - "Suddenly, an orc attacks"
+        - "Three zombies shamble forward"
+        
+        Args:
+            message: User message
+            
+        Returns:
+            tuple[bool, str]: (detected, monster_name)
+        """
+        msg_lower = message.lower()
+        
+        # Monster spawn patterns
+        spawn_patterns = [
+            ' appears',
+            ' emerges',
+            ' attacks',
+            ' jumps out',
+            ' approaches',
+            ' shambles',
+            ' swoops',
+            ' charges',
+        ]
+        
+        for pattern in spawn_patterns:
+            if pattern in msg_lower:
+                # Look for article + noun before pattern
+                idx = msg_lower.index(pattern)
+                before = message[:idx].strip()
+                
+                # Extract last 1-3 words
+                words = before.split()[-3:]
+                
+                # Try to find monster name
+                for i in range(len(words), 0, -1):
+                    potential_monster = ' '.join(words[i-1:])
+                    # Remove articles
+                    potential_monster = potential_monster.replace('a ', '').replace('an ', '').replace('the ', '')
+                    potential_monster = potential_monster.rstrip('.,!?;:')
+                    
+                    if potential_monster and len(potential_monster) > 2:
+                        return True, potential_monster.title()
+        
+        return False, ""
