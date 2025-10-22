@@ -316,23 +316,58 @@ async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, 
     Call the specified LLM provider and return the response.
     Returns (response_text, metadata)
     Includes rate limiting.
+    
+    Supports:
+    - Named providers: openai, anthropic, google, groq
+    - LM Studio: URLs containing 'http' or 'localhost' (OpenAI-compatible API)
     """
     try:
         # Estimate tokens
         estimated_tokens = len(prompt) // 4 + 2000  # Assume max 2000 tokens output
         
-        # Check rate limits
-        rate_limit_error = rate_limiter.check_rate_limit(provider, estimated_tokens)
-        if rate_limit_error:
-            logger.warning(f"Rate limit exceeded for {provider}: {rate_limit_error}")
-            raise HTTPException(
-                status_code=429,
-                detail=rate_limit_error
-            )
+        # Check rate limits (skip for local LM Studio)
+        if not ('http' in provider.lower() or 'localhost' in provider.lower()):
+            rate_limit_error = rate_limiter.check_rate_limit(provider, estimated_tokens)
+            if rate_limit_error:
+                logger.warning(f"Rate limit exceeded for {provider}: {rate_limit_error}")
+                raise HTTPException(
+                    status_code=429,
+                    detail=rate_limit_error
+                )
         
         prov = provider.lower()
-        # Simple provider-canonicalization
-        if prov == "openai":
+        
+        # Check if provider is a URL (LM Studio or other OpenAI-compatible server)
+        if 'http' in prov or 'localhost' in prov:
+            # LM Studio or other OpenAI-compatible server
+            from openai import AsyncOpenAI
+            
+            # Extract base URL (remove /v1 suffix if present)
+            base_url = provider
+            if not base_url.endswith('/v1'):
+                base_url = base_url.rstrip('/') + '/v1'
+            
+            client = AsyncOpenAI(
+                base_url=base_url,
+                api_key="lm-studio"  # LM Studio doesn't validate keys
+            )
+            
+            response = await client.chat.completions.create(
+                model=model or "local-model",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=2000,
+                temperature=0.7
+            )
+            
+            response_text = response.choices[0].message.content
+            metadata = {
+                "model": model or "local-model",
+                "provider": "lm-studio",
+                "base_url": base_url
+            }
+        
+        # Named providers
+        elif prov == "openai":
             response_text = await LLMProvider.generate_openai(prompt, model or "gpt-4")
             metadata = {"model": model or "gpt-4", "provider": "openai"}
         elif prov == "anthropic":
@@ -347,9 +382,10 @@ async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, 
         else:
             raise ValueError(f"Unsupported provider: {provider}")
         
-        # Record successful request
-        actual_tokens = len(response_text) // 4
-        rate_limiter.record_request(provider, actual_tokens)
+        # Record successful request (skip for local servers)
+        if not ('http' in provider.lower() or 'localhost' in provider.lower()):
+            actual_tokens = len(response_text) // 4
+            rate_limiter.record_request(provider, actual_tokens)
         
         return response_text, metadata
     except HTTPException:

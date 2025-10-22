@@ -242,17 +242,17 @@ export default function DMChatPage() {
       if (assistantMsg) {
         // replace placeholder with real assistant message
         setMessages((m) =>
-          m.map((it) => (it.id === placeholderId ? assistantMsg : it))
+          m.map((it) => (it.id === tempPlaceholderId ? assistantMsg : it))
         );
       } else {
         // remove placeholder if no assistant message
-        setMessages((m) => m.filter((it) => it.id !== placeholderId));
+        setMessages((m) => m.filter((it) => it.id !== tempPlaceholderId));
       }
     } catch (e) {
       console.error(e);
       setError(String(e));
       // Remove placeholder on error
-      setMessages((m) => m.filter((it) => it.id !== placeholderId));
+      setMessages((m) => m.filter((it) => it.id !== tempPlaceholderId));
     } finally {
       setSending(false);
       setLoadingGen(false);
