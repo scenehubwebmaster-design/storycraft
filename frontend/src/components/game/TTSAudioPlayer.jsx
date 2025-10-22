@@ -137,10 +137,15 @@ function TTSAudioPlayer({
       }
     } catch (err) {
       console.error("Failed to fetch TTS audio:", err);
-      
+
       // Check if it's a dependency error
-      if (err.response?.status === 500 && err.response?.data?.detail?.includes("TTS service not available")) {
-        setError("Voice narration unavailable. Install orpheus-speech on backend.");
+      if (
+        err.response?.status === 500 &&
+        err.response?.data?.detail?.includes("TTS service not available")
+      ) {
+        setError(
+          "Voice narration unavailable. Install orpheus-speech on backend."
+        );
       } else {
         setError("Failed to generate audio");
       }

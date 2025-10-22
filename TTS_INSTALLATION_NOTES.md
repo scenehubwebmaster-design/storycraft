@@ -3,19 +3,23 @@
 ## Current Status: ⚠️ Not Functional on Windows (CUDA Required)
 
 ### Issue
+
 Orpheus TTS requires CUDA-enabled PyTorch but the system has CPU-only PyTorch installed.
 
 **Error:**
+
 ```
 AssertionError: Torch not compiled with CUDA enabled
 ```
 
 ### Why This Happens
+
 - Orpheus TTS automatically tries to move models to CUDA device
 - Windows installation of PyTorch defaults to CPU-only version
 - The `orpheus_tts` package doesn't support CPU-only operation
 
 ### Installation Attempted
+
 ```powershell
 pip install --user orpheus-speech
 ```
@@ -27,10 +31,12 @@ pip install --user orpheus-speech
 ### Option 1: Install CUDA PyTorch (Recommended for GPU users)
 
 **Prerequisites:**
+
 - NVIDIA GPU
 - CUDA Toolkit 11.8 or 12.1
 
 **Steps:**
+
 ```powershell
 # Uninstall CPU PyTorch
 pip uninstall torch torchvision torchaudio
@@ -46,6 +52,7 @@ pip install --user orpheus-speech
 ```
 
 **Verification:**
+
 ```python
 import torch
 print(f"CUDA available: {torch.cuda.is_available()}")
@@ -60,11 +67,13 @@ print("Orpheus TTS imported successfully!")
 Consider these alternatives that work on CPU:
 
 1. **Coqui TTS** (CPU-friendly)
+
    ```powershell
    pip install TTS
    ```
 
 2. **pyttsx3** (Offline, uses system voices)
+
    ```powershell
    pip install pyttsx3
    ```
@@ -77,6 +86,7 @@ Consider these alternatives that work on CPU:
 ### Option 3: Disable TTS Feature
 
 TTS is optional. The application works without it:
+
 - Backend gracefully handles missing TTS dependency
 - Frontend shows clear error: "Voice narration unavailable. Install orpheus-speech on backend."
 - All other game features work normally
@@ -84,6 +94,7 @@ TTS is optional. The application works without it:
 ## Current Graceful Degradation
 
 ✅ **Already Implemented:**
+
 - Backend catches ImportError on missing `orpheus_tts`
 - Returns 500 with clear message when TTS endpoint called
 - Frontend detects error and shows user-friendly message
@@ -92,11 +103,13 @@ TTS is optional. The application works without it:
 ## Recommendations
 
 **For Development:**
+
 - Leave TTS disabled unless you have an NVIDIA GPU
 - Focus on core gameplay features first
 - TTS can be added later with proper GPU setup
 
 **For Production:**
+
 - Consider cloud-based TTS services (AWS Polly, Google TTS, Azure Speech)
 - Deploy on GPU-enabled server if using Orpheus TTS
 - Or use lighter CPU-based TTS alternatives
@@ -118,6 +131,7 @@ curl http://localhost:8000/api/chat/sessions/1/messages/1/tts?voice=tara
 ```
 
 Expected response:
+
 ```json
 {
   "detail": "TTS service not available. Install orpheus-speech: pip install orpheus-speech"
