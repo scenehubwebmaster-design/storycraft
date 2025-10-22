@@ -18,7 +18,13 @@ import wave
 import io
 import time
 from typing import Iterator, Optional
-from orpheus_tts import OrpheusModel
+
+try:
+    from orpheus_tts import OrpheusModel
+    ORPHEUS_AVAILABLE = True
+except ImportError:
+    ORPHEUS_AVAILABLE = False
+    OrpheusModel = None
 
 class TTSService:
     """
@@ -45,13 +51,22 @@ class TTSService:
             max_model_len: Maximum model sequence length
             default_voice: Default voice (tara, leah, jess, leo, dan, mia, zac, zoe)
         """
+        if not ORPHEUS_AVAILABLE:
+            raise ImportError(
+                "Orpheus TTS not available. Install with: pip install orpheus-speech"
+            )
+        
         print(f"Loading Orpheus TTS model: {model_name}")
-        self.model = OrpheusModel(
-            model_name=model_name,
-            max_model_len=max_model_len
-        )
-        self.default_voice = default_voice
-        print(f"Orpheus TTS model loaded successfully. Default voice: {default_voice}")
+        try:
+            self.model = OrpheusModel(
+                model_name=model_name,
+                max_model_len=max_model_len
+            )
+            self.default_voice = default_voice
+            print(f"Orpheus TTS model loaded successfully. Default voice: {default_voice}")
+        except Exception as e:
+            print(f"Failed to load Orpheus TTS model: {e}")
+            raise
     
     def generate_speech_streaming(
         self,
