@@ -1,6 +1,6 @@
 /**
  * TTSAudioPlayer - Text-to-Speech Audio Player Component
- * 
+ *
  * Features:
  * - Play/pause/stop controls
  * - Volume control
@@ -10,7 +10,7 @@
  * - Voice selection
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   IconButton,
@@ -21,26 +21,26 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
-} from '@mui/material';
+  InputLabel,
+} from "@mui/material";
 import {
   PlayArrow as PlayIcon,
   Pause as PauseIcon,
   Stop as StopIcon,
   VolumeUp as VolumeIcon,
   VolumeOff as MuteIcon,
-  RecordVoiceOver as VoiceIcon
-} from '@mui/icons-material';
-import axios from 'axios';
+  RecordVoiceOver as VoiceIcon,
+} from "@mui/icons-material";
+import axios from "axios";
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = "http://localhost:8000/api";
 
-function TTSAudioPlayer({ 
-  sessionId, 
-  messageId, 
+function TTSAudioPlayer({
+  sessionId,
+  messageId,
   autoPlay = false,
   showVoiceSelector = false,
-  compact = false
+  compact = false,
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,21 +48,21 @@ function TTSAudioPlayer({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState('tara');
+  const [selectedVoice, setSelectedVoice] = useState("tara");
   const [audioUrl, setAudioUrl] = useState(null);
   const [error, setError] = useState(null);
 
   const audioRef = useRef(null);
 
   const voices = [
-    { value: 'tara', label: 'Tara (Female, Warm)' },
-    { value: 'leah', label: 'Leah (Female, Clear)' },
-    { value: 'jess', label: 'Jess (Female, Bright)' },
-    { value: 'leo', label: 'Leo (Male, Deep)' },
-    { value: 'dan', label: 'Dan (Male, Smooth)' },
-    { value: 'mia', label: 'Mia (Female, Soft)' },
-    { value: 'zac', label: 'Zac (Male, Strong)' },
-    { value: 'zoe', label: 'Zoe (Female, Energetic)' }
+    { value: "tara", label: "Tara (Female, Warm)" },
+    { value: "leah", label: "Leah (Female, Clear)" },
+    { value: "jess", label: "Jess (Female, Bright)" },
+    { value: "leo", label: "Leo (Male, Deep)" },
+    { value: "dan", label: "Dan (Male, Smooth)" },
+    { value: "mia", label: "Mia (Female, Soft)" },
+    { value: "zac", label: "Zac (Male, Strong)" },
+    { value: "zoe", label: "Zoe (Female, Energetic)" },
   ];
 
   // Fetch and setup audio
@@ -100,14 +100,14 @@ function TTSAudioPlayer({
       setProgress(0);
     };
 
-    audio.addEventListener('timeupdate', updateProgress);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("ended", handleEnded);
 
     return () => {
-      audio.removeEventListener('timeupdate', updateProgress);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("ended", handleEnded);
     };
   }, [audioUrl]);
 
@@ -120,7 +120,7 @@ function TTSAudioPlayer({
         `${API_BASE}/chat/sessions/${sessionId}/messages/${messageId}/tts?voice=${voice}`,
         {},
         {
-          responseType: 'blob'
+          responseType: "blob",
         }
       );
 
@@ -136,8 +136,8 @@ function TTSAudioPlayer({
         }, 100);
       }
     } catch (err) {
-      console.error('Failed to fetch TTS audio:', err);
-      setError('Failed to generate audio');
+      console.error("Failed to fetch TTS audio:", err);
+      setError("Failed to generate audio");
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +162,7 @@ function TTSAudioPlayer({
 
   const handleStop = () => {
     if (!audioRef.current) return;
-    
+
     audioRef.current.pause();
     audioRef.current.currentTime = 0;
     setIsPlaying(false);
@@ -171,7 +171,7 @@ function TTSAudioPlayer({
 
   const handleProgressChange = (event, newValue) => {
     if (!audioRef.current || !duration) return;
-    
+
     const newTime = (newValue / 100) * duration;
     audioRef.current.currentTime = newTime;
     setProgress(newValue);
@@ -193,7 +193,7 @@ function TTSAudioPlayer({
   const handleVoiceChange = async (event) => {
     const newVoice = event.target.value;
     setSelectedVoice(newVoice);
-    
+
     // Re-fetch audio with new voice if already loaded
     if (audioUrl) {
       // Cleanup old URL
@@ -201,16 +201,16 @@ function TTSAudioPlayer({
       setAudioUrl(null);
       setProgress(0);
       setIsPlaying(false);
-      
+
       await fetchAudio(newVoice);
     }
   };
 
   const formatTime = (seconds) => {
-    if (!seconds || !isFinite(seconds)) return '0:00';
+    if (!seconds || !isFinite(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Cleanup on unmount
@@ -224,15 +224,15 @@ function TTSAudioPlayer({
 
   if (compact) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <audio ref={audioRef} src={audioUrl} />
-        
+
         {isLoading ? (
           <CircularProgress size={24} />
         ) : (
-          <Tooltip title={isPlaying ? 'Pause' : 'Play DM Voice'}>
-            <IconButton 
-              size="small" 
+          <Tooltip title={isPlaying ? "Pause" : "Play DM Voice"}>
+            <IconButton
+              size="small"
               onClick={handlePlayPause}
               disabled={!!error}
               color="primary"
@@ -241,7 +241,7 @@ function TTSAudioPlayer({
             </IconButton>
           </Tooltip>
         )}
-        
+
         {error && (
           <Typography variant="caption" color="error">
             {error}
@@ -252,14 +252,16 @@ function TTSAudioPlayer({
   }
 
   return (
-    <Box sx={{ 
-      p: 2, 
-      backgroundColor: '#f5f5f5', 
-      borderRadius: 2,
-      border: '1px solid #ddd'
-    }}>
+    <Box
+      sx={{
+        p: 2,
+        backgroundColor: "#f5f5f5",
+        borderRadius: 2,
+        border: "1px solid #ddd",
+      }}
+    >
       <audio ref={audioRef} src={audioUrl} />
-      
+
       {/* Voice Selector */}
       {showVoiceSelector && (
         <FormControl fullWidth size="small" sx={{ mb: 2 }}>
@@ -268,7 +270,9 @@ function TTSAudioPlayer({
             value={selectedVoice}
             label="DM Voice"
             onChange={handleVoiceChange}
-            startAdornment={<VoiceIcon fontSize="small" sx={{ mr: 1, ml: 1 }} />}
+            startAdornment={
+              <VoiceIcon fontSize="small" sx={{ mr: 1, ml: 1 }} />
+            }
           >
             {voices.map((voice) => (
               <MenuItem key={voice.value} value={voice.value}>
@@ -280,7 +284,7 @@ function TTSAudioPlayer({
       )}
 
       {/* Playback Controls */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
         {isLoading ? (
           <CircularProgress size={32} />
         ) : (
@@ -302,7 +306,7 @@ function TTSAudioPlayer({
             disabled={!audioUrl || !!error}
             size="small"
           />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography variant="caption" color="text.secondary">
               {formatTime(audioRef.current?.currentTime || 0)}
             </Typography>
@@ -313,7 +317,9 @@ function TTSAudioPlayer({
         </Box>
 
         {/* Volume Control */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 120 }}>
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 120 }}
+        >
           <IconButton size="small" onClick={toggleMute}>
             {isMuted || volume === 0 ? <MuteIcon /> : <VolumeIcon />}
           </IconButton>

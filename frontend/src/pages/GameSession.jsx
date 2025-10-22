@@ -294,7 +294,9 @@ function GameSession() {
             color={ttsEnabled ? "secondary" : "default"}
             startIcon={ttsEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
             onClick={() => setTtsEnabled(!ttsEnabled)}
-            title={ttsEnabled ? "Disable voice narration" : "Enable voice narration"}
+            title={
+              ttsEnabled ? "Disable voice narration" : "Enable voice narration"
+            }
           >
             Voice
           </Button>
