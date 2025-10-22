@@ -9,7 +9,7 @@
  * - Support for markdown in DM responses
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Paper,
   Box,
@@ -18,17 +18,24 @@ import {
   Typography,
   Avatar,
   CircularProgress,
-  Divider
-} from '@mui/material';
+  Divider,
+} from "@mui/material";
 import {
   Send as SendIcon,
   Person as PlayerIcon,
-  Castle as DMIcon
-} from '@mui/icons-material';
-import TTSAudioPlayer from './TTSAudioPlayer';
+  Castle as DMIcon,
+} from "@mui/icons-material";
+import TTSAudioPlayer from "./TTSAudioPlayer";
 
-function DMChatPanel({ messages = [], onSendMessage, isGenerating = false, sessionId = null }) {
-  const [inputValue, setInputValue] = useState('');
+function DMChatPanel({
+  messages = [],
+  onSendMessage,
+  isGenerating = false,
+  sessionId = null,
+  ttsEnabled = true,
+  ttsAutoPlay = false,
+}) {
+  const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -189,14 +196,14 @@ function DMChatPanel({ messages = [], onSendMessage, isGenerating = false, sessi
                   {formatMessage(msg.content)}
                 </Typography>
               </Paper>
-              
+
               {/* TTS Audio Player for DM messages */}
-              {isDM && msg.id && sessionId && (
+              {isDM && ttsEnabled && msg.id && sessionId && (
                 <Box sx={{ mt: 0.5 }}>
                   <TTSAudioPlayer
                     sessionId={sessionId}
                     messageId={msg.id}
-                    autoPlay={false}
+                    autoPlay={ttsAutoPlay}
                     compact={true}
                   />
                 </Box>

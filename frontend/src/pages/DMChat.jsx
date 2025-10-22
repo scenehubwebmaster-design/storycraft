@@ -48,9 +48,11 @@ import {
   Chat as ChatIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
+  VolumeUp as VolumeUpIcon,
 } from "@mui/icons-material";
 import { darkTheme } from "../theme/darkTheme";
 import ReactMarkdown from "react-markdown";
+import TTSAudioPlayer from "../components/game/TTSAudioPlayer";
 
 const drawerWidth = 320;
 
@@ -71,6 +73,8 @@ export default function DMChatPage() {
   const [error, setError] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [ttsAutoPlay, setTtsAutoPlay] = useState(false);
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -493,6 +497,9 @@ export default function DMChatPage() {
                     <MenuItem value="openai">OpenAI</MenuItem>
                     <MenuItem value="google">Google</MenuItem>
                     <MenuItem value="anthropic">Anthropic</MenuItem>
+                    <MenuItem value="http://100.120.44.114:1234/v1">
+                      LM Studio (Local)
+                    </MenuItem>
                   </Select>
                 </FormControl>
 
@@ -535,6 +542,35 @@ export default function DMChatPage() {
                     }}
                   />
                 </Tooltip>
+
+                <Divider sx={{ my: 1 }} />
+
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Voice Narration (TTS)
+                </Typography>
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={ttsEnabled}
+                      onChange={(e) => setTtsEnabled(e.target.checked)}
+                      color="secondary"
+                    />
+                  }
+                  label="Enable Voice Narration"
+                />
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={ttsAutoPlay}
+                      onChange={(e) => setTtsAutoPlay(e.target.checked)}
+                      disabled={!ttsEnabled}
+                      color="secondary"
+                    />
+                  }
+                  label="Auto-play DM responses"
+                />
               </Stack>
             </Card>
           </Collapse>
@@ -830,6 +866,26 @@ export default function DMChatPage() {
                             {msg.content}
                           </Typography>
                         )}
+
+                        {/* TTS Audio Player */}
+                        {msg.role === "assistant" &&
+                          ttsEnabled &&
+                          msg.id &&
+                          !msg._optimistic && (
+                            <Box sx={{ mt: 1.5 }}>
+                              <TTSAudioPlayer
+                                sessionId={selectedSession.id}
+                                messageId={msg.id}
+                                autoPlay={ttsAutoPlay}
+                                compact={false}
+                                sx={{
+                                  bgcolor: "rgba(255,255,255,0.1)",
+                                  borderRadius: 1,
+                                  p: 1,
+                                }}
+                              />
+                            </Box>
+                          )}
 
                         {/* Source Citations */}
                         {msg.role === "assistant" &&

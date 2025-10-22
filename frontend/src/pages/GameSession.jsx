@@ -30,6 +30,8 @@ import {
   SportsKabaddi as CombatIcon,
   Explore as ExploreIcon,
   People as PartyIcon,
+  VolumeUp as VolumeUpIcon,
+  VolumeOff as VolumeOffIcon,
 } from "@mui/icons-material";
 
 import { useGameSession } from "../hooks/useGameSession";
@@ -70,6 +72,8 @@ function GameSession() {
 
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showEventLog, setShowEventLog] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [ttsAutoPlay, setTtsAutoPlay] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -286,6 +290,15 @@ function GameSession() {
         </Typography>
         <Box sx={{ display: "flex", gap: 2 }}>
           <Button
+            variant={ttsEnabled ? "contained" : "outlined"}
+            color={ttsEnabled ? "secondary" : "default"}
+            startIcon={ttsEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+            onClick={() => setTtsEnabled(!ttsEnabled)}
+            title={ttsEnabled ? "Disable voice narration" : "Enable voice narration"}
+          >
+            Voice
+          </Button>
+          <Button
             variant="outlined"
             startIcon={<DiceIcon />}
             onClick={() => setShowDiceRoller(!showDiceRoller)}
@@ -325,6 +338,8 @@ function GameSession() {
                 onSendMessage={handleSendMessage}
                 isGenerating={isGenerating}
                 sessionId={chatSessionId}
+                ttsEnabled={ttsEnabled}
+                ttsAutoPlay={ttsAutoPlay}
               />
             </Grid>
 
