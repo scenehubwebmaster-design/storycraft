@@ -22,11 +22,13 @@ try:
     from ..database import get_db
     from .session_manager import SessionManager
     from .combat_engine import CombatEngine, CombatantData
+    from ..services.dnd_mcp_client import DndMcpClient
 except ImportError:
     from backend.models import GameSession, GameEvent, NPC
     from backend.database import get_db
     from backend.game.session_manager import SessionManager
     from backend.game.combat_engine import CombatEngine, CombatantData
+    from backend.services.dnd_mcp_client import DndMcpClient
 
 
 @dataclass
@@ -78,6 +80,7 @@ class NarrativeEngine:
         self.llm = llm_client
         self.session_mgr = SessionManager(db)
         self.combat_engine = CombatEngine(db)
+        self.mcp_client = DndMcpClient()  # D&D 5e API client
     
     async def generate_opening_scene(
         self,
@@ -782,3 +785,251 @@ Narration:"""
         )
         
         return combat
+    
+    # ============================================================================
+    # D&D MCP INTEGRATION - Spell & Monster Lookup
+    # ============================================================================
+    
+    async def process_spell_cast(
+        self,
+        spell_name: str,
+        caster_name: str,
+        target: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Process spell casting with official D&D 5e spell data.
+        
+        Fetches spell details from MCP client and returns formatted
+        information for narrative integration.
+        
+        Args:
+            spell_name: Name of spell (e.g., "Fireball", "Cure Wounds")
+            caster_name: Name of character casting spell
+            target: Optional target of spell
+        
+        Returns:
+            Dictionary with spell data:
+            {
+                "success": bool,
+                "spell": {...},  # Full spell data from MCP
+                "narrative": str,  # Formatted description
+                "damage": str,  # Damage dice if applicable
+                "save_dc": str,  # Saving throw info
+                "error": str  # If lookup failed
+            }
+        
+        Example:
+            >>> result = await engine.process_spell_cast("Fireball", "Gandalf")
+            >>> print(result["narrative"])
+            "Gandalf casts Fireball (3rd-level Evocation). Each creature in a 
+             20-foot-radius sphere must make a Dexterity saving throw..."
+        """
+        try:
+            # Fetch spell from D&D 5e API via MCP
+            spell_data = await self.mcp_client.get_spell(spell_name)
+            
+            if not spell_data or "error" in spell_data:
+                return {
+                    "success": False,
+                    "error": f"Spell '{spell_name}' not found in D&D 5e database",
+                    "narrative": f"{caster_name} attempts to cast {spell_name}, but the spell fizzles..."
+                }
+            
+            # Extract key spell information
+            spell = spell_data.get("spell", {})
+            level = spell.get("level", 0)
+            school = spell.get("school", {}).get("name", "")
+            casting_time = spell.get("casting_time", "1 action")
+            spell_range = spell.get("range", "")
+            components = spell.get("components", [])
+            duration = spell.get("duration", "")
+            description = spell.get("desc", [""])[0] if spell.get("desc") else ""
+            
+            # Check for damage
+            damage_info = ""
+            if spell.get("damage"):
+                damage_type = spell["damage"].get("damage_type", {}).get("name", "")
+                damage_at_slot_level = spell["damage"].get("damage_at_slot_level", {})
+                if damage_at_slot_level:
+                    first_level = list(damage_at_slot_level.values())[0]
+                    damage_info = f" Damage: {first_level} {damage_type}"
+            
+            # Check for saving throw
+            save_info = ""
+            if spell.get("dc"):
+                save_type = spell["dc"].get("dc_type", {}).get("name", "")
+                save_info = f" Save: {save_type} DC"
+            
+            # Build narrative description
+            level_str = "cantrip" if level == 0 else f"{level}{'st' if level == 1 else 'nd' if level == 2 else 'rd' if level == 3 else 'th'}-level"
+            components_str = ", ".join(components)
+            
+            target_str = f" targeting {target}" if target else ""
+            
+            narrative = (
+                f"{caster_name} casts **{spell_name}** ({level_str} {school}){target_str}. "
+                f"*Casting Time: {casting_time}, Range: {spell_range}, Components: {components_str}, "
+                f"Duration: {duration}*\n\n"
+                f"{description[:200]}..."
+            )
+            
+            return {
+                "success": True,
+                "spell": spell,
+                "spell_name": spell_name,
+                "level": level,
+                "school": school,
+                "narrative": narrative,
+                "damage": damage_info,
+                "save_dc": save_info,
+                "full_description": description,
+                "components": components,
+                "range": spell_range,
+                "duration": duration
+            }
+        
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "narrative": f"{caster_name} attempts to cast {spell_name}, but something goes wrong..."
+            }
+    
+    async def spawn_monster(
+        self,
+        monster_name: str,
+        count: int = 1,
+        location: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Spawn monster(s) with official D&D 5e stat blocks.
+        
+        Fetches monster data from MCP client and returns formatted
+        information for combat encounters.
+        
+        Args:
+            monster_name: Name of monster (e.g., "Goblin", "Ancient Red Dragon")
+            count: Number of monsters to spawn
+            location: Optional location description
+        
+        Returns:
+            Dictionary with monster data:
+            {
+                "success": bool,
+                "monster": {...},  # Full monster data from MCP
+                "narrative": str,  # Formatted spawn description
+                "combatants": [...],  # CombatantData objects for combat engine
+                "error": str  # If lookup failed
+            }
+        
+        Example:
+            >>> result = await engine.spawn_monster("Goblin", count=3)
+            >>> print(result["narrative"])
+            "3 Goblins appear! CR 1/4, AC 15, HP 7 each."
+        """
+        try:
+            # Fetch monster from D&D 5e API via MCP
+            monster_data = await self.mcp_client.get_monster(monster_name)
+            
+            if not monster_data or "error" in monster_data:
+                return {
+                    "success": False,
+                    "error": f"Monster '{monster_name}' not found in D&D 5e database",
+                    "narrative": f"You sense a presence, but nothing appears..."
+                }
+            
+            # Extract monster stats
+            monster = monster_data.get("monster", {})
+            name = monster.get("name", monster_name)
+            size = monster.get("size", "")
+            monster_type = monster.get("type", "")
+            alignment = monster.get("alignment", "")
+            ac = monster.get("armor_class", [{}])[0].get("value", 10) if monster.get("armor_class") else 10
+            hp_dice = monster.get("hit_points_roll", "1d8")
+            hp = monster.get("hit_points", 10)
+            cr = monster.get("challenge_rating", 0)
+            
+            # Get abilities for initiative
+            dex_score = monster.get("dexterity", 10)
+            dex_modifier = (dex_score - 10) // 2
+            
+            # Build narrative description
+            location_str = f" in {location}" if location else ""
+            count_str = f"{count} " if count > 1 else "A "
+            plural_name = name if count == 1 else f"{name}s"
+            
+            narrative = (
+                f"{count_str}**{plural_name}** {'appear' if count > 1 else 'appears'}{location_str}! "
+                f"*{size} {monster_type}, {alignment}. "
+                f"CR {cr}, AC {ac}, HP {hp} each ({hp_dice}).*\n\n"
+            )
+            
+            # Add description if available
+            if monster.get("desc"):
+                narrative += f"{monster['desc'][:150]}..."
+            
+            # Build combatant data for combat engine
+            combatants = []
+            for i in range(count):
+                combatant_name = f"{name} {i+1}" if count > 1 else name
+                combatants.append(CombatantData(
+                    name=combatant_name,
+                    initiative_bonus=dex_modifier,
+                    max_hp=hp,
+                    current_hp=hp,
+                    ac=ac,
+                    is_player=False,
+                    monster_type=name.lower()
+                ))
+            
+            return {
+                "success": True,
+                "monster": monster,
+                "monster_name": name,
+                "count": count,
+                "narrative": narrative,
+                "combatants": combatants,
+                "ac": ac,
+                "hp": hp,
+                "cr": cr,
+                "dex_modifier": dex_modifier,
+                "size": size,
+                "type": monster_type,
+                "alignment": alignment
+            }
+        
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "narrative": f"You sense a {monster_name} nearby, but it remains hidden..."
+            }
+    
+    async def enhance_scene_with_dnd_content(
+        self,
+        scene_description: str,
+        context: Dict[str, Any]
+    ) -> str:
+        """
+        Enhance scene description with relevant D&D content from MCP.
+        
+        Analyzes scene for D&D entities (spells, monsters, items) and
+        enriches description with official data where applicable.
+        
+        Args:
+            scene_description: Raw scene text
+            context: Additional context (party level, location, etc.)
+        
+        Returns:
+            Enhanced scene description with D&D details
+        
+        Example:
+            >>> enhanced = await engine.enhance_scene_with_dnd_content(
+            ...     "A wizard casts Fireball at the goblins",
+            ...     {"party_level": 5}
+            ... )
+        """
+        # This is a placeholder for future enhancement
+        # Could use NLP to detect spell/monster names and auto-lookup
+        return scene_description
+
