@@ -7,6 +7,7 @@ from .. import models
 from .monsters import search_monsters
 from .references import do_reference_search
 from .generation import call_llm
+from ..query_analyzer import analyze_query, get_search_summary
 
 router = APIRouter()
 
@@ -157,8 +158,24 @@ async def generate_for_session(session_id: int, db: Session = Depends(get_db)):
             monster_docs = []
         
         try:
-            # Search references (all types)
-            reference_docs = do_reference_search(q=retrieval_query, ref_type=None, k=s.top_k or 5, db=db)
+            # Analyze query to extract structured search parameters
+            query_params = analyze_query(retrieval_query)
+            search_summary = get_search_summary(query_params)
+            print(f"[DEBUG] Query analysis: {search_summary}")
+            print(f"[DEBUG] Extracted params: {query_params}")
+            
+            # Search references with extracted filters
+            reference_docs = do_reference_search(
+                q=retrieval_query,
+                ref_type=query_params.get('ref_type'),
+                k=s.top_k or 5,
+                db=db,
+                level=query_params.get('level'),
+                rarity=query_params.get('rarity'),
+                school=query_params.get('school'),
+                category=query_params.get('category'),
+                tags=query_params.get('tags')
+            )
             print(f"[DEBUG] Reference search returned {len(reference_docs)} results")
         except Exception as e:
             print(f"[DEBUG] Reference search failed: {e}")
