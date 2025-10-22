@@ -8,6 +8,7 @@ from .monsters import search_monsters
 from .references import do_reference_search
 from .generation import call_llm
 from ..query_analyzer import analyze_query, get_search_summary
+from ..game.dm_chat_handler import DMChatHandler
 
 router = APIRouter()
 
@@ -114,6 +115,115 @@ def update_session(session_id: int, req: UpdateSessionRequest, db: Session = Dep
     db.commit()
     db.refresh(s)
     return s.to_dict()
+
+
+@router.post("/sessions/{session_id}/game-chat")
+async def generate_game_chat(
+    session_id: int,
+    game_session_id: int,
+    db: Session = Depends(get_db)
+):
+    """Generate a DM response for game session chat.
+    
+    This endpoint processes player messages through the AI DM system,
+    integrating dice rolling, combat, narrative, and NPC dialogue.
+    
+    Args:
+        session_id: Chat session ID for conversation history
+        game_session_id: Game session ID for game state
+    
+    Returns:
+        DM response with game state updates
+    """
+    # Verify chat session exists
+    chat_session = db.query(models.ChatSession).filter(
+        models.ChatSession.id == session_id
+    ).first()
+    if not chat_session:
+        raise HTTPException(status_code=404, detail="Chat session not found")
+    
+    # Verify game session exists
+    game_session = db.query(models.GameSession).filter(
+        models.GameSession.id == game_session_id
+    ).first()
+    if not game_session:
+        raise HTTPException(status_code=404, detail="Game session not found")
+    
+    # Get last user message from chat session
+    last_msg = db.query(models.ChatMessage).filter(
+        models.ChatMessage.session_id == session_id,
+        models.ChatMessage.role == 'user',
+        models.ChatMessage.is_deleted.is_(False)
+    ).order_by(models.ChatMessage.message_index.desc()).first()
+    
+    if not last_msg:
+        raise HTTPException(status_code=400, detail="No user message found in session")
+    
+    # Initialize DM chat handler with LM Studio configuration
+    lm_studio_url = chat_session.provider if chat_session.provider and 'http' in chat_session.provider else "http://100.120.44.114:1234/v1"
+    model = chat_session.model or "local-model"
+    
+    dm_handler = DMChatHandler(
+        db=db,
+        lm_studio_url=lm_studio_url,
+        model=model
+    )
+    
+    # Process game message through DM handler
+    try:
+        dm_response = await dm_handler.process_game_message(
+            game_session=game_session,
+            user_message=last_msg.content
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DM processing failed: {e}")
+    
+    # Create assistant message with DM response
+    last_index = db.query(models.ChatMessage).filter(
+        models.ChatMessage.session_id == session_id
+    ).order_by(models.ChatMessage.message_index.desc()).first()
+    next_index = (last_index.message_index + 1) if last_index else 0
+    
+    assistant_msg = models.ChatMessage(
+        session_id=session_id,
+        role='assistant',
+        content=dm_response.message,
+        message_index=next_index,
+        meta={
+            'game_session_id': game_session_id,
+            'game_state_changed': dm_response.game_state_changed,
+            'scene_changed': dm_response.scene_changed,
+            'combat_started': dm_response.combat_started,
+            'combat_ended': dm_response.combat_ended,
+            'events': dm_response.events
+        }
+    )
+    db.add(assistant_msg)
+    
+    # Log events to game session
+    for event in dm_response.events:
+        game_event = models.GameEvent(
+            session_id=game_session_id,
+            event_type=event.get('type', 'unknown'),
+            event_data=event
+        )
+        db.add(game_event)
+    
+    db.commit()
+    db.refresh(assistant_msg)
+    db.refresh(game_session)
+    
+    return {
+        "assistant_message": assistant_msg.to_dict(),
+        "game_state": game_session.game_state,
+        "dm_response": {
+            "game_state_changed": dm_response.game_state_changed,
+            "scene_changed": dm_response.scene_changed,
+            "combat_started": dm_response.combat_started,
+            "combat_ended": dm_response.combat_ended,
+            "events": dm_response.events
+        }
+    }
 
 
 @router.post("/sessions/{session_id}/generate")
