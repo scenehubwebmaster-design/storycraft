@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from sqlalchemy.orm import Session
@@ -347,3 +348,78 @@ async def generate_for_session(session_id: int, db: Session = Depends(get_db)):
     db.refresh(m)
 
     return {"assistant_message": m.to_dict(), "generation": metadata}
+
+
+@router.post("/sessions/{session_id}/messages/{message_id}/tts")
+async def generate_tts_for_message(
+    session_id: int,
+    message_id: int,
+    voice: str = "tara",
+    db: Session = Depends(get_db)
+):
+    """Generate text-to-speech audio for a chat message using Orpheus TTS.
+    
+    Returns WAV audio file (16-bit PCM, 24kHz, mono).
+    
+    Args:
+        session_id: Chat session ID
+        message_id: Message ID to convert to speech
+        voice: Voice to use (tara, leah, jess, leo, dan, mia, zac, zoe)
+    
+    Returns:
+        StreamingResponse: WAV audio file
+    """
+    # Verify session exists
+    session = db.query(models.ChatSession).filter(
+        models.ChatSession.id == session_id
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Get message
+    message = db.query(models.ChatMessage).filter(
+        models.ChatMessage.id == message_id,
+        models.ChatMessage.session_id == session_id
+    ).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Only generate TTS for assistant messages
+    if message.role != 'assistant':
+        raise HTTPException(
+            status_code=400, 
+            detail="TTS only available for assistant messages"
+        )
+    
+    try:
+        # Import TTS service (lazy load)
+        from ..tts_service import get_tts_service
+        
+        tts = get_tts_service()
+        
+        # Generate speech audio
+        audio_data = tts.generate_speech(
+            text=message.content,
+            voice=voice,
+            add_dm_personality=True
+        )
+        
+        # Return as streaming audio
+        return StreamingResponse(
+            iter([audio_data]),
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": f"inline; filename=message_{message_id}.wav"
+            }
+        )
+        
+    except ImportError:
+        raise HTTPException(
+            status_code=500,
+            detail="TTS service not available. Install orpheus-speech: pip install orpheus-speech"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"TTS generation failed: {e}"
+        )

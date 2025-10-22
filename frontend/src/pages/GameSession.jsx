@@ -1,6 +1,6 @@
 /**
  * GameSession Page - AI Dungeon Master Game Board
- * 
+ *
  * Main container for the D&D game session interface with:
  * - DM chat panel for natural language interaction
  * - Combat tracker with initiative and HP
@@ -11,8 +11,8 @@
  * - Event log
  */
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
   Container,
@@ -23,23 +23,23 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
-  Backdrop
-} from '@mui/material';
+  Backdrop,
+} from "@mui/material";
 import {
   Casino as DiceIcon,
   SportsKabaddi as CombatIcon,
   Explore as ExploreIcon,
-  People as PartyIcon
-} from '@mui/icons-material';
+  People as PartyIcon,
+} from "@mui/icons-material";
 
-import { useGameSession } from '../hooks/useGameSession';
-import DMChatPanel from '../components/game/DMChatPanel';
-import CombatTracker from '../components/game/CombatTracker';
-import PartyStatus from '../components/game/PartyStatus';
-import SceneDisplay from '../components/game/SceneDisplay';
-import ActionButtons from '../components/game/ActionButtons';
-import DiceRoller from '../components/game/DiceRoller';
-import EventLog from '../components/game/EventLog';
+import { useGameSession } from "../hooks/useGameSession";
+import DMChatPanel from "../components/game/DMChatPanel";
+import CombatTracker from "../components/game/CombatTracker";
+import PartyStatus from "../components/game/PartyStatus";
+import SceneDisplay from "../components/game/SceneDisplay";
+import ActionButtons from "../components/game/ActionButtons";
+import DiceRoller from "../components/game/DiceRoller";
+import EventLog from "../components/game/EventLog";
 
 function GameSession() {
   const { gameId, chatId } = useParams();
@@ -65,22 +65,26 @@ function GameSession() {
     processAttack,
     nextTurn,
     endCombat,
-    startScene
+    startScene,
   } = useGameSession(gameId);
 
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showEventLog, setShowEventLog] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
 
   // Load game session on mount
   useEffect(() => {
     if (gameId && chatId) {
-      loadGameSession(parseInt(gameId), parseInt(chatId)).catch(err => {
-        console.error('Failed to load game session:', err);
+      loadGameSession(parseInt(gameId), parseInt(chatId)).catch((err) => {
+        console.error("Failed to load game session:", err);
         setSnackbar({
           open: true,
-          message: 'Failed to load game session. Creating new session...',
-          severity: 'error'
+          message: "Failed to load game session. Creating new session...",
+          severity: "error",
         });
       });
     } else {
@@ -91,25 +95,26 @@ function GameSession() {
 
   const handleCreateNewSession = async () => {
     try {
-      const { gameSessionId: newGameId, chatSessionId: newChatId } = await createGameSession(
-        'New Adventure',
-        [] // Start with empty party - can add members later
-      );
+      const { gameSessionId: newGameId, chatSessionId: newChatId } =
+        await createGameSession(
+          "New Adventure",
+          [] // Start with empty party - can add members later
+        );
 
       // Redirect to new session URL
       navigate(`/game/${newGameId}/${newChatId}`, { replace: true });
 
       setSnackbar({
         open: true,
-        message: 'New game session created! Start your adventure...',
-        severity: 'success'
+        message: "New game session created! Start your adventure...",
+        severity: "success",
       });
     } catch (err) {
-      console.error('Failed to create game session:', err);
+      console.error("Failed to create game session:", err);
       setSnackbar({
         open: true,
-        message: 'Failed to create game session',
-        severity: 'error'
+        message: "Failed to create game session",
+        severity: "error",
       });
     }
   };
@@ -118,11 +123,11 @@ function GameSession() {
     try {
       await sendMessage(message);
     } catch (err) {
-      console.error('Failed to send message:', err);
+      console.error("Failed to send message:", err);
       setSnackbar({
         open: true,
-        message: 'Failed to send message to DM',
-        severity: 'error'
+        message: "Failed to send message to DM",
+        severity: "error",
       });
     }
   };
@@ -133,15 +138,15 @@ function GameSession() {
       setSnackbar({
         open: true,
         message: `🎲 Rolled ${notation}: ${result.total}`,
-        severity: 'info'
+        severity: "info",
       });
       return result;
     } catch (err) {
-      console.error('Failed to roll dice:', err);
+      console.error("Failed to roll dice:", err);
       setSnackbar({
         open: true,
-        message: 'Failed to roll dice',
-        severity: 'error'
+        message: "Failed to roll dice",
+        severity: "error",
       });
     }
   };
@@ -150,8 +155,8 @@ function GameSession() {
     if (!currentTurnCombatant) {
       setSnackbar({
         open: true,
-        message: 'No active combatant',
-        severity: 'warning'
+        message: "No active combatant",
+        severity: "warning",
       });
       return;
     }
@@ -161,22 +166,22 @@ function GameSession() {
         currentTurnCombatant.name,
         targetName,
         currentTurnCombatant.attack_bonus || 5,
-        currentTurnCombatant.damage_dice || '1d8+3'
+        currentTurnCombatant.damage_dice || "1d8+3"
       );
 
       setSnackbar({
         open: true,
-        message: result.hit 
-          ? `💥 Hit! ${result.damage} damage` 
+        message: result.hit
+          ? `💥 Hit! ${result.damage} damage`
           : `Miss! Rolled ${result.attack_roll}`,
-        severity: result.hit ? 'success' : 'warning'
+        severity: result.hit ? "success" : "warning",
       });
     } catch (err) {
-      console.error('Failed to process attack:', err);
+      console.error("Failed to process attack:", err);
       setSnackbar({
         open: true,
-        message: 'Failed to process attack',
-        severity: 'error'
+        message: "Failed to process attack",
+        severity: "error",
       });
     }
   };
@@ -186,15 +191,15 @@ function GameSession() {
       await nextTurn();
       setSnackbar({
         open: true,
-        message: 'Next turn',
-        severity: 'info'
+        message: "Next turn",
+        severity: "info",
       });
     } catch (err) {
-      console.error('Failed to advance turn:', err);
+      console.error("Failed to advance turn:", err);
       setSnackbar({
         open: true,
-        message: 'Failed to advance turn',
-        severity: 'error'
+        message: "Failed to advance turn",
+        severity: "error",
       });
     }
   };
@@ -204,46 +209,46 @@ function GameSession() {
       await endCombat();
       setSnackbar({
         open: true,
-        message: 'Combat ended',
-        severity: 'success'
+        message: "Combat ended",
+        severity: "success",
       });
     } catch (err) {
-      console.error('Failed to end combat:', err);
+      console.error("Failed to end combat:", err);
       setSnackbar({
         open: true,
-        message: 'Failed to end combat',
-        severity: 'error'
+        message: "Failed to end combat",
+        severity: "error",
       });
     }
   };
 
   const handleQuickAction = (actionType) => {
     switch (actionType) {
-      case 'explore':
-        handleSendMessage('I look around and examine my surroundings');
+      case "explore":
+        handleSendMessage("I look around and examine my surroundings");
         break;
-      case 'search':
-        handleSendMessage('I search the area carefully');
+      case "search":
+        handleSendMessage("I search the area carefully");
         break;
-      case 'listen':
-        handleSendMessage('I listen carefully for any sounds');
+      case "listen":
+        handleSendMessage("I listen carefully for any sounds");
         break;
-      case 'talk':
-        handleSendMessage('I try to start a conversation');
+      case "talk":
+        handleSendMessage("I try to start a conversation");
         break;
-      case 'attack':
+      case "attack":
         if (isInCombat) {
-          handleSendMessage('I attack the nearest enemy');
+          handleSendMessage("I attack the nearest enemy");
         } else {
           setSnackbar({
             open: true,
-            message: 'Not in combat',
-            severity: 'warning'
+            message: "Not in combat",
+            severity: "warning",
           });
         }
         break;
-      case 'help':
-        handleSendMessage('/status');
+      case "help":
+        handleSendMessage("/status");
         break;
       default:
         break;
@@ -252,7 +257,10 @@ function GameSession() {
 
   if (loading && !gameSessionId) {
     return (
-      <Backdrop open={true} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <Backdrop
+        open={true}
+        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
         <CircularProgress color="inherit" />
       </Backdrop>
     );
@@ -261,11 +269,22 @@ function GameSession() {
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box
+        sx={{
+          mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
           <ExploreIcon /> AI Dungeon Master
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: "flex", gap: 2 }}>
           <Button
             variant="outlined"
             startIcon={<DiceIcon />}
@@ -296,10 +315,7 @@ function GameSession() {
           <Grid container spacing={2}>
             {/* Current Scene */}
             <Grid item xs={12}>
-              <SceneDisplay 
-                scene={currentScene}
-                isGenerating={isGenerating}
-              />
+              <SceneDisplay scene={currentScene} isGenerating={isGenerating} />
             </Grid>
 
             {/* DM Chat Panel */}
@@ -308,6 +324,7 @@ function GameSession() {
                 messages={messages}
                 onSendMessage={handleSendMessage}
                 isGenerating={isGenerating}
+                sessionId={chatSessionId}
               />
             </Grid>
 
@@ -327,10 +344,7 @@ function GameSession() {
           <Grid container spacing={2}>
             {/* Party Status */}
             <Grid item xs={12}>
-              <PartyStatus
-                partyStatus={partyStatus}
-                isInCombat={isInCombat}
-              />
+              <PartyStatus partyStatus={partyStatus} isInCombat={isInCombat} />
             </Grid>
 
             {/* Combat Tracker (when in combat) */}
@@ -374,10 +388,10 @@ function GameSession() {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert 
-          severity={snackbar.severity} 
+        <Alert
+          severity={snackbar.severity}
           variant="filled"
           onClose={() => setSnackbar({ ...snackbar, open: false })}
         >
