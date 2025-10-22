@@ -56,6 +56,7 @@ import SettingsPage from "./pages/Settings";
 import ReferencesPage from "./pages/References";
 import RagTesterPage from "./pages/RagTester";
 import DMChatPage from "./pages/DMChat";
+import GameSession from "./pages/GameSession";
 
 function NotFound() {
   return (
@@ -281,6 +282,8 @@ export default function App() {
             <Route path="/references" element={<ReferencesPage />} />
             <Route path="/rag-tester" element={<DMChatPage />} />
             <Route path="/dm-chat" element={<DMChatPage />} />
+            <Route path="/game" element={<GameSession />} />
+            <Route path="/game/:gameId/:chatId" element={<GameSession />} />
             <Route path="/create" element={<CreatePage />} />
             <Route path="/create/character" element={<CreateCharacterPage />} />
             <Route path="/create/story" element={<CreateStoryPage />} />
