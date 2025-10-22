@@ -5,7 +5,7 @@ import sys
 try:
     # Preferred (when package is importable)
     from .database import engine, Base
-    from .routers import characters, stories, worlds, llm, generation, settings, locations, references
+    from .routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat
 except Exception:
     # Fallback to absolute imports so running `python backend/main.py` or
     # starting uvicorn from other working directories still works. Ensure the
@@ -14,7 +14,7 @@ except Exception:
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     from backend.database import engine, Base
-    from backend.routers import characters, stories, worlds, llm, generation, settings, locations, references
+    from backend.routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat
 import logging
 
 # Set up logging
@@ -80,6 +80,35 @@ app.include_router(generation.router, tags=["generation"])  # No prefix - alread
 app.include_router(settings.router, tags=["settings"])  # No prefix - already defined in router
 app.include_router(locations.router, tags=["locations"])  # /api/locations/
 app.include_router(references.router, tags=["references"])  # /api/references/
+app.include_router(monsters.router, tags=["monsters"])  # /api/monsters/
+app.include_router(chat.router, prefix="/api/chat", tags=["chat"])  # /api/chat/
+
+
+@app.on_event("startup")
+async def _populate_groq_model_cache():
+    """Fetch available Groq models at startup and cache them for rate limiter use.
+
+    This call is best-effort: if GROQ_API_KEY isn't set or the network call
+    fails, the groq_models module will fall back to hardcoded defaults.
+    """
+    lg = logging.getLogger("backend.main")
+    try:
+        from backend import groq_models
+        from backend import model_cache
+
+        try:
+            models = await groq_models.fetch_available_models()
+        except TypeError:
+            # Some environments may have a synchronous fallback
+            models = groq_models.fetch_available_models()
+
+        if models:
+            model_cache.set_models("groq", models)
+            lg.info(f"Cached {len(models)} Groq models on startup")
+        else:
+            lg.info("Groq model fetch returned no models; using fallback list")
+    except Exception as e:
+        lg.info(f"Groq model prefetch skipped: {e}")
 
 @app.get("/health")
 def health_check():

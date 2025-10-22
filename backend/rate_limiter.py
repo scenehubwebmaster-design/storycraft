@@ -20,8 +20,12 @@ except ImportError:
 try:
     from groq_models import get_model_limits as get_groq_model_limits
 except ImportError:
-    logger.warning("Failed to import groq_models, model-specific limits unavailable")
-    get_groq_model_limits = None
+    try:
+        # Try backend package import as a fallback (module lives in backend/groq_models.py)
+        from backend.groq_models import get_model_limits as get_groq_model_limits  # type: ignore
+    except Exception:
+        logger.warning("Failed to import groq_models (tried top-level and backend.groq_models), model-specific limits unavailable")
+        get_groq_model_limits = None
 
 
 class RateLimiter:
@@ -122,6 +126,23 @@ class RateLimiter:
             if model_limits:
                 limits.update(model_limits)
                 logger.debug(f"Using model-specific limits for {model}: {model_limits}")
+
+        # If we didn't have groq model limits available at import time, try a lazy import
+        if provider == "groq" and model and not get_groq_model_limits:
+            try:
+                import importlib
+                mod = importlib.import_module("backend.groq_models")
+                gm = getattr(mod, "get_model_limits", None)
+                if gm:
+                    # Register into module-level name so subsequent calls use it
+                    globals()["get_groq_model_limits"] = gm
+                    model_limits = gm(model)
+                    if model_limits:
+                        limits.update(model_limits)
+                        logger.debug(f"Using lazily-loaded model-specific limits for {model}: {model_limits}")
+            except Exception:
+                # We purposely silence errors here; logging already occurred at import time
+                pass
         
         # Check requests per minute
         requests_last_minute = len(self.request_history[provider])

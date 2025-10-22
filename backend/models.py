@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Table, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Table, Boolean, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -186,6 +186,14 @@ class Reference(Base):
     title = Column(String(255), nullable=False)
     content = Column(Text)  # Markdown or HTML content
     source_url = Column(String(1024))
+    
+    # Metadata fields for filtering and enhanced search
+    level = Column(Integer, nullable=True, index=True)  # Spell level (0-9), character level, item level
+    rarity = Column(String(50), nullable=True, index=True)  # Common, Uncommon, Rare, Very Rare, Legendary, Artifact
+    school = Column(String(100), nullable=True)  # Spell school: Abjuration, Conjuration, Divination, Enchantment, Evocation, Illusion, Necromancy, Transmutation
+    category = Column(String(100), nullable=True)  # Item category: Weapon, Armor, Wondrous Item, Potion, etc.
+    tags = Column(JSON, nullable=True)  # Flexible tagging: ["fire", "area", "damage"], ["healing"], ["stealth"], etc.
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -197,6 +205,171 @@ class Reference(Base):
             "title": self.title,
             "content": self.content,
             "source_url": self.source_url,
+            "level": self.level,
+            "rarity": self.rarity,
+            "school": self.school,
+            "category": self.category,
+            "tags": self.tags,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+# Monster stats table for structured D&D monsters
+class MonsterStat(Base):
+    __tablename__ = "monster_stats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, unique=True)
+    slug = Column(String(255), unique=True)
+    url = Column(String(1024))
+    cr = Column(String(50))
+    numeric_cr = Column(Float)
+    ac = Column(String(255))
+    hp = Column(String(255))
+    speed = Column(String(255))
+    str = Column(Integer)
+    dex = Column(Integer)
+    con = Column(Integer)
+    int = Column(Integer)
+    wis = Column(Integer)
+    cha = Column(Integer)
+    senses = Column(String(255))
+    languages = Column(String(255))
+    damage = Column(Text)
+    saving_throws = Column(Text)
+    damage_resistances = Column(Text)
+    damage_immunities = Column(Text)
+    condition_immunities = Column(Text)
+    traits = Column(Text)  # JSON or plain text
+    actions = Column(Text)
+    reactions = Column(Text)
+    legendary_actions = Column(Text)
+    source = Column(String(255))
+    raw_html = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# Embeddings for monsters stored via ORM for faster retrieval
+class MonsterEmbedding(Base):
+    __tablename__ = "monster_embeddings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    monster_id = Column(Integer, ForeignKey("monster_stats.id"), unique=True, index=True)
+    vector = Column(Text)  # JSON-encoded vector
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# Embeddings for references (classes, spells, equipment, etc.) for RAG retrieval
+class ReferenceEmbedding(Base):
+    __tablename__ = "reference_embeddings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reference_id = Column(Integer, ForeignKey("references.id"), unique=True, index=True)
+    vector = Column(Text)  # JSON-encoded vector
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# Document chunks for better RAG retrieval (split long documents into retrievable chunks)
+class DocumentChunk(Base):
+    __tablename__ = "document_chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_id = Column(Integer, ForeignKey("references.id"), nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False)  # Order within document (0, 1, 2, ...)
+    chunk_text = Column(Text, nullable=False)  # The actual chunk content
+    heading = Column(String(255), nullable=True)  # Section heading if any
+    token_count = Column(Integer, nullable=True)  # Approximate token count
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# Embeddings for document chunks
+class ChunkEmbedding(Base):
+    __tablename__ = "chunk_embeddings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chunk_id = Column(Integer, ForeignKey("document_chunks.id"), unique=True, index=True)
+    vector = Column(Text)  # JSON-encoded vector (384-dim from sentence-transformers)
+    model = Column(String(100), nullable=True)  # Track which model was used
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# Chat session storage for persistent DM conversations (RAG-ready)
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=True)
+    user_id = Column(Integer, nullable=True, index=True)
+    provider = Column(String(100), nullable=True)  # e.g., 'groq', 'openai'
+    model = Column(String(255), nullable=True)
+    include_context = Column(Boolean, default=True)  # whether to include retrieval context
+    top_k = Column(Integer, default=5)
+    meta = Column(JSON, nullable=True)  # misc session-level metadata
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship to messages
+    messages = relationship(
+        "ChatMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="ChatMessage.message_index",
+    )
+
+    def to_dict(self, include_messages=True):
+        base = {
+            "id": self.id,
+            "title": self.title,
+            "user_id": self.user_id,
+            "provider": self.provider,
+            "model": self.model,
+            "include_context": self.include_context,
+            "top_k": self.top_k,
+            "metadata": self.meta,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+        if include_messages:
+            base["messages"] = [m.to_dict() for m in (self.messages or [])]
+        return base
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False, index=True)
+    role = Column(String(32), nullable=False)  # 'user', 'dm', 'system', 'assistant'
+    content = Column(Text, nullable=False)
+    message_index = Column(Integer, nullable=False, default=0, index=True)
+    tokens = Column(Integer, nullable=True)
+    meta = Column(JSON, nullable=True)  # per-message metadata (e.g., retrieval provenance)
+    is_deleted = Column(Boolean, default=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationship back to session
+    session = relationship("ChatSession", back_populates="messages")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "session_id": self.session_id,
+            "role": self.role,
+            "content": self.content,
+            "message_index": self.message_index,
+            "tokens": self.tokens,
+            "metadata": self.meta,
+            "is_deleted": self.is_deleted,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+

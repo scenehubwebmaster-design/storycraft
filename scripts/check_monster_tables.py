@@ -1,0 +1,15 @@
+import sqlite3
+conn=sqlite3.connect('e:/storycraft/storycraft.db')
+cur=conn.cursor()
+cur.execute("SELECT count(*) FROM sqlite_master WHERE name='monster_stats'")
+print('monster_stats table exists:', cur.fetchone()[0])
+cur.execute("SELECT count(*) FROM monster_stats")
+print('monster_stats rows:', cur.fetchone()[0])
+cur.execute("SELECT count(*) FROM sqlite_master WHERE name='monster_embeddings'")
+print('monster_embeddings table exists:', cur.fetchone()[0])
+cur.execute("SELECT count(*) FROM monster_embeddings")
+print('monster_embeddings rows:', cur.fetchone()[0])
+cur.execute("SELECT id, name, cr FROM monster_stats ORDER BY name LIMIT 5")
+for r in cur.fetchall():
+    print(r)
+conn.close()

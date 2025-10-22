@@ -16,6 +16,77 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+@router.get("/models")
+async def list_models(provider: str | None = None):
+    """Return available models for a provider (or all providers if omitted).
+
+    This is best-effort: if provider-specific fetchers raise or are not
+    available, the endpoint returns an empty list for that provider.
+    """
+    results = {}
+
+    async def _fetch_openai():
+        try:
+            models = await fetch_openai_models()
+            return models
+        except TypeError:
+            return fetch_openai_models()
+        except Exception:
+            logger.debug("openai model fetch failed", exc_info=True)
+            return []
+
+    async def _fetch_anthropic():
+        try:
+            models = await fetch_claude_models()
+            return models
+        except TypeError:
+            return fetch_claude_models()
+        except Exception:
+            logger.debug("anthropic model fetch failed", exc_info=True)
+            return []
+
+    async def _fetch_google():
+        try:
+            models = await fetch_available_models()
+            return models
+        except TypeError:
+            return fetch_available_models()
+        except Exception:
+            logger.debug("google model fetch failed", exc_info=True)
+            return []
+
+    async def _fetch_groq():
+        try:
+            models = await fetch_groq_models()
+            return models
+        except TypeError:
+            return fetch_groq_models()
+        except Exception:
+            logger.debug("groq model fetch failed", exc_info=True)
+            return []
+
+    # Provider-specific request
+    if provider:
+        p = provider.lower()
+        if p == "openai":
+            return await _fetch_openai()
+        if p in ("anthropic", "claude"):
+            return await _fetch_anthropic()
+        if p in ("google", "gemini"):
+            return await _fetch_google()
+        if p == "groq":
+            return await _fetch_groq()
+        return []
+
+    # All providers
+    results["openai"] = await _fetch_openai()
+    results["anthropic"] = await _fetch_anthropic()
+    results["google"] = await _fetch_google()
+    results["groq"] = await _fetch_groq()
+
+    return results
+
 # Import LLM clients
 try:
     import openai

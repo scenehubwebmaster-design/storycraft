@@ -54,6 +54,8 @@ import WorldsPage from "./pages/Worlds";
 import WorldDetailPage from "./pages/WorldDetail";
 import SettingsPage from "./pages/Settings";
 import ReferencesPage from "./pages/References";
+import RagTesterPage from "./pages/RagTester";
+import DMChatPage from "./pages/DMChat";
 
 function NotFound() {
   return (
@@ -88,6 +90,7 @@ function Layout({ children }) {
     { label: "Characters", path: "/characters", icon: <PeopleIcon /> },
     { label: "Worlds", path: "/worlds", icon: <PublicIcon /> },
     { label: "Settings", path: "/settings", icon: <SettingsIcon /> },
+    { label: "DM Chat", path: "/dm-chat", icon: <ErrorOutlineIcon /> },
   ];
 
   const handleDrawerToggle = () => {
@@ -276,6 +279,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/references" element={<ReferencesPage />} />
+            <Route path="/rag-tester" element={<DMChatPage />} />
+            <Route path="/dm-chat" element={<DMChatPage />} />
             <Route path="/create" element={<CreatePage />} />
             <Route path="/create/character" element={<CreateCharacterPage />} />
             <Route path="/create/story" element={<CreateStoryPage />} />

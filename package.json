@@ -23,7 +23,12 @@
     "fresh:full": "npm run clean:all && npm run dev:all",
     "test:read-pdf": "node ./scripts/read_pdf_test_wait.js",
     "extract:pdf": "node ./scripts/extract_pdf_pages.js",
-    "extract:phb": "python ./scripts/extract_phb.py --pdf ./documents/PlayersHandbook2024.pdf --pages 1 --out ./data/phb/raw_pages.json"
+    "extract:phb": "python ./scripts/extract_phb.py --pdf ./documents/PlayersHandbook2024.pdf --pages 1 --out ./data/phb/raw_pages.json",
+    "test:frontend": "npm --prefix frontend run test:unit",
+    "test:frontend:watch": "npm --prefix frontend run test:unit:watch"
+  },
+  "jest": {
+    "rootMode": "package-json"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
