@@ -10,6 +10,7 @@
 ## 📋 Overview
 
 Integrate the D&D MCP server to provide real-time access to official D&D 5e content:
+
 - **Spells**: All official spells with full details
 - **Monsters**: Complete monster stat blocks
 - **Equipment**: Weapons, armor, adventuring gear
@@ -44,30 +45,31 @@ Architecture:
 class DndMcpClient:
     def __init__(self, mcp_endpoint="http://localhost:3001"):
         """Initialize MCP client with endpoint"""
-        
+
     async def search_all(self, query: str) -> dict:
         """Search across all D&D categories"""
-        
+
     async def get_spell(self, spell_name: str) -> dict:
         """Get detailed spell information"""
-        
+
     async def get_monster(self, monster_name: str) -> dict:
         """Get monster stat block"""
-        
+
     async def get_equipment(self, item_name: str) -> dict:
         """Get equipment details"""
-        
+
     async def get_magic_item(self, item_name: str) -> dict:
         """Get magic item properties"""
-        
+
     async def filter_spells_by_level(self, min_level: int, max_level: int) -> list:
         """Get spells within level range"""
-        
+
     async def find_monsters_by_cr(self, min_cr: float, max_cr: float) -> list:
         """Get monsters within CR range"""
 ```
 
 **Key Features:**
+
 - Async HTTP client (aiohttp)
 - Response caching (TTL: 1 hour)
 - Error handling with fallback
@@ -81,14 +83,16 @@ class DndMcpClient:
 ```javascript
 /**
  * MCP Proxy Server
- * 
+ *
  * Bridges Node.js MCP server with Python FastAPI backend.
  * Accepts HTTP requests and forwards to MCP stdio server.
  */
 
-const express = require('express');
-const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
-const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
+const express = require("express");
+const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
+const {
+  StdioClientTransport,
+} = require("@modelcontextprotocol/sdk/client/stdio.js");
 
 const app = express();
 const PORT = 3001;
@@ -98,26 +102,29 @@ let mcpClient = null;
 
 async function initializeMCP() {
   const transport = new StdioClientTransport({
-    command: 'uv',
-    args: ['--directory', 'E:\\dnd-mcp', 'run', 'dnd_mcp_server.py']
+    command: "uv",
+    args: ["--directory", "E:\\dnd-mcp", "run", "dnd_mcp_server.py"],
   });
-  
-  mcpClient = new Client({
-    name: 'dnd-proxy',
-    version: '1.0.0'
-  }, {
-    capabilities: {}
-  });
-  
+
+  mcpClient = new Client(
+    {
+      name: "dnd-proxy",
+      version: "1.0.0",
+    },
+    {
+      capabilities: {},
+    }
+  );
+
   await mcpClient.connect(transport);
-  console.log('MCP client connected');
+  console.log("MCP client connected");
 }
 
 // Endpoint: Search all categories
-app.post('/api/search', async (req, res) => {
+app.post("/api/search", async (req, res) => {
   try {
     const { query } = req.body;
-    const result = await mcpClient.callTool('search_all_categories', { query });
+    const result = await mcpClient.callTool("search_all_categories", { query });
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -125,7 +132,7 @@ app.post('/api/search', async (req, res) => {
 });
 
 // Endpoint: Get spell details
-app.get('/api/spell/:name', async (req, res) => {
+app.get("/api/spell/:name", async (req, res) => {
   // Implementation
 });
 
@@ -157,7 +164,7 @@ class Spell(BaseModel):
     description: str
     higher_levels: Optional[str] = None
     classes: List[str]
-    
+
 class Monster(BaseModel):
     name: str
     size: str
@@ -171,7 +178,7 @@ class Monster(BaseModel):
     challenge_rating: float
     actions: List[dict]
     special_abilities: List[dict]
-    
+
 class MagicItem(BaseModel):
     name: str
     rarity: str
@@ -190,6 +197,7 @@ class MagicItem(BaseModel):
 **Directory:** `documents/reference/dnd_mechanics/`
 
 Create these files:
+
 1. `combat_rules.md` - Action economy, attacks, conditions
 2. `spellcasting_rules.md` - Spell slots, concentration, components
 3. `rest_rules.md` - Short/long rest mechanics
@@ -222,9 +230,9 @@ from pathlib import Path
 def ingest_dnd_mechanics():
     client = chromadb.PersistentClient(path="./chroma_db")
     collection = client.get_or_create_collection("dnd_mechanics")
-    
+
     mechanics_dir = Path("documents/reference/dnd_mechanics")
-    
+
     for md_file in mechanics_dir.glob("*.md"):
         content = md_file.read_text()
         # Chunk and ingest
@@ -246,27 +254,27 @@ class NarrativeEngine:
     def __init__(self, db: Session):
         self.db = db
         self.dnd_mcp = DndMcpClient()  # NEW
-        
+
     async def generate_opening_scene(self, game_session, adventure_type, location):
         # Query MCP for relevant monsters/items for this location
         monsters = await self.dnd_mcp.find_monsters_by_cr(
             min_cr=game_session.party_level - 2,
             max_cr=game_session.party_level + 2
         )
-        
+
         # Get environment-appropriate spells
         spells = await self.dnd_mcp.filter_spells_by_level(
             min_level=0,
             max_level=3
         )
-        
+
         # Build context with official D&D content
         context = f"""
         Location: {location}
         Appropriate monsters: {monsters}
         Available magic: {spells}
         """
-        
+
         # Generate scene with LLM using official content
         # ...
 ```
@@ -277,7 +285,7 @@ class NarrativeEngine:
 async def process_spell_cast(self, spell_name: str):
     """Look up spell details from MCP and apply effects"""
     spell = await self.dnd_mcp.get_spell(spell_name)
-    
+
     if spell:
         # Apply spell effects based on official rules
         damage_dice = spell.get('damage', {}).get('damage_at_slot_level', {})
@@ -291,7 +299,7 @@ async def process_spell_cast(self, spell_name: str):
 async def spawn_monster(self, monster_name: str, encounter_difficulty: str):
     """Spawn monster with official stat block"""
     monster = await self.dnd_mcp.get_monster(monster_name)
-    
+
     combatant = {
         'name': monster['name'],
         'hp': monster['hit_points'],
@@ -302,7 +310,7 @@ async def spawn_monster(self, monster_name: str, encounter_difficulty: str):
         'actions': monster['actions'],
         'special_abilities': monster.get('special_abilities', [])
     }
-    
+
     return combatant
 ```
 
@@ -317,25 +325,25 @@ async def spawn_monster(self, monster_name: str, encounter_difficulty: str):
 ```python
 async def _handle_command(self, game_session, message):
     """Enhanced command handling with D&D lookups"""
-    
+
     command = message.split()[0].lower()
     args = ' '.join(message.split()[1:])
-    
+
     if command == '/spell':
         # Look up spell in MCP
         spell = await self.dnd_mcp.get_spell(args)
         return self._format_spell_info(spell)
-        
+
     elif command == '/monster':
         # Look up monster in MCP
         monster = await self.dnd_mcp.get_monster(args)
         return self._format_monster_stat_block(monster)
-        
+
     elif command == '/item':
         # Look up item in MCP
         item = await self.dnd_mcp.get_magic_item(args)
         return self._format_item_info(item)
-        
+
     # ... existing commands
 ```
 
@@ -344,20 +352,20 @@ async def _handle_command(self, game_session, message):
 ```python
 async def _parse_intent(self, game_session, user_message):
     """Enhanced intent parsing with D&D entity recognition"""
-    
+
     # Check if message mentions spell names
     spell_mentions = await self._find_spell_mentions(user_message)
-    
+
     # Check if message mentions monsters
     monster_mentions = await self._find_monster_mentions(user_message)
-    
+
     # Enhance LLM prompt with official content
     context = {
         'spells': spell_mentions,
         'monsters': monster_mentions,
         'available_actions': self._get_available_actions(game_session)
     }
-    
+
     # Pass to LLM for intent classification with D&D context
     # ...
 ```
@@ -403,10 +411,10 @@ async def list_spells(
     """List spells with filters"""
     client = DndMcpClient()
     spells = await client.filter_spells_by_level(min_level, max_level)
-    
+
     if school:
         spells = [s for s in spells if s['school'] == school]
-    
+
     return spells
 
 @router.get("/monsters")
@@ -441,6 +449,7 @@ app.include_router(dnd_content.router)
 ### 6.1 Create D&D Content Components
 
 **Files:**
+
 - `frontend/src/components/dnd/SpellCard.jsx` - Display spell details
 - `frontend/src/components/dnd/MonsterStatBlock.jsx` - Display monster stats
 - `frontend/src/components/dnd/ItemCard.jsx` - Display magic items
@@ -449,10 +458,11 @@ app.include_router(dnd_content.router)
 ### 6.2 Integrate into GameSession
 
 Add D&D content panel:
+
 ```jsx
 <Grid item xs={12} md={4}>
   <DndSearch onSelect={handleDndContentSelect} />
-  
+
   {selectedSpell && <SpellCard spell={selectedSpell} />}
   {selectedMonster && <MonsterStatBlock monster={selectedMonster} />}
 </Grid>
@@ -461,7 +471,7 @@ Add D&D content panel:
 ### 6.3 Add Quick Reference Buttons
 
 ```jsx
-<Box sx={{ display: 'flex', gap: 1 }}>
+<Box sx={{ display: "flex", gap: 1 }}>
   <Button onClick={() => openSpellList()}>📚 Spells</Button>
   <Button onClick={() => openMonsterList()}>👹 Monsters</Button>
   <Button onClick={() => openItemList()}>✨ Items</Button>
@@ -515,7 +525,7 @@ async def test_scene_generation_with_monsters():
         adventure_type="dungeon",
         location="Ancient Ruins"
     )
-    
+
     # Should include appropriate monsters from MCP
     assert scene.description
     assert len(scene.choices) > 0
@@ -543,6 +553,7 @@ Test flow:
 ## 🚀 Deployment Checklist
 
 ### Backend
+
 - [ ] Install Node.js dependencies for MCP proxy
 - [ ] Start MCP proxy server on port 3001
 - [ ] Configure Python backend to use proxy endpoint
@@ -552,6 +563,7 @@ Test flow:
 - [ ] Verify fallback to RAG when MCP down
 
 ### Frontend
+
 - [ ] Create D&D content components
 - [ ] Add search interface
 - [ ] Test spell/monster/item displays
@@ -559,6 +571,7 @@ Test flow:
 - [ ] Add error handling
 
 ### Documentation
+
 - [ ] Document MCP setup process
 - [ ] Add examples of using D&D content
 - [ ] Update API documentation
@@ -569,30 +582,35 @@ Test flow:
 ## 📝 Implementation Order
 
 ### Day 1 (Morning - 3 hours)
+
 1. ✅ Fix DnD MCP server installation
 2. ⏳ Create MCP proxy server (scripts/mcp_proxy_server.js)
 3. ⏳ Create Python MCP client (backend/services/dnd_mcp_client.py)
 4. ⏳ Test basic connectivity
 
 ### Day 1 (Afternoon - 3 hours)
+
 5. ⏳ Create Pydantic models for D&D content
 6. ⏳ Create D&D knowledge markdown files
 7. ⏳ Ingest markdown files into RAG
 8. ⏳ Test RAG queries with new content
 
 ### Day 2 (Morning - 3 hours)
+
 9. ⏳ Integrate MCP client into narrative engine
 10. ⏳ Add spell lookup for combat
 11. ⏳ Add monster spawning with stat blocks
 12. ⏳ Test scene generation with MCP content
 
 ### Day 2 (Afternoon - 2 hours)
+
 13. ⏳ Enhance DM chat handler with /spell, /monster, /item commands
 14. ⏳ Add context-aware entity recognition
 15. ⏳ Create D&D content API endpoints
 16. ⏳ Test all endpoints
 
 ### Day 3 (All day - 4 hours)
+
 17. ⏳ Create frontend D&D content components
 18. ⏳ Integrate into GameSession page
 19. ⏳ Add quick reference buttons
@@ -607,6 +625,7 @@ Test flow:
 ## 🎯 Success Criteria
 
 ### Must Have (MVP)
+
 - [x] DnD MCP server running and accessible
 - [ ] Python MCP client working
 - [ ] Spells searchable via API
@@ -615,6 +634,7 @@ Test flow:
 - [ ] /spell command shows accurate spell info
 
 ### Nice to Have
+
 - [ ] All 10 D&D mechanics markdown files in RAG
 - [ ] Frontend spell/monster cards
 - [ ] Quick reference buttons
@@ -622,6 +642,7 @@ Test flow:
 - [ ] Cache for frequently accessed content
 
 ### Stretch Goals
+
 - [ ] Character sheet integration (use official race/class data)
 - [ ] Automatic spell slot tracking
 - [ ] Initiative tracker with official monster stats
@@ -682,21 +703,25 @@ Test flow:
 ## 💡 Key Innovations
 
 1. **Hybrid Knowledge System**
+
    - MCP provides real-time official content
    - RAG provides DM guidance and mechanics
    - Combined for accurate, rich responses
 
 2. **Seamless Integration**
+
    - Python backend talks to Node.js MCP via HTTP proxy
    - No need to rewrite MCP server in Python
    - Maintains type safety with Pydantic models
 
 3. **Smart Fallback**
+
    - If MCP unavailable, use RAG system
    - Graceful degradation
    - Error messages guide users
 
 4. **Context-Aware DM**
+
    - Narrative engine uses appropriate monsters for party level
    - Combat uses official stat blocks
    - Spell effects follow official rules
@@ -711,14 +736,17 @@ Test flow:
 ## 🎓 Learning Resources
 
 ### MCP Documentation
+
 - https://modelcontextprotocol.io/docs
 - https://github.com/modelcontextprotocol/servers
 
 ### D&D 5e API
+
 - https://www.dnd5eapi.co/
 - https://www.dnd5eapi.co/docs/
 
 ### Our Implementation
+
 - `E:\dnd-mcp` - MCP server location
 - `.vscode/mcp.json` - MCP configuration
 - This file - Complete implementation plan
