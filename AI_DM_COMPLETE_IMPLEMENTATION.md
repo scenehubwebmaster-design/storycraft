@@ -959,13 +959,16 @@ And let the AI Dungeon Master guide your adventure! 🎲⚔️🏰
 ### LM Studio + TTS UI Integration (Just Added!)
 
 **New Features:**
+
 1. **LM Studio as Provider Option**
+
    - Added to DMChat.jsx provider dropdown
    - URL: http://100.120.44.114:1234/v1
    - Works alongside Groq/OpenAI/Google/Anthropic
    - Enables fully local AI DM (privacy + offline)
 
 2. **TTS Controls in UI**
+
    - DMChat.jsx: Settings panel with TTS enable/auto-play toggles
    - GameSession.jsx: Voice button in header (🔊/🔇)
    - DMChatPanel.jsx: TTS player props (ttsEnabled, ttsAutoPlay)
@@ -979,6 +982,7 @@ And let the AI Dungeon Master guide your adventure! 🎲⚔️🏰
    - Loading states and error handling
 
 **Files Modified:**
+
 - `frontend/src/pages/DMChat.jsx` (+60 lines)
 - `frontend/src/pages/GameSession.jsx` (+20 lines)
 - `frontend/src/components/game/DMChatPanel.jsx` (+10 lines)

@@ -373,3 +373,324 @@ class ChatMessage(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
+
+# ============================================================================
+# D&D GAME SYSTEM MODELS
+# ============================================================================
+
+class GameSession(Base):
+    """Core game session - links to ChatSession for DM conversation"""
+    __tablename__ = "game_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chat_session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False, index=True)
+    campaign_name = Column(String(255), nullable=False)
+    current_location = Column(String(255), nullable=True)
+    current_scene = Column(Text, nullable=True)
+    game_state = Column(JSON, nullable=True)  # Flexible state storage
+    party_level = Column(Integer, default=1)
+    session_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    chat_session = relationship("ChatSession", foreign_keys=[chat_session_id])
+    party_members = relationship("PartyMember", back_populates="game_session", cascade="all, delete-orphan")
+    encounters = relationship("CombatEncounter", back_populates="game_session", cascade="all, delete-orphan")
+    quests = relationship("Quest", back_populates="game_session", cascade="all, delete-orphan")
+    npcs = relationship("NPC", back_populates="game_session", cascade="all, delete-orphan")
+    inventory = relationship("InventoryItem", back_populates="game_session", cascade="all, delete-orphan")
+    events = relationship("GameEvent", back_populates="game_session", cascade="all, delete-orphan")
+    locations = relationship("GameLocation", back_populates="game_session", cascade="all, delete-orphan")
+
+    def to_dict(self, include_relationships=False):
+        data = {
+            "id": self.id,
+            "chat_session_id": self.chat_session_id,
+            "campaign_name": self.campaign_name,
+            "current_location": self.current_location,
+            "current_scene": self.current_scene,
+            "game_state": self.game_state,
+            "party_level": self.party_level,
+            "session_notes": self.session_notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+        if include_relationships:
+            data["party_members"] = [pm.to_dict() for pm in (self.party_members or [])]
+            data["quests"] = [q.to_dict() for q in (self.quests or [])]
+            data["locations"] = [loc.to_dict() for loc in (self.locations or [])]
+        return data
+
+
+class PartyMember(Base):
+    """Party member status - links Character to GameSession"""
+    __tablename__ = "party_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)
+    character_id = Column(Integer, ForeignKey("characters.id"), nullable=False, index=True)
+    current_hp = Column(Integer, nullable=False)
+    max_hp = Column(Integer, nullable=False)
+    temp_hp = Column(Integer, default=0)
+    conditions = Column(JSON, nullable=True)  # ["poisoned", "stunned", etc.]
+    position = Column(JSON, nullable=True)  # {"x": 0, "y": 0} or battlefield position
+    is_active = Column(Boolean, default=True, index=True)
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    game_session = relationship("GameSession", back_populates="party_members")
+    character = relationship("Character", foreign_keys=[character_id])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_session_id": self.game_session_id,
+            "character_id": self.character_id,
+            "character_name": self.character.name if self.character else None,
+            "current_hp": self.current_hp,
+            "max_hp": self.max_hp,
+            "temp_hp": self.temp_hp,
+            "conditions": self.conditions,
+            "position": self.position,
+            "is_active": self.is_active,
+            "joined_at": self.joined_at.isoformat() if self.joined_at else None,
+        }
+
+
+class CombatEncounter(Base):
+    """Combat encounter tracking"""
+    __tablename__ = "combat_encounters"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    difficulty = Column(String(50), nullable=True)  # easy, medium, hard, deadly
+    is_active = Column(Boolean, default=True, index=True)
+    turn_order = Column(JSON, nullable=True)  # [{"id": 1, "initiative": 18}, ...]
+    current_turn = Column(Integer, default=0)
+    round_number = Column(Integer, default=1)
+    started_at = Column(DateTime, default=datetime.utcnow)
+    ended_at = Column(DateTime, nullable=True)
+
+    # Relationships
+    game_session = relationship("GameSession", back_populates="encounters")
+    participants = relationship("CombatParticipant", back_populates="encounter", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_session_id": self.game_session_id,
+            "name": self.name,
+            "description": self.description,
+            "difficulty": self.difficulty,
+            "is_active": self.is_active,
+            "turn_order": self.turn_order,
+            "current_turn": self.current_turn,
+            "round_number": self.round_number,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "ended_at": self.ended_at.isoformat() if self.ended_at else None,
+            "participants": [p.to_dict() for p in (self.participants or [])],
+        }
+
+
+class CombatParticipant(Base):
+    """Individual participant in combat (PC or monster)"""
+    __tablename__ = "combat_participants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    encounter_id = Column(Integer, ForeignKey("combat_encounters.id"), nullable=False, index=True)
+    entity_type = Column(String(50), nullable=False)  # "pc" or "monster"
+    entity_id = Column(Integer, nullable=True)  # character_id or monster_stat_id
+    name = Column(String(255), nullable=False)
+    initiative = Column(Integer, nullable=False)
+    current_hp = Column(Integer, nullable=False)
+    max_hp = Column(Integer, nullable=False)
+    ac = Column(Integer, nullable=False)
+    conditions = Column(JSON, nullable=True)
+    position = Column(JSON, nullable=True)  # Battlefield position
+    is_alive = Column(Boolean, default=True)
+
+    # Relationships
+    encounter = relationship("CombatEncounter", back_populates="participants")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "encounter_id": self.encounter_id,
+            "entity_type": self.entity_type,
+            "entity_id": self.entity_id,
+            "name": self.name,
+            "initiative": self.initiative,
+            "current_hp": self.current_hp,
+            "max_hp": self.max_hp,
+            "ac": self.ac,
+            "conditions": self.conditions,
+            "position": self.position,
+            "is_alive": self.is_alive,
+        }
+
+
+class Quest(Base):
+    """Quest/objective tracking"""
+    __tablename__ = "quests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    quest_giver = Column(String(255), nullable=True)
+    objectives = Column(JSON, nullable=True)  # [{"text": "...", "completed": false}, ...]
+    status = Column(String(50), default="active", index=True)  # active, completed, failed
+    reward = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    completed_at = Column(DateTime, nullable=True)
+
+    # Relationships
+    game_session = relationship("GameSession", back_populates="quests")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_session_id": self.game_session_id,
+            "title": self.title,
+            "description": self.description,
+            "quest_giver": self.quest_giver,
+            "objectives": self.objectives,
+            "status": self.status,
+            "reward": self.reward,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+        }
+
+
+class NPC(Base):
+    """Non-player character tracking"""
+    __tablename__ = "npcs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    role = Column(String(100), nullable=True)  # merchant, guard, villain, ally, etc.
+    location = Column(String(255), nullable=True)
+    personality = Column(Text, nullable=True)
+    relationship_to_party = Column(Integer, default=0)  # -100 (hostile) to 100 (friendly)
+    dialogue_history = Column(JSON, nullable=True)  # [{"turn": 1, "dialogue": "..."}, ...]
+    is_alive = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    game_session = relationship("GameSession", back_populates="npcs")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_session_id": self.game_session_id,
+            "name": self.name,
+            "description": self.description,
+            "role": self.role,
+            "location": self.location,
+            "personality": self.personality,
+            "relationship_to_party": self.relationship_to_party,
+            "dialogue_history": self.dialogue_history,
+            "is_alive": self.is_alive,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class InventoryItem(Base):
+    """Party/character inventory tracking"""
+    __tablename__ = "inventory_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)
+    character_id = Column(Integer, ForeignKey("characters.id"), nullable=True, index=True)  # null = party inventory
+    item_reference_id = Column(Integer, ForeignKey("references.id"), nullable=True, index=True)  # Link to equipment ref
+    item_name = Column(String(255), nullable=False)
+    quantity = Column(Integer, default=1)
+    is_equipped = Column(Boolean, default=False)
+    description = Column(Text, nullable=True)
+    acquired_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    game_session = relationship("GameSession", back_populates="inventory")
+    character = relationship("Character", foreign_keys=[character_id])
+    item_reference = relationship("Reference", foreign_keys=[item_reference_id])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_session_id": self.game_session_id,
+            "character_id": self.character_id,
+            "character_name": self.character.name if self.character else "Party",
+            "item_reference_id": self.item_reference_id,
+            "item_name": self.item_name,
+            "quantity": self.quantity,
+            "is_equipped": self.is_equipped,
+            "description": self.description,
+            "acquired_at": self.acquired_at.isoformat() if self.acquired_at else None,
+        }
+
+
+class GameEvent(Base):
+    """Game event log for turn-by-turn journal and state snapshots"""
+    __tablename__ = "game_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)
+    event_type = Column(String(100), nullable=False, index=True)  # combat, dialogue, exploration, rest, etc.
+    description = Column(Text, nullable=False)
+    game_state_snapshot = Column(JSON, nullable=True)  # Optional state snapshot for this turn
+    turn_number = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # Relationships
+    game_session = relationship("GameSession", back_populates="events")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_session_id": self.game_session_id,
+            "event_type": self.event_type,
+            "description": self.description,
+            "game_state_snapshot": self.game_state_snapshot,
+            "turn_number": self.turn_number,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class GameLocation(Base):
+    """Game location/dungeon room tracking"""
+    __tablename__ = "game_locations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    location_type = Column(String(100), nullable=True)  # dungeon_room, city, wilderness, etc.
+    parent_location_id = Column(Integer, ForeignKey("game_locations.id"), nullable=True, index=True)
+    features = Column(JSON, nullable=True)  # ["altar", "trap", "treasure_chest"]
+    connections = Column(JSON, nullable=True)  # {"north": 5, "south": 3} -> location IDs
+    is_explored = Column(Boolean, default=False)
+    discovered_at = Column(DateTime, nullable=True)
+
+    # Relationships
+    game_session = relationship("GameSession", back_populates="locations")
+    parent_location = relationship("GameLocation", remote_side=[id], foreign_keys=[parent_location_id])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_session_id": self.game_session_id,
+            "name": self.name,
+            "description": self.description,
+            "location_type": self.location_type,
+            "parent_location_id": self.parent_location_id,
+            "features": self.features,
+            "connections": self.connections,
+            "is_explored": self.is_explored,
+            "discovered_at": self.discovered_at.isoformat() if self.discovered_at else None,
+        }
+

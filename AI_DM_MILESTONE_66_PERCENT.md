@@ -10,17 +10,21 @@
 ## 🎯 What We Accomplished This Session
 
 ### Phase 3 Completion: DM Chat Handler
+
 Built the natural language interface that brings all game systems together:
 
 **File Created:**
+
 - `backend/game/dm_chat_handler.py` (700 lines)
 
 **New API Endpoint:**
+
 - `POST /api/chat/sessions/{id}/game-chat` with `game_session_id` parameter
 
 **Key Components:**
 
 #### 1. AsyncLMStudioClient
+
 - Async HTTP client for local LLM at http://100.120.44.114:1234
 - OpenAI-compatible API interface
 - Retry logic with exponential backoff (5 retries max)
@@ -28,34 +32,37 @@ Built the natural language interface that brings all game systems together:
 - 120-second timeout with graceful error handling
 
 #### 2. DMChatHandler Class
+
 The "brain" of the AI DM that orchestrates all game systems:
 
 ```python
 class DMChatHandler:
     def __init__(db, lm_studio_url, model)
-    
+
     # Main entry point
     async def process_game_message(game_session, user_message) -> DMResponse
-    
+
     # Intent parsing with LLM
     async def _parse_intent(game_session, user_message) -> Intent
-    
+
     # System routing
     async def _handle_command(game_session, message)  # /roll, /hp, /status
     async def _handle_combat_action(game_session, intent)
     async def _handle_dialogue(game_session, intent)
     async def _handle_exploration(game_session, intent)
     async def _handle_unknown(game_session, message)
-    
+
     # Context management
     def _build_game_context(game_session) -> str
     def clear_conversation_history(session_id)
 ```
 
 #### 3. Intent Classification
+
 LLM-powered intent parsing with structured JSON output:
 
 **Intent Types:**
+
 - `exploration` - Moving, investigating, exploring
 - `combat_action` - Attacking, casting spells in combat
 - `dialogue` - Talking to NPCs
@@ -63,17 +70,20 @@ LLM-powered intent parsing with structured JSON output:
 - `unknown` - Fallback with helpful DM response
 
 **Entity Extraction:**
+
 - Target names (monsters, NPCs, objects)
 - Actions (attack, investigate, talk)
 - Dice notation (1d20+5, 2d6, etc.)
 - Locations (tavern, dungeon, forest)
 
 **Fallback System:**
+
 - Heuristic-based parsing if LLM fails
 - Keyword detection for combat/dialogue
 - Graceful degradation to exploration
 
 #### 4. Command Processing
+
 Slash command support for quick actions:
 
 ```
@@ -83,15 +93,18 @@ Slash command support for quick actions:
 ```
 
 **Command Features:**
+
 - Dice rolling through DiceRoller integration
 - Party HP display with current/max values
 - Combat status (active, round, current turn)
 - Scene information (location, description)
 
 #### 5. System Integration
+
 Seamless routing to specialized game systems:
 
 **Combat Actions:**
+
 - Detect combat intent from natural language
 - Route to CombatEngine.process_attack()
 - Generate narrative descriptions via NarrativeEngine
@@ -99,12 +112,14 @@ Seamless routing to specialized game systems:
 - Automatic combat end detection
 
 **Dialogue:**
+
 - Extract NPC name from player message
 - Route to NarrativeEngine.generate_npc_dialogue()
 - Maintain NPC personality and dialogue history
 - Contextual responses based on game state
 
 **Exploration:**
+
 - Process player choices through NarrativeEngine
 - Detect combat triggers automatically
 - Update scenes with new descriptions
@@ -112,14 +127,18 @@ Seamless routing to specialized game systems:
 - Track location changes
 
 #### 6. Conversation Management
+
 Maintains chat history per game session:
+
 - Stores last N messages (default: 10 messages = 20 user+assistant pairs)
 - Automatic history trimming for token efficiency
 - Per-session conversation context
 - Conversation history cleared on session end
 
 #### 7. Game Context Building
+
 Builds concise context for LLM prompts:
+
 ```
 Location: Dark Tavern Basement
 Scene: You descend the creaky stairs into a dimly lit basement...
@@ -133,11 +152,13 @@ Party: Fighter, Wizard, Cleric
 ## 📊 Statistics
 
 **Code Written This Session:**
+
 - 1 new file: `dm_chat_handler.py` (700 lines)
 - 1 modified file: `chat.py` (+100 lines for game-chat endpoint)
 - **Total new code:** ~800 lines
 
 **Cumulative Project Stats:**
+
 - **Total backend code:** 3,300+ lines
 - **Game system files:** 4 (dice_roller, combat_engine, narrative_engine, dm_chat_handler)
 - **API endpoints:** 11 total
@@ -153,6 +174,7 @@ Party: Fighter, Wizard, Cleric
 ### Backend Game Systems (100% Complete)
 
 #### 1. Dice Roller ✅
+
 - File: `backend/game/dice_roller.py` (400 lines)
 - Full D&D 5e dice mechanics
 - Notation parsing (XdY+Z format)
@@ -161,6 +183,7 @@ Party: Fighter, Wizard, Cleric
 - API: POST `/api/game/sessions/{id}/roll`
 
 #### 2. Combat Engine ✅
+
 - File: `backend/game/combat_engine.py` (500 lines)
 - Initiative system with DEX tiebreaker
 - Attack resolution (d20 + bonus vs AC)
@@ -170,6 +193,7 @@ Party: Fighter, Wizard, Cleric
 - API: 5 endpoints (start, get, attack, next-turn, end)
 
 #### 3. Narrative Engine ✅
+
 - File: `backend/game/narrative_engine.py` (800 lines)
 - Opening scene generation with RAG
 - Player choice processing
@@ -180,6 +204,7 @@ Party: Fighter, Wizard, Cleric
 - API: 4 endpoints (start, choice, dialogue, current)
 
 #### 4. DM Chat Handler ✅ (NEW)
+
 - File: `backend/game/dm_chat_handler.py` (700 lines)
 - Natural language intent classification
 - System routing (dice/combat/narrative/dialogue)
@@ -219,6 +244,7 @@ DiceRoller    CombatEngine    NarrativeEngine  NarrativeEngine
 ## 🔌 API Endpoints Summary
 
 ### Game System Endpoints (10)
+
 ```
 POST   /api/game/sessions              - Create new game session
 GET    /api/game/sessions              - List all game sessions
@@ -247,6 +273,7 @@ GET    /api/game/sessions/{id}/scene/current - Get current scene
 ```
 
 ### Chat Endpoint (1)
+
 ```
 POST   /api/chat/sessions/{id}/game-chat?game_session_id={gid}
     Request: Uses last user message from chat session
@@ -268,17 +295,20 @@ POST   /api/chat/sessions/{id}/game-chat?game_session_id={gid}
 ## 🧪 Testing the DM Chat Handler
 
 ### 1. Start Backend
+
 ```bash
 cd e:\storycraft\backend
 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### 2. Ensure LM Studio Running
+
 - URL: http://100.120.44.114:1234
 - Model loaded and ready
 - Test: `curl http://100.120.44.114:1234/v1/models`
 
 ### 3. Create Game Session
+
 ```bash
 curl -X POST http://localhost:8000/api/game/sessions \
   -H "Content-Type: application/json" \
@@ -287,6 +317,7 @@ curl -X POST http://localhost:8000/api/game/sessions \
 ```
 
 ### 4. Create Chat Session
+
 ```bash
 curl -X POST http://localhost:8000/api/chat/sessions \
   -H "Content-Type: application/json" \
@@ -300,6 +331,7 @@ curl -X POST http://localhost:8000/api/chat/sessions \
 ```
 
 ### 5. Add User Message
+
 ```bash
 curl -X POST http://localhost:8000/api/chat/sessions/{session_id}/messages \
   -H "Content-Type: application/json" \
@@ -310,11 +342,13 @@ curl -X POST http://localhost:8000/api/chat/sessions/{session_id}/messages \
 ```
 
 ### 6. Generate DM Response
+
 ```bash
 curl -X POST "http://localhost:8000/api/chat/sessions/{session_id}/game-chat?game_session_id={game_session_id}"
 ```
 
 ### 7. Test Commands
+
 ```bash
 # Add user message: "/roll 1d20+5"
 curl -X POST http://localhost:8000/api/chat/sessions/{session_id}/messages \
@@ -350,26 +384,31 @@ curl -X POST "http://localhost:8000/api/chat/sessions/{session_id}/game-chat?gam
 ### What Works Now
 
 1. **Natural Language Understanding:**
+
    - Players can type natural actions: "I sneak past the guard"
    - LLM classifies intent and extracts entities
    - Automatic routing to appropriate game system
 
 2. **Command Flexibility:**
+
    - Quick actions with slash commands
    - Natural language for immersive play
    - Both styles work seamlessly
 
 3. **Combat Flow:**
+
    - "I attack the orc" → rolls attack, damage, updates state
    - Narrative descriptions of combat actions
    - Automatic turn progression
 
 4. **Dialogue System:**
+
    - "I talk to the merchant about magic items"
    - NPC personality maintained across conversation
    - Context-aware responses
 
 5. **Exploration:**
+
    - "I investigate the locked chest"
    - Scene progression with choices
    - Automatic combat initiation when appropriate
@@ -394,18 +433,21 @@ curl -X POST "http://localhost:8000/api/chat/sessions/{session_id}/game-chat?gam
 7. **DiceRoller.jsx** - Visual dice roller widget
 
 ### State Management
+
 - `useGameSession` hook for game state
 - WebSocket or polling for real-time updates
 - React Context for global game state
 - Local state for UI interactions
 
 ### API Integration
+
 - Axios/Fetch client for API calls
 - Error handling and loading states
 - Optimistic UI updates
 - Retry logic for failed requests
 
 ### User Experience
+
 - Mobile-responsive design
 - Keyboard shortcuts
 - Accessibility (ARIA labels, keyboard navigation)
@@ -448,6 +490,7 @@ curl -X POST "http://localhost:8000/api/chat/sessions/{session_id}/game-chat?gam
 ## 🎉 Milestone Achievements
 
 ### Backend: 100% Complete
+
 ✅ All 4 game systems implemented and integrated  
 ✅ 11 API endpoints functional  
 ✅ LM Studio integration working  
@@ -455,9 +498,10 @@ curl -X POST "http://localhost:8000/api/chat/sessions/{session_id}/game-chat?gam
 ✅ Natural language interface operational  
 ✅ Event logging and state persistence  
 ✅ Conversation history management  
-✅ RAG system ready for context retrieval  
+✅ RAG system ready for context retrieval
 
 ### Project: 66% Complete
+
 - [x] Phase 1: Dice Roller (Day 1)
 - [x] Phase 2: Combat Engine (Day 1)
 - [x] Phase 3: Narrative Engine (Day 2)
@@ -466,6 +510,7 @@ curl -X POST "http://localhost:8000/api/chat/sessions/{session_id}/game-chat?gam
 - [ ] Phase 6: E2E Testing & Docs (Day 3-4)
 
 ### Code Quality
+
 - Type hints throughout
 - Comprehensive docstrings
 - Error handling with fallbacks
@@ -489,6 +534,7 @@ curl -X POST "http://localhost:8000/api/chat/sessions/{session_id}/game-chat?gam
 Backend is **100% complete** and ready to power an AI Dungeon Master experience!
 
 **What players can do NOW (via API):**
+
 - ✅ Create game sessions with party members
 - ✅ Roll dice with full D&D mechanics
 - ✅ Enter combat with initiative and turn order
@@ -500,6 +546,7 @@ Backend is **100% complete** and ready to power an AI Dungeon Master experience!
 - ✅ Track HP, status, and combat state
 
 **What's missing:**
+
 - ❌ User-friendly frontend UI
 - ❌ Visual character sheets
 - ❌ Pretty dice roller animations
