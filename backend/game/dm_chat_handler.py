@@ -2,7 +2,7 @@
 DM Chat Handler - Natural Language Interface for AI Dungeon Master
 
 This module provides a chat-based interface that connects all game systems
-(dice, combat, narrative) through natural language processing powered by LM Studio.
+(dice, combat, narrative) through natural language processing.
 
 Architecture:
 1. Process player messages through intent classification (exploration/combat/dialogue/command)
@@ -11,16 +11,13 @@ Architecture:
 4. Maintain conversation history and game state consistency
 5. Log all interactions for narrative continuity
 
-LM Studio Integration:
-- Uses local LLM at http://100.120.44.114:1234
-- OpenAI-compatible API
-- Async HTTP client with retry logic
-- JSON-mode responses for structured parsing
+LLM Provider Support:
+- Named providers: openai, anthropic, google, groq
+- Local LM Studio: URL-based (http://host:port/v1)
+- Unified interface via call_llm() from generation.py
 """
 
 import json
-import asyncio
-import aiohttp
 from typing import List, Dict, Any
 from dataclasses import dataclass
 from enum import Enum
@@ -30,6 +27,9 @@ from backend.models import GameSession
 from backend.game.dice_roller import DiceRoller
 from backend.game.combat_engine import CombatEngine
 from backend.game.narrative_engine import NarrativeEngine
+
+# Import unified LLM interface
+from backend.routers.generation import call_llm
 
 try:
     from backend.services.dnd_mcp_client import DndMcpClient
@@ -66,54 +66,6 @@ class DMResponse:
     events: List[Dict[str, Any]]  # Game events that occurred
 
 
-class AsyncLMStudioClient:
-    """Async LM Studio client for AI DM chat"""
-    
-    def __init__(self, base_url: str = "http://100.120.44.114:1234/v1", timeout: int = 120):
-        self.base_url = base_url.rstrip('/')
-        self.timeout = aiohttp.ClientTimeout(total=timeout)
-        self.max_retries = 5
-        
-    async def chat(
-        self,
-        model: str,
-        messages: List[Dict[str, str]],
-        max_tokens: int = 512,
-        temperature: float = 0.2,
-        json_mode: bool = False
-    ) -> Dict[str, Any]:
-        """Send chat completion request with retry logic"""
-        url = f"{self.base_url}/chat/completions"
-        
-        payload = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-        }
-        
-        if json_mode:
-            payload["response_format"] = {"type": "json_object"}
-        
-        last_error = None
-        
-        for attempt in range(self.max_retries):
-            try:
-                async with aiohttp.ClientSession(timeout=self.timeout) as session:
-                    async with session.post(url, json=payload) as response:
-                        response.raise_for_status()
-                        return await response.json()
-                        
-            except Exception as e:
-                last_error = e
-                sleep_duration = min(10, 1 + attempt * 2)
-                print(f"LM Studio request failed (attempt {attempt + 1}/{self.max_retries}): {e}")
-                print(f"Retrying in {sleep_duration}s...")
-                await asyncio.sleep(sleep_duration)
-        
-        raise last_error
-
-
 class DMChatHandler:
     """
     Main AI DM chat interface that orchestrates all game systems.
@@ -121,12 +73,16 @@ class DMChatHandler:
     This handler acts as the "brain" of the AI DM, processing natural language
     player input and coordinating responses across dice rolling, combat, narrative,
     and dialogue systems.
+    
+    Supports multiple LLM providers:
+    - Named providers: openai, anthropic, google, groq
+    - Local LM Studio: URL (e.g., http://100.120.44.114:1234/v1)
     """
     
     def __init__(
         self,
         db: Session,
-        lm_studio_url: str = "http://100.120.44.114:1234/v1",
+        provider: str = "http://100.120.44.114:1234/v1",
         model: str = "local-model"
     ):
         """
@@ -134,11 +90,11 @@ class DMChatHandler:
         
         Args:
             db: Database session for state persistence
-            lm_studio_url: URL to LM Studio server
-            model: Model identifier for LM Studio
+            provider: LLM provider (named provider or URL for LM Studio)
+            model: Model identifier for the provider
         """
         self.db = db
-        self.lm_client = AsyncLMStudioClient(base_url=lm_studio_url)
+        self.provider = provider
         self.model = model
         
         # Initialize game system components
@@ -278,22 +234,19 @@ Return JSON format:
     "entities": {<extracted entities>}
 }"""
         
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Game context:\n{game_context}\n\nPlayer message: {user_message}"}
-        ]
-        
         try:
-            response = await self.lm_client.chat(
-                model=self.model,
-                messages=messages,
-                max_tokens=256,
-                temperature=0.1,
-                json_mode=True
+            # Convert messages to prompt string for unified LLM interface
+            prompt = f"{system_prompt}\n\nGame context:\n{game_context}\n\nPlayer message: {user_message}"
+            
+            # Call unified LLM interface
+            response_text, metadata = await call_llm(
+                prompt=prompt,
+                provider=self.provider,
+                model=self.model
             )
             
-            content = response['choices'][0]['message']['content']
-            parsed = json.loads(content)
+            # Parse JSON response
+            parsed = json.loads(response_text)
             
             return Intent(
                 type=IntentType(parsed.get('intent', 'unknown')),
@@ -636,20 +589,16 @@ Return JSON format:
         system_prompt = """You are a D&D Dungeon Master. Generate a helpful response to the player's message.
 Keep it concise (2-3 sentences). Stay in character as the DM. Guide the player on what they can do."""
         
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Game context:\n{game_context}\n\nPlayer: {user_message}"}
-        ]
-        
         try:
-            response = await self.lm_client.chat(
-                model=self.model,
-                messages=messages,
-                max_tokens=256,
-                temperature=0.7
-            )
+            # Build prompt for unified LLM interface
+            prompt = f"{system_prompt}\n\nGame context:\n{game_context}\n\nPlayer: {user_message}"
             
-            message = response['choices'][0]['message']['content']
+            # Call unified LLM interface
+            message, metadata = await call_llm(
+                prompt=prompt,
+                provider=self.provider,
+                model=self.model
+            )
             
         except Exception:
             message = "I'm not sure what you mean. Try /help for available commands, or describe what you'd like to do in more detail."
@@ -884,9 +833,9 @@ Keep it concise (2-3 sentences). Stay in character as the DM. Guide the player o
             # Full item details would require another API call
             lines = [
                 f"💎 **{name}**",
-                f"*Magic Item*",
+                "*Magic Item*",
                 "",
-                f"Use `/spell` or `/monster` for full stat blocks.",
+                "Use `/spell` or `/monster` for full stat blocks.",
                 f"Item details: {url}"
             ]
             
