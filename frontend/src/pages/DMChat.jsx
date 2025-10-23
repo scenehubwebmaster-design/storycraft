@@ -35,6 +35,7 @@ import {
   Badge,
 } from "@mui/material";
 import FloatingChatInput from "../components/game/FloatingChatInput";
+import CinematicMessageCard from "../components/game/CinematicMessageCard";
 import {
   Delete as DeleteIcon,
   Add as AddIcon,
@@ -1159,242 +1160,165 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                 </Box>
               </Box>
             ) : (
-              <Stack spacing={2}>
-                {messages.map((msg) => (
-                  <Card
-                    key={msg.id}
-                    elevation={2}
-                    sx={{
-                      bgcolor:
-                        msg.role === "assistant"
-                          ? "primary.light"
-                          : "background.paper",
-                      color:
-                        msg.role === "assistant" ? "white" : "text.primary",
-                      maxWidth: "85%",
-                      alignSelf:
-                        msg.role === "assistant" ? "flex-start" : "flex-end",
-                      opacity: msg._optimistic ? 0.6 : 1,
-                    }}
-                  >
-                    <CardContent>
-                      <Stack
-                        direction="row"
-                        spacing={1.5}
-                        alignItems="flex-start"
-                      >
-                        <Avatar
-                          sx={{
-                            bgcolor:
-                              msg.role === "assistant"
-                                ? "secondary.main"
-                                : "primary.main",
-                            width: 40,
-                            height: 40,
+              <Stack spacing={1.5}>
+                {messages.map((msg) => {
+                  // Create a stateful wrapper for SceneImageDisplay to extract image data
+                  const SceneImageWrapper = ({ onImageData }) => {
+                    const [imageData, setImageData] = useState(null);
+
+                    React.useEffect(() => {
+                      if (imageData && onImageData) {
+                        onImageData(imageData);
+                      }
+                    }, [imageData]);
+
+                    return msg.role === "assistant" &&
+                      msg.id &&
+                      !msg._optimistic ? (
+                      <SceneImageDisplay
+                        sessionId={selectedSession.id}
+                        messageId={msg.id}
+                        messageContent={msg.content}
+                        compact={true}
+                        autoGenerate={sceneImageAutoGenerate}
+                        onImageGenerated={(data) => setImageData(data)}
+                      />
+                    ) : null;
+                  };
+
+                  return (
+                    <CinematicMessageCard
+                      key={msg.id}
+                      message={msg}
+                      isUser={msg.role !== "assistant"}
+                      sceneImage={null} // Will be populated by SceneImageDisplay
+                      onImageGenerate={
+                        msg.role === "assistant" && msg.id && !msg._optimistic
+                          ? async () => {
+                              // Trigger image generation via SceneImageDisplay
+                              // This will be handled by the SceneImageDisplay component itself
+                            }
+                          : undefined
+                      }
+                    >
+                      {/* Action Chips Parser - Parse tables and create interactive chips */}
+                      {msg.role === "assistant" && (
+                        <ActionChipsParser
+                          content={msg.content}
+                          onActionClick={(action, roll, dc) => {
+                            // Open ability check panel if it's an ability/skill check
+                            const hasAbilityCheck =
+                              roll && roll.toLowerCase().includes("d20");
+
+                            if (
+                              hasAbilityCheck &&
+                              availableCharacters.length > 0
+                            ) {
+                              // Open the ability check panel
+                              setAbilityCheckOpen(true);
+                            } else {
+                              // Fallback: construct a formatted message
+                              let actionMessage = `I want to ${action}`;
+                              if (roll) {
+                                actionMessage += `\n\nSuggested roll: ${roll}`;
+                              }
+                              if (dc) {
+                                actionMessage += `\nDC: ${dc}`;
+                              }
+                              setMessage(actionMessage);
+                            }
                           }}
-                        >
-                          {msg.role === "assistant" ? (
-                            <SmartToyIcon />
-                          ) : (
-                            <PersonIcon />
-                          )}
-                        </Avatar>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              fontWeight: 600,
-                              mb: 1,
-                              textTransform: "capitalize",
-                            }}
-                          >
-                            {msg.role === "assistant"
-                              ? "Dungeon Master"
-                              : "Player"}
-                          </Typography>
+                        />
+                      )}
 
-                          {/* Render Markdown for assistant, plain text for user */}
-                          {msg.role === "assistant" ? (
-                            <Box
+                      {/* TTS Audio Player */}
+                      {msg.role === "assistant" &&
+                        ttsEnabled &&
+                        msg.id &&
+                        !msg._optimistic && (
+                          <Box sx={{ mt: 1.5 }}>
+                            <TTSAudioPlayer
+                              sessionId={selectedSession.id}
+                              messageId={msg.id}
+                              autoPlay={ttsAutoPlay}
+                              compact={true}
+                              defaultVoice={ttsVoice}
+                              defaultFlavorTextOnly={ttsFlavorTextOnly}
                               sx={{
-                                wordBreak: "break-word",
-                                overflowWrap: "break-word",
-                                "& p": { mb: 1, lineHeight: 1.6 },
-                                "& h1, & h2, & h3, & h4, & h5, & h6": {
-                                  fontWeight: 600,
-                                  mt: 2,
-                                  mb: 1,
-                                  color: "inherit",
-                                },
-                                "& ul, & ol": { pl: 3, mb: 1 },
-                                "& li": { mb: 0.5 },
-                                "& strong": { fontWeight: 700 },
-                                "& em": { fontStyle: "italic" },
-                                "& code": {
-                                  bgcolor: "rgba(0,0,0,0.2)",
-                                  px: 0.5,
-                                  py: 0.25,
-                                  borderRadius: 0.5,
-                                  fontFamily: "monospace",
-                                  fontSize: "0.9em",
-                                  wordBreak: "break-all",
-                                },
-                                "& pre": {
-                                  bgcolor: "rgba(0,0,0,0.3)",
-                                  p: 1.5,
-                                  borderRadius: 1,
-                                  overflow: "auto",
-                                  "& code": {
-                                    bgcolor: "transparent",
-                                    px: 0,
-                                    py: 0,
-                                  },
-                                },
-                                "& hr": {
-                                  borderColor: "rgba(255,255,255,0.2)",
-                                  my: 2,
-                                },
-                              }}
-                            >
-                              <ReactMarkdown>{msg.content}</ReactMarkdown>
-                            </Box>
-                          ) : (
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                whiteSpace: "pre-wrap",
-                                wordBreak: "break-word",
-                                overflowWrap: "break-word",
-                                lineHeight: 1.6,
-                              }}
-                            >
-                              {msg.content}
-                            </Typography>
-                          )}
-
-                          {/* Action Chips Parser - Parse tables and create interactive chips */}
-                          {msg.role === "assistant" && (
-                            <ActionChipsParser
-                              content={msg.content}
-                              onActionClick={(action, roll, dc) => {
-                                // Open ability check panel if it's an ability/skill check
-                                const hasAbilityCheck =
-                                  roll && roll.toLowerCase().includes("d20");
-
-                                if (
-                                  hasAbilityCheck &&
-                                  availableCharacters.length > 0
-                                ) {
-                                  // Open the ability check panel
-                                  setAbilityCheckOpen(true);
-                                } else {
-                                  // Fallback: construct a formatted message
-                                  let actionMessage = `I want to ${action}`;
-                                  if (roll) {
-                                    actionMessage += `\n\nSuggested roll: ${roll}`;
-                                  }
-                                  if (dc) {
-                                    actionMessage += `\nDC: ${dc}`;
-                                  }
-                                  setMessage(actionMessage);
-                                }
+                                bgcolor: "rgba(255,255,255,0.1)",
+                                borderRadius: 1,
+                                p: 1,
                               }}
                             />
-                          )}
+                          </Box>
+                        )}
 
-                          {/* TTS Audio Player */}
-                          {msg.role === "assistant" &&
-                            ttsEnabled &&
-                            msg.id &&
-                            !msg._optimistic && (
-                              <Box sx={{ mt: 1.5 }}>
-                                <TTSAudioPlayer
-                                  sessionId={selectedSession.id}
-                                  messageId={msg.id}
-                                  autoPlay={ttsAutoPlay}
-                                  compact={true}
-                                  defaultVoice={ttsVoice}
-                                  defaultFlavorTextOnly={ttsFlavorTextOnly}
+                      {/* Scene Image Generator */}
+                      {msg.role === "assistant" &&
+                        msg.id &&
+                        !msg._optimistic && (
+                          <SceneImageDisplay
+                            sessionId={selectedSession.id}
+                            messageId={msg.id}
+                            messageContent={msg.content}
+                            compact={true}
+                            autoGenerate={sceneImageAutoGenerate}
+                          />
+                        )}
+
+                      {/* Source Citations */}
+                      {msg.role === "assistant" &&
+                        msg.metadata &&
+                        msg.metadata.retrievals &&
+                        msg.metadata.retrievals.length > 0 && (
+                          <Box
+                            sx={{
+                              mt: 2,
+                              pt: 2,
+                              borderTop: "1px solid rgba(255,255,255,0.2)",
+                            }}
+                          >
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                              sx={{ mb: 1 }}
+                            >
+                              <MenuBookIcon fontSize="small" />
+                              <Typography
+                                variant="caption"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Sources Referenced:
+                              </Typography>
+                            </Stack>
+                            <Stack spacing={0.5}>
+                              {msg.metadata.retrievals.map((r, idx) => (
+                                <Chip
+                                  key={idx}
+                                  label={r.name || r.id || "Unknown"}
+                                  size="small"
+                                  onClick={
+                                    r.source_url
+                                      ? () =>
+                                          window.open(r.source_url, "_blank")
+                                      : undefined
+                                  }
                                   sx={{
-                                    bgcolor: "rgba(255,255,255,0.1)",
-                                    borderRadius: 1,
-                                    p: 1,
+                                    bgcolor: "rgba(255,255,255,0.15)",
+                                    color: "white",
+                                    "&:hover": {
+                                      bgcolor: "rgba(255,255,255,0.25)",
+                                    },
                                   }}
                                 />
-                              </Box>
-                            )}
-
-                          {/* Scene Image Generator */}
-                          {msg.role === "assistant" &&
-                            msg.id &&
-                            !msg._optimistic && (
-                              <SceneImageDisplay
-                                sessionId={selectedSession.id}
-                                messageId={msg.id}
-                                messageContent={msg.content}
-                                compact={true}
-                                autoGenerate={sceneImageAutoGenerate}
-                              />
-                            )}
-
-                          {/* Source Citations */}
-                          {msg.role === "assistant" &&
-                            msg.metadata &&
-                            msg.metadata.retrievals &&
-                            msg.metadata.retrievals.length > 0 && (
-                              <Box
-                                sx={{
-                                  mt: 2,
-                                  pt: 2,
-                                  borderTop: "1px solid rgba(255,255,255,0.2)",
-                                }}
-                              >
-                                <Stack
-                                  direction="row"
-                                  spacing={0.5}
-                                  alignItems="center"
-                                  sx={{ mb: 1 }}
-                                >
-                                  <MenuBookIcon fontSize="small" />
-                                  <Typography
-                                    variant="caption"
-                                    sx={{ fontWeight: 600 }}
-                                  >
-                                    Sources Referenced:
-                                  </Typography>
-                                </Stack>
-                                <Stack spacing={0.5}>
-                                  {msg.metadata.retrievals.map((r, idx) => (
-                                    <Chip
-                                      key={idx}
-                                      label={r.name || r.id || "Unknown"}
-                                      size="small"
-                                      onClick={
-                                        r.source_url
-                                          ? () =>
-                                              window.open(
-                                                r.source_url,
-                                                "_blank"
-                                              )
-                                          : undefined
-                                      }
-                                      sx={{
-                                        bgcolor: "rgba(255,255,255,0.15)",
-                                        color: "white",
-                                        "&:hover": {
-                                          bgcolor: "rgba(255,255,255,0.25)",
-                                        },
-                                      }}
-                                    />
-                                  ))}
-                                </Stack>
-                              </Box>
-                            )}
-                        </Box>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                ))}
+                              ))}
+                            </Stack>
+                          </Box>
+                        )}
+                    </CinematicMessageCard>
+                  );
+                })}
                 <div ref={bottomRef} />
               </Stack>
             )}
