@@ -7,7 +7,7 @@ for use in campaign creation wizards.
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -52,7 +52,25 @@ def extract_metadata_from_reference(ref: Reference) -> Optional[AdventureTemplat
         # Patterns:
         # - /overview/index or /overview/README (generated adventures)
         # - /README at 2-level depth (tyranny_of_dragons sub-adventures)
-        # - /index at 2-level depth (homebrew adventures, but NOT tyranny)
+        # - /index at 2-level depth for guild modules OR 3-level for homebrew adventures
+        # - EXCLUDE: items/index, npcs/index, locations/index, mechanics/index, etc.
+        
+        # Skip item/npc/location/mechanic/handout/parts subdirectories
+        excluded_subdirs = ['items', 'npcs', 'locations', 'mechanics', 'handouts', 'parts', 'maps']
+        key_parts = ref.key.split('/')
+        if any(subdir in key_parts for subdir in excluded_subdirs):
+            return None
+        
+        # Also skip if tags indicate this is an item/npc/location list
+        if ref.tags:
+            excluded_tags = ['items', 'npcs', 'locations', 'mechanics', 'handouts']
+            if any(tag in ref.tags for tag in excluded_tags):
+                return None
+        
+        # Skip if title suggests this is an item/treasure list
+        if ref.title and any(word in ref.title.lower() for word in ['notable items', 'items & treasure', 'items & lore', 'treasure &', 'items & relics', 'items & clues']):
+            return None
+        
         is_overview = (
             ref.key.endswith('/overview/index') or 
             ref.key.endswith('/overview/README')
@@ -62,8 +80,10 @@ def extract_metadata_from_reference(ref: Reference) -> Optional[AdventureTemplat
         if ref.key.endswith('/README') and ref.key.count('/') == 2:
             is_overview = True
         
-        # Module-level index files (homebrew adventures, but NOT tyranny items pages)
-        if ref.key.endswith('/index') and ref.key.count('/') == 2 and 'tyranny_of_dragons' not in ref.key:
+        # Module-level index files (2-level depth)
+        # Guild modules: tyranny_of_dragons/hoard_of_the_dragon_queen/index
+        # Homebrew adventures: Bloodmoon_Epitaph/Epitaph_of_Thorns/index
+        if ref.key.endswith('/index') and ref.key.count('/') == 2:
             is_overview = True
         
         if not is_overview:
@@ -75,15 +95,14 @@ def extract_metadata_from_reference(ref: Reference) -> Optional[AdventureTemplat
             if not ref.tags or 'adventure' not in str(ref.tags).lower():
                 return None
         
-        # Determine source from ref_type or key
+        # Determine source from key structure (most reliable)
         source = "guild_modules"  # default
         
-        # Check key for source indicators
-        if 'generated_content' in ref.key or 'crown_of_the_fire_giants' in ref.key or 'curse_of_the_vampire_lord' in ref.key or 'depths_of_the_elemental_chaos' in ref.key or 'secrets_of_the_wizard_conclave' in ref.key or 'shadows_of_the_underdark' in ref.key:
-            source = "generated"
-        elif any(homebrew in ref.key for homebrew in ['Bloodmoon', 'Bloodsand', 'Dreams_of_Obsidian', 'Echoes_of_Azure', 'Gilded_Marrows', 'Gravesong', 'Ironclad', 'Lanterns_of_Emberfall', 'Regalia_of_Stars', 'Ruins_of_Amber', 'Shattered_Spires', 'Stormshard', 'Frozen_Chalice', 'Thorns_in_Silver', 'Twilight_Arcanum', 'Wardens', 'Whispers_in_Ice']):
+        if 'homebrew_adventures' in ref.key:
             source = "homebrew"
-        elif 'tyranny' in ref.key.lower() or 'phlan' in ref.key.lower():
+        elif 'generated_content' in ref.key:
+            source = "generated"
+        elif 'guild_modules' in ref.key or 'tyranny' in ref.key.lower():
             source = "guild_modules"
         
         # Extract themes from tags
@@ -198,24 +217,60 @@ async def get_adventure_templates(
         source: Filter by source (guild_modules, generated, homebrew)
     """
     try:
-        # Query for adventure index documents
+        # Query for adventure index/overview documents only
+        # Patterns:
+        # - Generated adventures: */overview/index or */overview/README
+        # - Guild modules: */module_name/README or */module_name/index
+        # - Homebrew adventures: */collection/adventure/index
         query = db.query(Reference).filter(
-            or_(
+            and_(
                 Reference.ref_type == 'guild_modules',
-                Reference.content.like('%adventure%'),
-                Reference.content.like('%campaign%')
+                or_(
+                    Reference.key.like('%/index'),
+                    Reference.key.like('%/README'),
+                    Reference.key.like('%/overview/%')
+                ),
+                # Exclude subdirectories that are not adventure roots
+                ~Reference.key.like('%/items/%'),
+                ~Reference.key.like('%/npcs/%'),
+                ~Reference.key.like('%/locations/%'),
+                ~Reference.key.like('%/mechanics/%'),
+                ~Reference.key.like('%/handouts/%'),
+                ~Reference.key.like('%/parts/%'),
+                ~Reference.key.like('%/maps/%')
             )
         )
         
         # Get all references
         references = query.all()
+        print(f"[DEBUG] Found {len(references)} potential adventure references")
         
-        # Extract adventure templates
+        # Extract adventure templates and deduplicate
         templates = []
+        seen_adventures = {}  # Track by adventure module path
+        
         for ref in references:
             template = extract_metadata_from_reference(ref)
             if template:
-                templates.append(template)
+                # Debug: log extracted templates
+                print(f"[EXTRACTED] {template.title} ({template.id}) - Source: {template.source}")
+                # Extract adventure module path (first 2 parts of key)
+                # e.g., "crown_of_the_fire_giants/overview/index" -> "crown_of_the_fire_giants"
+                key_parts = template.id.split('/')
+                adventure_key = key_parts[0] if key_parts else template.id
+                
+                # Only keep first occurrence of each adventure
+                if adventure_key not in seen_adventures:
+                    seen_adventures[adventure_key] = template
+                    templates.append(template)
+                else:
+                    # If we found a better version (e.g., index.md vs README.md), prefer index
+                    existing = seen_adventures[adventure_key]
+                    if template.id.endswith('/index') and not existing.id.endswith('/index'):
+                        # Replace with index version
+                        templates.remove(existing)
+                        templates.append(template)
+                        seen_adventures[adventure_key] = template
         
         # Filter by campaign type
         if campaign_type:

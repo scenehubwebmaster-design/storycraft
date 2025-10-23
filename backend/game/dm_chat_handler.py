@@ -613,7 +613,12 @@ Keep it concise (2-3 sentences). Stay in character as the DM. Guide the player o
         )
     
     def _build_game_context(self, game_session: GameSession) -> str:
-        """Build concise game context for LLM prompts"""
+        """
+        Build game context for LLM prompts with CONDITIONAL character stats.
+        
+        Uses heuristic to determine if full character stats are needed based on
+        recent conversation context. Saves tokens during roleplay-heavy scenes.
+        """
         lines = []
         
         # Current scene
@@ -624,18 +629,200 @@ Keep it concise (2-3 sentences). Stay in character as the DM. Guide the player o
         
         # Combat status
         combat_state = game_session.game_state.get('combat_state')
-        if combat_state and combat_state.get('active'):
+        in_combat = combat_state and combat_state.get('active')
+        
+        if in_combat:
             lines.append(f"Combat: Active (Round {combat_state.get('round', 1)})")
             combatants = combat_state.get('combatants', [])
             if combatants:
                 lines.append(f"Combatants: {', '.join(c.get('name', 'Unknown') for c in combatants)}")
         
-        # Party status
-        party_status = game_session.game_state.get('party_status', {})
-        if party_status:
-            lines.append(f"Party: {', '.join(party_status.keys())}")
+        # Determine if we need full character stats (combat always needs stats)
+        session_id = game_session.id
+        needs_full_stats = in_combat or self._should_include_stats(session_id)
+        
+        # Debug logging to show optimization in action
+        if needs_full_stats:
+            print(f"[DM Context] Including FULL character stats (combat={in_combat}, keywords detected)")
+        else:
+            print("[DM Context] Using COMPACT mode (names only) - no mechanical keywords detected")
+        
+        # Party members - full stats or names only
+        if game_session.party_members:
+            if needs_full_stats:
+                # Include full character stats for mechanical interactions
+                lines.append("\n=== PARTY CHARACTERS (FULL STATS) ===")
+                lines.extend(self._format_full_party_stats(game_session))
+            else:
+                # Just include names and basic info for roleplay
+                lines.append("\n=== PARTY ===")
+                party_names = []
+                for party_member in game_session.party_members:
+                    if party_member.is_active and party_member.character:
+                        char = party_member.character
+                        if char.is_dnd:
+                            char_class = char.dnd_class or "Adventurer"
+                            level = char.dnd_level or 1
+                            party_names.append(f"{char.name} ({char_class} {level})")
+                        else:
+                            party_names.append(char.name)
+                lines.append(", ".join(party_names))
         
         return "\n".join(lines) if lines else "New game session"
+    
+    def _should_include_stats(self, session_id: int) -> bool:
+        """
+        Heuristic to determine if full character stats are needed.
+        
+        Checks recent conversation history for mechanical keywords that indicate
+        the DM needs character stats (skill checks, attacks, spells, etc.)
+        
+        Args:
+            session_id: Game session ID
+            
+        Returns:
+            bool: True if stats should be included
+        """
+        # Get recent conversation history (last 3 messages)
+        if session_id not in self.conversation_history:
+            return True  # First message - include stats
+        
+        recent_messages = self.conversation_history[session_id][-6:]  # Last 3 user+assistant pairs
+        
+        # Keywords that indicate mechanical gameplay
+        mechanical_keywords = [
+            # Dice and checks (be specific to avoid false positives)
+            ' roll ', ' check ', 'saving throw', ' save ', ' skill check',
+            'd20', 'd12', 'd10', 'd8', 'd6', 'd4',
+            # Combat actions
+            ' attack ', ' hit ', ' damage ', ' strike ', ' shoot ', ' stab ', ' slash ',
+            'attack roll', 'damage roll',
+            # Spellcasting
+            ' cast ', 'i cast', 'casting', ' spell ', ' cantrip', ' ritual', 'concentration',
+            # Resources
+            ' hp ', 'hit points', ' healing ', 'heal ', 'take damage',
+            'spell slot', 'ki point', ' rage', 'channel divinity', 'action surge',
+            # Stats
+            ' ac ', 'armor class', ' initiative', ' modifier', ' bonus',
+            'strength check', 'dexterity check', 'constitution check',
+            'intelligence check', 'wisdom check', 'charisma check',
+            'str check', 'dex check', 'con check', 'int check', 'wis check', 'cha check',
+            # Combat state
+            'in combat', ' fight ', ' battle ', 'combat begins', ' turn ', ' round ',
+            'roll initiative',
+            # Conditions
+            'poisoned', 'stunned', 'paralyzed', 'prone', 'restrained', 'blinded',
+            'charmed', 'deafened', 'frightened', 'grappled', 'incapacitated',
+            # Items and equipment (be specific)
+            'equip weapon', 'equip armor', 'drink potion', 'use potion',
+            'attune', 'unequip'
+        ]
+        
+        # Check last few messages for keywords
+        combined_text = " ".join([msg['content'].lower() for msg in recent_messages])
+        
+        return any(keyword in combined_text for keyword in mechanical_keywords)
+    
+    def _format_full_party_stats(self, game_session: GameSession) -> list:
+        """
+        Format full character stats for all party members.
+        
+        Args:
+            game_session: Game session with party members
+            
+        Returns:
+            list: Lines of formatted character stats
+        """
+        lines = []
+        
+        for party_member in game_session.party_members:
+            if not party_member.is_active:
+                continue
+                
+            char = party_member.character
+            if not char:
+                continue
+            
+            # Character header
+            lines.append(f"\n**{char.name}**")
+            
+            # Basic D&D info
+            if char.is_dnd:
+                char_class = char.dnd_class or "Unknown"
+                level = char.dnd_level or 1
+                species = char.dnd_species or "Unknown"
+                lines.append(f"  Class: {char_class} {level}, Species: {species}")
+            
+            # Combat stats
+            current_hp = party_member.current_hp if party_member.current_hp is not None else char.dnd_hit_points_current
+            max_hp = party_member.max_hp if party_member.max_hp is not None else char.dnd_hit_points_max
+            temp_hp = party_member.temp_hp or char.dnd_temporary_hp or 0
+            ac = char.dnd_armor_class or 10
+            
+            if max_hp:
+                lines.append(f"  HP: {current_hp}/{max_hp} (Temp: {temp_hp}) | AC: {ac}")
+            
+            # Ability scores and modifiers
+            if char.dnd_ability_scores:
+                scores = char.dnd_ability_scores
+                mods = char.dnd_ability_modifiers or {}
+                
+                str_score = scores.get('strength', 10)
+                str_mod = mods.get('strength', 0)
+                dex_score = scores.get('dexterity', 10)
+                dex_mod = mods.get('dexterity', 0)
+                con_score = scores.get('constitution', 10)
+                con_mod = mods.get('constitution', 0)
+                int_score = scores.get('intelligence', 10)
+                int_mod = mods.get('intelligence', 0)
+                wis_score = scores.get('wisdom', 10)
+                wis_mod = mods.get('wisdom', 0)
+                cha_score = scores.get('charisma', 10)
+                cha_mod = mods.get('charisma', 0)
+                
+                lines.append(f"  STR: {str_score} ({str_mod:+d}) | DEX: {dex_score} ({dex_mod:+d}) | CON: {con_score} ({con_mod:+d})")
+                lines.append(f"  INT: {int_score} ({int_mod:+d}) | WIS: {wis_score} ({wis_mod:+d}) | CHA: {cha_score} ({cha_mod:+d})")
+            
+            # Key combat info
+            prof_bonus = char.dnd_proficiency_bonus or "+2"
+            initiative = char.dnd_initiative or "+0"
+            speed = char.dnd_speed or 30
+            lines.append(f"  Proficiency: {prof_bonus} | Initiative: {initiative} | Speed: {speed} ft")
+            
+            # Spellcasting (if applicable)
+            if char.dnd_spellcasting:
+                spell_info = char.dnd_spellcasting
+                spell_ability = spell_info.get('ability', 'Unknown')
+                spell_dc = spell_info.get('dc', 10)
+                spell_attack = spell_info.get('attack', 0)
+                lines.append(f"  Spellcasting: {spell_ability} | DC: {spell_dc} | Attack: +{spell_attack}")
+                
+                # Spell slots
+                if 'slots' in spell_info:
+                    slots = spell_info['slots']
+                    slot_strs = []
+                    for level, slot_info in sorted(slots.items()):
+                        if isinstance(slot_info, dict):
+                            current = slot_info.get('current', 0)
+                            max_slots = slot_info.get('max', 0)
+                            if max_slots > 0:
+                                slot_strs.append(f"{level}: {current}/{max_slots}")
+                    if slot_strs:
+                        lines.append(f"  Spell Slots: {', '.join(slot_strs)}")
+            
+            # Conditions
+            conditions = party_member.conditions or char.dnd_conditions or []
+            if conditions:
+                lines.append(f"  Conditions: {', '.join(conditions)}")
+            
+            # Skills (only show proficiencies)
+            if char.dnd_skills:
+                skills_str = ', '.join(char.dnd_skills[:5])  # Limit to first 5
+                if len(char.dnd_skills) > 5:
+                    skills_str += f" (+{len(char.dnd_skills) - 5} more)"
+                lines.append(f"  Skill Proficiencies: {skills_str}")
+        
+        return lines
     
     def clear_conversation_history(self, session_id: int):
         """Clear conversation history for a session"""

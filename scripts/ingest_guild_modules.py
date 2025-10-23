@@ -94,15 +94,20 @@ def get_module_name_from_path(file_path: pathlib.Path, modules_dir: pathlib.Path
 
 def get_section_from_path(file_path: pathlib.Path, modules_dir: pathlib.Path) -> str:
     """
-    Extract the section type from the file path.
+    Extract the section path from the file path, preserving subdirectory structure.
     e.g., .../Defiance_in_Phlan/locations/peat_bog.md -> locations
          .../Defiance_in_Phlan/index.md -> overview
+         .../Bloodmoon_Epitaph/Epitaph_of_Thorns/items/index.md -> Epitaph_of_Thorns/items
     """
     try:
         relative = file_path.relative_to(modules_dir)
-        if len(relative.parts) > 2:
-            # It's in a subdirectory
-            return relative.parts[1]
+        parts = list(relative.parts)
+        
+        # Remove module name (first part) and filename (last part)
+        if len(parts) > 2:
+            # Build section path from everything between module and filename
+            section_parts = parts[1:-1]
+            return '/'.join(section_parts)
         elif file_path.stem in ('index', 'README'):
             return 'overview'
         else:

@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Database path
-DB_PATH = Path(__file__).parent.parent.parent / "storycraft.db"
+DB_PATH = Path(__file__).parent.parent.parent / "storycraft.db"  # Project root
 
 
 def migrate():

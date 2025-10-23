@@ -18,7 +18,7 @@ from sqlalchemy import create_engine, text
 import logging
 
 # Get database URL
-DEFAULT_DB_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'storycraft.db'))
+DEFAULT_DB_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'storycraft.db'))  # Project root
 DATABASE_URL = os.environ.get('STORYCRAFT_DATABASE_URL', f"sqlite:///{DEFAULT_DB_FILE}")
 
 logging.basicConfig(level=logging.INFO)

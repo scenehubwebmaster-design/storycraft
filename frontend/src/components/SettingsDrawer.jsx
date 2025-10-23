@@ -149,6 +149,42 @@ const SettingsDrawer = ({
     setExpandedPanel(isExpanded ? panel : false);
   };
 
+  // Handle provider change and reset voice to valid default
+  const handleProviderChange = (newProvider) => {
+    setTtsProvider(newProvider);
+
+    // Reset voice to valid default for new provider
+    if (newProvider === "openai") {
+      // Check if current voice is valid for OpenAI, otherwise reset
+      const openaiVoices = [
+        "alloy",
+        "echo",
+        "fable",
+        "onyx",
+        "nova",
+        "shimmer",
+      ];
+      if (!openaiVoices.includes(ttsVoice)) {
+        setTtsVoice("nova"); // Default OpenAI voice
+      }
+    } else if (newProvider === "kitten") {
+      // Check if current voice is valid for KittenTTS, otherwise reset
+      const kittenVoices = [
+        "tara",
+        "leah",
+        "jess",
+        "mia",
+        "leo",
+        "dan",
+        "zac",
+        "zoe",
+      ];
+      if (!kittenVoices.includes(ttsVoice)) {
+        setTtsVoice("tara"); // Default Kitten voice
+      }
+    }
+  };
+
   return (
     <Drawer
       anchor="right"
@@ -379,7 +415,7 @@ const SettingsDrawer = ({
                       <Chip
                         label="KittenTTS"
                         color={ttsProvider === "kitten" ? "primary" : "default"}
-                        onClick={() => setTtsProvider("kitten")}
+                        onClick={() => handleProviderChange("kitten")}
                         variant={
                           ttsProvider === "kitten" ? "filled" : "outlined"
                         }
@@ -387,7 +423,7 @@ const SettingsDrawer = ({
                       <Chip
                         label="OpenAI Whisper"
                         color={ttsProvider === "openai" ? "primary" : "default"}
-                        onClick={() => setTtsProvider("openai")}
+                        onClick={() => handleProviderChange("openai")}
                         variant={
                           ttsProvider === "openai" ? "filled" : "outlined"
                         }

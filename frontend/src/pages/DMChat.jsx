@@ -51,6 +51,7 @@ import {
   VolumeUp as VolumeUpIcon,
   PlayArrow as PlayArrowIcon,
   RecordVoiceOver as VoiceIcon,
+  Casino as DiceIcon,
   Stop as StopIcon,
   Campaign as CampaignIcon,
 } from "@mui/icons-material";
@@ -67,6 +68,9 @@ import DiceRoller from "../components/DiceRoller";
 import CombatActionPanel from "../components/CombatActionPanel";
 import SettingsDrawer from "../components/SettingsDrawer";
 import ResponseSuggestionChips from "../components/game/ResponseSuggestionChips";
+import ActionChipsParser from "../components/game/ActionChipsParser";
+import AbilityCheckPanel from "../components/game/AbilityCheckPanel";
+import CharacterQuickSelect from "../components/game/CharacterQuickSelect";
 
 const drawerWidth = 320;
 
@@ -89,7 +93,7 @@ export default function DMChatPage() {
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [ttsAutoPlay, setTtsAutoPlay] = useState(true); // Changed default to true for auto-play
-  const [ttsVoice, setTtsVoice] = useState("tara");
+  const [ttsVoice, setTtsVoice] = useState("alloy"); // OpenAI-compatible default voice
   const [ttsFlavorTextOnly, setTtsFlavorTextOnly] = useState(false);
   const [sceneImageAutoGenerate, setSceneImageAutoGenerate] = useState(true); // Auto-generate scene images by default
   const bottomRef = useRef(null);
@@ -99,6 +103,7 @@ export default function DMChatPage() {
   const [activeCampaign, setActiveCampaign] = useState(null);
   const [combatMode, setCombatMode] = useState(false);
   const [diceRollerOpen, setDiceRollerOpen] = useState(false);
+  const [abilityCheckOpen, setAbilityCheckOpen] = useState(false);
   const [rightPanelView, setRightPanelView] = useState("party"); // 'party', 'initiative', 'combat'
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
@@ -1117,6 +1122,21 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                     />
                   )}
 
+                  {/* Character Quick Select Bar */}
+                  {availableCharacters && availableCharacters.length > 0 && (
+                    <CharacterQuickSelect
+                      characters={availableCharacters}
+                      activeCharacterIds={activeCharacters}
+                      onToggleCharacter={(charId) => {
+                        setActiveCharacters((prev) =>
+                          prev.includes(charId)
+                            ? prev.filter((id) => id !== charId)
+                            : [...prev, charId]
+                        );
+                      }}
+                    />
+                  )}
+
                   <TextField
                     fullWidth
                     multiline
@@ -1348,6 +1368,37 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                                 </Typography>
                               )}
 
+                              {/* Action Chips Parser - Parse tables and create interactive chips */}
+                              {msg.role === "assistant" && (
+                                <ActionChipsParser
+                                  content={msg.content}
+                                  onActionClick={(action, roll, dc) => {
+                                    // Open ability check panel if it's an ability/skill check
+                                    const hasAbilityCheck =
+                                      roll &&
+                                      roll.toLowerCase().includes("d20");
+
+                                    if (
+                                      hasAbilityCheck &&
+                                      availableCharacters.length > 0
+                                    ) {
+                                      // Open the ability check panel
+                                      setAbilityCheckOpen(true);
+                                    } else {
+                                      // Fallback: construct a formatted message
+                                      let actionMessage = `I want to ${action}`;
+                                      if (roll) {
+                                        actionMessage += `\n\nSuggested roll: ${roll}`;
+                                      }
+                                      if (dc) {
+                                        actionMessage += `\nDC: ${dc}`;
+                                      }
+                                      setMessage(actionMessage);
+                                    }
+                                  }}
+                                />
+                              )}
+
                               {/* TTS Audio Player */}
                               {msg.role === "assistant" &&
                                 ttsEnabled &&
@@ -1542,14 +1593,27 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
 
                 {/* Dice Roller Button */}
                 <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={() => setDiceRollerOpen(true)}
-                    startIcon={<MenuBookIcon />}
-                  >
-                    🎲 Roll Dice
-                  </Button>
+                  <Stack spacing={1}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      onClick={() => setAbilityCheckOpen(true)}
+                      startIcon={<PersonIcon />}
+                      disabled={
+                        !availableCharacters || availableCharacters.length === 0
+                      }
+                    >
+                      🎯 Ability Check
+                    </Button>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => setDiceRollerOpen(true)}
+                      startIcon={<DiceIcon />}
+                    >
+                      🎲 Roll Dice
+                    </Button>
+                  </Stack>
                 </Box>
               </Paper>
             )}
@@ -1569,6 +1633,18 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
           open={diceRollerOpen}
           onClose={() => setDiceRollerOpen(false)}
           onRollComplete={handleDiceRoll}
+        />
+
+        {/* Ability Check Panel */}
+        <AbilityCheckPanel
+          open={abilityCheckOpen}
+          onClose={() => setAbilityCheckOpen(false)}
+          characters={availableCharacters}
+          onCheckComplete={(message, result) => {
+            // Send the formatted check result to chat
+            setMessage(message);
+            setAbilityCheckOpen(false);
+          }}
         />
 
         {/* Settings Drawer (Offcanvas) */}

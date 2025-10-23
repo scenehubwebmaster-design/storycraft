@@ -21,7 +21,7 @@ import json
 from pathlib import Path
 
 # Database path - use the same logic as database.py (root level)
-DB_PATH = Path(__file__).parent.parent.parent / "storycraft.db"
+DB_PATH = Path(__file__).parent.parent.parent / "storycraft.db"  # Project root
 
 
 def calculate_ability_modifier(score):

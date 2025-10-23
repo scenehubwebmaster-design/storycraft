@@ -453,18 +453,18 @@ When describing scenes, use evocative language. When voicing NPCs, give them per
 async def generate_tts_for_message(
     session_id: int,
     message_id: int,
-    voice: str = "tara",
+    voice: str = "alloy",  # Default to OpenAI-compatible voice
     flavor_text_only: bool = False,
     db: Session = Depends(get_db)
 ):
-    """Generate text-to-speech audio for a chat message using Kitten TTS.
+    """Generate text-to-speech audio for a chat message.
     
     Returns WAV audio file (16-bit PCM, 24kHz, mono).
     
     Args:
         session_id: Chat session ID
         message_id: Message ID to convert to speech
-        voice: Voice to use (tara, leah, jess, leo, dan, mia, zac, zoe)
+        voice: Voice to use (OpenAI: alloy/echo/fable/onyx/nova/shimmer, KittenTTS: tara/leah/jess/leo/dan/mia/zac/zoe)
         flavor_text_only: If True, narrate only flavor/narrative text (skip mechanics)
     
     Returns:
@@ -493,18 +493,74 @@ async def generate_tts_for_message(
         )
     
     try:
-        # Import TTS service (lazy load)
-        from ..tts_service import get_tts_service
+        # Get user settings to determine TTS provider
+        settings = db.query(models.UserSettings).first()
         
-        tts = get_tts_service()
+        # No defaults - if no settings, TTS is not configured
+        if not settings or not settings.tts_provider:
+            raise HTTPException(
+                status_code=400,
+                detail="TTS provider not configured. Please set your TTS preferences in settings."
+            )
         
-        # Generate speech audio
-        audio_data = tts.generate_speech(
-            text=message.content,
-            voice=voice,
-            add_dm_personality=True,
-            flavor_text_only=flavor_text_only
-        )
+        tts_provider = settings.tts_provider
+        tts_model = settings.tts_model if settings.tts_model else "standard"
+        tts_speed = settings.tts_speed if settings.tts_speed else 1.0
+        
+        # Map voice based on provider (handle KittenTTS voices being sent to OpenAI)
+        if tts_provider == "openai":
+            # If a KittenTTS voice was provided, use the saved voice from settings or default to alloy
+            kitten_voices = ["tara", "leah", "jess", "leo", "dan", "mia", "zac", "zoe"]
+            if voice in kitten_voices:
+                # Use the voice saved in settings (should be OpenAI voice) or default
+                voice = settings.tts_voice if settings.tts_voice else "alloy"
+                print(f"[TTS] Mapped KittenTTS voice to OpenAI voice: {voice}")
+        
+        print(f"[TTS] Using provider: {tts_provider}, voice: {voice}, model: {tts_model}, speed: {tts_speed}")
+        
+        # Route to appropriate TTS service based on provider - NO FALLBACKS
+        if tts_provider == "openai":
+            # Use OpenAI TTS service
+            from ..openai_tts_service import get_openai_tts_service
+            
+            tts = get_openai_tts_service(
+                voice=voice,
+                model=tts_model,
+                audio_format="wav"  # Frontend expects WAV
+            )
+            
+            # Generate speech audio with OpenAI
+            audio_data = tts.generate_speech(
+                text=message.content,
+                voice=voice,
+                model=tts_model,
+                speed=tts_speed,
+                output_format="wav"
+            )
+            
+            print(f"[TTS] Generated {len(audio_data)} bytes with OpenAI TTS")
+        
+        elif tts_provider == "kitten":
+            # Use KittenTTS service
+            from ..tts_service import get_tts_service
+            
+            tts = get_tts_service()
+            
+            # Generate speech audio with KittenTTS
+            audio_data = tts.generate_speech(
+                text=message.content,
+                voice=voice,
+                add_dm_personality=True,
+                flavor_text_only=flavor_text_only
+            )
+            
+            print(f"[TTS] Generated {len(audio_data)} bytes with KittenTTS")
+        
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported TTS provider: {tts_provider}. Supported providers: 'openai', 'kitten'"
+            )
         
         # Return as streaming audio
         return StreamingResponse(
@@ -515,12 +571,12 @@ async def generate_tts_for_message(
             }
         )
         
-    except ImportError:
+    except ImportError as e:
         import traceback
         traceback.print_exc()
         raise HTTPException(
             status_code=500,
-            detail="TTS service not available. Install kittentts: pip install https://github.com/KittenML/KittenTTS/releases/download/0.1/kittentts-0.1.0-py3-none-any.whl && pip install soundfile"
+            detail=f"TTS service not available: {str(e)}. Install required packages."
         )
     except Exception as e:
         import traceback

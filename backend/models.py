@@ -850,8 +850,8 @@ class UserSettings(Base):
     user_id = Column(Integer, nullable=True, index=True)  # Future: link to user auth
     
     # TTS Settings
-    tts_provider = Column(String(50), default="kitten")  # "kitten" or "openai"
-    tts_voice = Column(String(50), default="tara")  # Voice ID for current provider
+    tts_provider = Column(String(50), nullable=True)  # "kitten" or "openai" - no default, must be explicitly set
+    tts_voice = Column(String(50), default="alloy")  # Voice ID for current provider (OpenAI default)
     tts_enabled = Column(Boolean, default=True)
     tts_auto_play = Column(Boolean, default=False)
     tts_speed = Column(Float, default=1.0)  # Speech speed (0.25 to 4.0)

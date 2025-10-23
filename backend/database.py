@@ -10,7 +10,8 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 # Database configuration - prefer an absolute path so all processes use the same file
-# Keep backward-compatible relative URL if an env var overrides it
+# Database is stored in PROJECT ROOT to consolidate all data including RAG embeddings
+# This 490MB file contains: campaigns, characters, chat history, and 52K+ RAG embeddings
 DEFAULT_DB_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'storycraft.db'))
 # Allow tests to run against an isolated in-memory database to avoid stale
 # on-disk schemas (pytest sets PYTEST_CURRENT_TEST in the environment).

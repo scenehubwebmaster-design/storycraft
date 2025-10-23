@@ -12,7 +12,7 @@ import os
 import sys
 
 # Get the database path
-DB_PATH = os.path.join(os.path.dirname(__file__), "storycraft.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "storycraft.db")  # backend/storycraft.db
 
 def migrate():
     """Add structured_data column to characters and worlds tables"""

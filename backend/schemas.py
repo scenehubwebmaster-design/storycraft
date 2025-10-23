@@ -526,8 +526,8 @@ class DnDCharacterNarrative(BaseModel):
 class UserSettingsBase(BaseModel):
     """Base schema for user settings"""
     # TTS Settings
-    tts_provider: str = Field(default="kitten", description="TTS provider: 'kitten' or 'openai'")
-    tts_voice: str = Field(default="tara", description="Voice ID for current provider")
+    tts_provider: Optional[str] = Field(None, description="TTS provider: 'kitten' or 'openai' (must be explicitly set)")
+    tts_voice: str = Field(default="alloy", description="Voice ID for current provider (OpenAI default)")
     tts_enabled: bool = Field(default=True, description="Enable voice narration")
     tts_auto_play: bool = Field(default=False, description="Auto-play DM responses")
     tts_speed: float = Field(default=1.0, ge=0.25, le=4.0, description="Speech speed")

@@ -27,6 +27,8 @@ import {
   Stack,
   Grid,
   CircularProgress,
+  Pagination,
+  Collapse,
 } from "@mui/material";
 import {
   Campaign as CampaignIcon,
@@ -52,6 +54,14 @@ const CampaignSetupWizard = ({
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Campaign mode: "premade" or "custom"
+  const [campaignMode, setCampaignMode] = useState(null);
+  const [premadeCampaigns, setPremadeCampaigns] = useState([]);
+  const [loadingPremade, setLoadingPremade] = useState(false);
+  const [premadePage, setPremadePage] = useState(0);
+  const [showAllPremade, setShowAllPremade] = useState(false);
+  const CAMPAIGNS_PER_PAGE = 6;
 
   // Campaign details
   const [title, setTitle] = useState("");
@@ -276,12 +286,48 @@ const CampaignSetupWizard = ({
     }
   }, [open, activeStep]);
 
+  // Load premade campaigns when wizard opens
+  useEffect(() => {
+    if (open && activeStep === 0 && !campaignMode) {
+      loadPremadeCampaigns();
+    }
+  }, [open, activeStep, campaignMode]);
+
   // Load adventure templates when wizard opens or campaign type changes
   useEffect(() => {
     if (open && activeStep === 1) {
       loadAdventureTemplates();
     }
   }, [open, activeStep, campaignType]);
+
+  const loadPremadeCampaigns = async () => {
+    setLoadingPremade(true);
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/adventures/templates"
+      );
+      if (response.ok) {
+        const data = await response.json();
+
+        // Deduplicate campaigns by id
+        const uniqueCampaigns = [];
+        const seenIds = new Set();
+
+        for (const campaign of data.templates || []) {
+          if (!seenIds.has(campaign.id)) {
+            seenIds.add(campaign.id);
+            uniqueCampaigns.push(campaign);
+          }
+        }
+
+        setPremadeCampaigns(uniqueCampaigns);
+      }
+    } catch (err) {
+      console.error("Error loading premade campaigns:", err);
+    } finally {
+      setLoadingPremade(false);
+    }
+  };
 
   const loadAdventureTemplates = async () => {
     setLoadingTemplates(true);
@@ -322,6 +368,12 @@ const CampaignSetupWizard = ({
   };
 
   const handleNext = () => {
+    if (activeStep === 0 && !campaignMode) {
+      setError(
+        "Please choose to create a custom campaign or select a premade adventure"
+      );
+      return;
+    }
     if (activeStep === 0 && !title.trim()) {
       setError("Campaign title is required");
       return;
@@ -340,7 +392,16 @@ const CampaignSetupWizard = ({
 
   const handleBack = () => {
     setError(null);
-    setActiveStep((prev) => prev - 1);
+    if (activeStep === 1 && campaignMode === "premade") {
+      // If going back from step 1 on a premade, reset mode selection
+      setCampaignMode(null);
+      setActiveStep(0);
+    } else if (activeStep === 0 && campaignMode) {
+      // If on step 0 with mode selected, go back to mode selection
+      setCampaignMode(null);
+    } else {
+      setActiveStep((prev) => prev - 1);
+    }
   };
 
   const toggleCharacter = (characterId) => {
@@ -351,6 +412,36 @@ const CampaignSetupWizard = ({
         return [...prev, characterId];
       }
     });
+  };
+
+  const handleSelectPremade = (template) => {
+    setTitle(template.title);
+    setDescription(template.description);
+
+    // Parse level range to set starting level
+    if (template.level_range && template.level_range.includes("-")) {
+      const startLevel = parseInt(template.level_range.split("-")[0]);
+      setStartingLevel(startLevel);
+    }
+
+    // Set campaign type
+    setCampaignType(template.campaign_type);
+
+    // Set setting if available
+    if (template.setting) {
+      setSetting(template.setting);
+    }
+
+    // Set selected template for step 1
+    setSelectedTemplate(template.id);
+
+    // Set mode and move to next step
+    setCampaignMode("premade");
+    setActiveStep(1);
+  };
+
+  const handleCreateCustom = () => {
+    setCampaignMode("custom");
   };
 
   const handleCreate = async () => {
@@ -422,9 +513,13 @@ const CampaignSetupWizard = ({
   const handleClose = () => {
     if (!loading) {
       setActiveStep(0);
+      setCampaignMode(null);
+      setPremadePage(0);
+      setShowAllPremade(false);
       setTitle("");
       setDescription("");
       setSelectedCharacterIds([]);
+      setSelectedTemplate(null);
       setError(null);
       onClose();
     }
@@ -433,8 +528,242 @@ const CampaignSetupWizard = ({
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
+        // If no mode selected yet, show choice screen
+        if (!campaignMode) {
+          return (
+            <Stack spacing={3}>
+              <Alert severity="info" icon={<AutoAwesome />}>
+                <AlertTitle>
+                  <strong>Choose Your Path</strong>
+                </AlertTitle>
+                <Typography variant="body2">
+                  Start with a curated adventure from our library, or create
+                  your own custom campaign from scratch.
+                </Typography>
+              </Alert>
+
+              {/* Premade Campaigns Section */}
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  📚 Premade Campaigns ({premadeCampaigns.length})
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  Choose from professionally crafted adventures, official D&D
+                  modules, and AI-generated content
+                </Typography>
+
+                {loadingPremade ? (
+                  <Box
+                    sx={{ display: "flex", justifyContent: "center", py: 4 }}
+                  >
+                    <CircularProgress />
+                  </Box>
+                ) : premadeCampaigns.length === 0 ? (
+                  <Alert severity="info">
+                    No premade campaigns found. Try creating a custom campaign!
+                  </Alert>
+                ) : (
+                  <>
+                    <Grid container spacing={2}>
+                      {premadeCampaigns
+                        .slice(
+                          premadePage * CAMPAIGNS_PER_PAGE,
+                          (premadePage + 1) * CAMPAIGNS_PER_PAGE
+                        )
+                        .map((campaign) => {
+                          const sourceIcons = {
+                            guild_modules: "📚",
+                            generated: "✨",
+                            homebrew: "🎨",
+                          };
+                          const sourceLabels = {
+                            guild_modules: "Official Module",
+                            generated: "AI Generated",
+                            homebrew: "Homebrew",
+                          };
+
+                          return (
+                            <Grid key={campaign.id} size={{ xs: 12, sm: 6 }}>
+                              <Card
+                                sx={{
+                                  cursor: "pointer",
+                                  transition: "all 0.2s",
+                                  height: "100%",
+                                  "&:hover": {
+                                    transform: "translateY(-4px)",
+                                    boxShadow: 6,
+                                  },
+                                }}
+                                onClick={() => handleSelectPremade(campaign)}
+                              >
+                                <CardContent>
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      mb: 1,
+                                    }}
+                                  >
+                                    <Typography variant="h3" sx={{ mr: 1 }}>
+                                      {sourceIcons[campaign.source] || "🎲"}
+                                    </Typography>
+                                    <Box sx={{ flex: 1 }}>
+                                      <Typography
+                                        variant="h6"
+                                        component="div"
+                                        sx={{ fontSize: "1rem" }}
+                                      >
+                                        {campaign.title}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {sourceLabels[campaign.source]} • Levels{" "}
+                                        {campaign.level_range}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{
+                                      mb: 1,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      display: "-webkit-box",
+                                      WebkitLineClamp: 3,
+                                      WebkitBoxOrient: "vertical",
+                                    }}
+                                  >
+                                    {campaign.description}
+                                  </Typography>
+                                  {campaign.themes &&
+                                    campaign.themes.length > 0 && (
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          gap: 0.5,
+                                          flexWrap: "wrap",
+                                          mt: 1,
+                                        }}
+                                      >
+                                        {campaign.themes
+                                          .slice(0, 3)
+                                          .map((theme, idx) => (
+                                            <Chip
+                                              key={idx}
+                                              label={theme}
+                                              size="small"
+                                              sx={{
+                                                fontSize: "0.7rem",
+                                                height: "20px",
+                                              }}
+                                            />
+                                          ))}
+                                      </Box>
+                                    )}
+                                </CardContent>
+                              </Card>
+                            </Grid>
+                          );
+                        })}
+                    </Grid>
+
+                    {/* Pagination Controls */}
+                    {premadeCampaigns.length > CAMPAIGNS_PER_PAGE && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          mt: 3,
+                          gap: 2,
+                        }}
+                      >
+                        <Pagination
+                          count={Math.ceil(
+                            premadeCampaigns.length / CAMPAIGNS_PER_PAGE
+                          )}
+                          page={premadePage + 1}
+                          onChange={(e, page) => setPremadePage(page - 1)}
+                          color="primary"
+                          showFirstButton
+                          showLastButton
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          Showing {premadePage * CAMPAIGNS_PER_PAGE + 1}-
+                          {Math.min(
+                            (premadePage + 1) * CAMPAIGNS_PER_PAGE,
+                            premadeCampaigns.length
+                          )}{" "}
+                          of {premadeCampaigns.length} campaigns
+                        </Typography>
+                      </Box>
+                    )}
+                  </>
+                )}
+              </Box>
+
+              {/* Divider */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Box sx={{ flex: 1, height: "1px", bgcolor: "divider" }} />
+                <Typography variant="body2" color="text.secondary">
+                  OR
+                </Typography>
+                <Box sx={{ flex: 1, height: "1px", bgcolor: "divider" }} />
+              </Box>
+
+              {/* Custom Campaign Option */}
+              <Card
+                sx={{
+                  cursor: "pointer",
+                  border: 2,
+                  borderColor: "primary.main",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: 4,
+                  },
+                }}
+                onClick={handleCreateCustom}
+              >
+                <CardContent>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                    <Typography variant="h3" sx={{ mr: 2 }}>
+                      ✨
+                    </Typography>
+                    <Box>
+                      <Typography variant="h6">
+                        Create Custom Campaign
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Build your own adventure from scratch with full
+                        customization
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Stack>
+          );
+        }
+
+        // If mode is selected, show campaign details form
         return (
           <Stack spacing={3}>
+            <Alert severity="info">
+              <Typography variant="body2">
+                {campaignMode === "premade"
+                  ? "Review and customize your selected campaign"
+                  : "Fill in the details for your custom campaign"}
+              </Typography>
+            </Alert>
+
             <TextField
               label="Campaign Title"
               value={title}
@@ -1135,7 +1464,7 @@ const CampaignSetupWizard = ({
         <Button onClick={handleClose} disabled={loading}>
           Cancel
         </Button>
-        {activeStep > 0 && (
+        {(activeStep > 0 || campaignMode) && (
           <Button onClick={handleBack} disabled={loading}>
             Back
           </Button>
