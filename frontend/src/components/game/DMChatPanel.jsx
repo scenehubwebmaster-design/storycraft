@@ -85,25 +85,26 @@ function DMChatPanel({
   return (
     <Paper
       elevation={3}
-      sx={{ height: "500px", display: "flex", flexDirection: "column" }}
+      sx={{ height: "100%", display: "flex", flexDirection: "column" }}
     >
-      {/* Chat Header */}
+      {/* Compact Chat Header */}
       <Box
         sx={{
-          p: 2,
+          p: 1,
           background: "linear-gradient(135deg, #d4af37 0%, #8b0000 100%)",
           color: "white",
         }}
       >
         <Typography
-          variant="h6"
-          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+          variant="subtitle2"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 0.5,
+            fontWeight: 600,
+          }}
         >
-          <DMIcon /> Dungeon Master Chat
-        </Typography>
-        <Typography variant="caption">
-          Talk to your AI DM using natural language or commands like /roll, /hp,
-          /status
+          <DMIcon fontSize="small" /> DM Chat
         </Typography>
       </Box>
 
@@ -112,10 +113,10 @@ function DMChatPanel({
         sx={{
           flex: 1,
           overflowY: "auto",
-          p: 2,
+          p: 1.5,
           display: "flex",
           flexDirection: "column",
-          gap: 2,
+          gap: 1.5,
           backgroundColor: "#f5f5f5",
         }}
       >

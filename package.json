@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@sylphlab/pdf-reader-mcp": "^0.3.23",
-    "leaflet-draw": "^1.0.4"
+    "leaflet-draw": "^1.0.4",
+    "react-draggable": "^4.5.0"
   }
 }

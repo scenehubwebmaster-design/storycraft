@@ -34,6 +34,7 @@ import {
   Tooltip,
   Badge,
 } from "@mui/material";
+import FloatingChatInput from "../components/game/FloatingChatInput";
 import {
   Delete as DeleteIcon,
   Add as AddIcon,
@@ -429,13 +430,80 @@ export default function DMChatPage() {
       const partyResponse = await fetch(`/api/campaigns/${campaign.id}/party`);
       const party = partyResponse.ok ? await partyResponse.json() : [];
 
-      // Build campaign initialization prompt
+      // Build detailed party list with stats
       const partyList = party
-        .map(
-          (char) =>
-            `- ${char.name} (${char.dnd_species} ${char.dnd_class}, Level ${char.dnd_level})`
-        )
-        .join("\n");
+        .map((char) => {
+          const abilityScores = char.ability_scores || {};
+          const abilityMods = char.ability_modifiers || {};
+
+          return `### ${char.name}
+**${char.dnd_species} ${char.dnd_class} ${char.dnd_level}** | Background: ${
+            char.dnd_background || "Unknown"
+          }
+
+**Combat Stats:**
+- AC: ${char.armor_class || 10} | HP: ${char.current_hp}/${
+            char.max_hp
+          } | Speed: ${char.speed || 30} ft | Initiative: ${
+            char.initiative >= 0 ? "+" : ""
+          }${char.initiative || 0}
+
+**Ability Scores:**
+- STR: ${abilityScores.strength || 10} (${
+            abilityMods.strength >= 0 ? "+" : ""
+          }${abilityMods.strength || 0}) | DEX: ${
+            abilityScores.dexterity || 10
+          } (${abilityMods.dexterity >= 0 ? "+" : ""}${
+            abilityMods.dexterity || 0
+          }) | CON: ${abilityScores.constitution || 10} (${
+            abilityMods.constitution >= 0 ? "+" : ""
+          }${abilityMods.constitution || 0})
+- INT: ${abilityScores.intelligence || 10} (${
+            abilityMods.intelligence >= 0 ? "+" : ""
+          }${abilityMods.intelligence || 0}) | WIS: ${
+            abilityScores.wisdom || 10
+          } (${abilityMods.wisdom >= 0 ? "+" : ""}${
+            abilityMods.wisdom || 0
+          }) | CHA: ${abilityScores.charisma || 10} (${
+            abilityMods.charisma >= 0 ? "+" : ""
+          }${abilityMods.charisma || 0})
+
+**Skills:** ${
+            char.skills
+              ? Object.entries(char.skills)
+                  .filter(([_, proficient]) => proficient)
+                  .map(([skill, _]) => skill.replace("_", " "))
+                  .join(", ") || "None"
+              : "None"
+          }
+
+**Equipment:** ${
+            char.equipment && Array.isArray(char.equipment)
+              ? char.equipment.slice(0, 5).join(", ")
+              : "Standard starting equipment"
+          }
+${
+  char.equipment && char.equipment.length > 5
+    ? `... and ${char.equipment.length - 5} more items`
+    : ""
+}
+
+**Spellcasting:** ${
+            char.spellcasting?.spellcasting_ability
+              ? `${char.spellcasting.spellcasting_ability} (DC ${
+                  char.spellcasting.spell_save_dc || "N/A"
+                }, +${char.spellcasting.spell_attack_bonus || 0} to hit)`
+              : "None"
+          }
+
+**Conditions:** ${
+            char.conditions && char.conditions.length > 0
+              ? char.conditions.join(", ")
+              : "None"
+          }
+`;
+        })
+        .join("\n---\n\n");
 
       const initPrompt = `🎲 **Campaign Initialized: ${campaign.title}**
 
@@ -452,7 +520,10 @@ export default function DMChatPage() {
         metadata.campaign_tone?.replace("_", " ") || "Heroic Fantasy"
       }
 
-**The Adventuring Party:**
+---
+
+## **The Adventuring Party**
+
 ${partyList || "(No characters assigned yet)"}
 
 ---
@@ -474,6 +545,13 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
 6. Adjudicate rules fairly using D&D 5e mechanics
 7. Ask for dice rolls when needed (attack rolls, saving throws, skill checks)
 8. Reference the PHB and other source material via RAG when needed
+
+**The party's full stats are provided above. You have complete information about:**
+- Current HP, AC, and combat statistics
+- All ability scores and modifiers
+- Proficient skills for appropriate DCs
+- Equipment and spellcasting abilities
+- Any active conditions or status effects
 
 **Please begin the adventure with the opening scene narration!**`;
 
@@ -1024,480 +1102,302 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
           </Alert>
         )}
 
-        {/* Content Area - Flexible Layout */}
+        {/* Content Area - Direct scrolling without nested containers */}
         {selectedSession && (
-          <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
-            {/* Main Chat Area */}
-            <Box
-              sx={{
-                flexGrow: 1,
-                display: "flex",
-                flexDirection: "column",
-                overflow: "hidden",
-              }}
-            >
-              {/* Message Input - TOP */}
-              <Paper
-                elevation={4}
-                sx={{
-                  p: 2,
-                  borderBottom: "2px solid",
-                  borderColor: "secondary.main",
-                  bgcolor: "background.paper",
-                  flexShrink: 0,
-                }}
-              >
-                <Stack spacing={1.5}>
-                  {/* Active Character Selection (if campaign active) */}
-                  {activeCampaign && availableCharacters.length > 0 && (
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ mb: 0.5, display: "block" }}
-                      >
-                        🎭 Acting as:
-                      </Typography>
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        flexWrap="wrap"
-                        useFlexGap
-                      >
-                        {availableCharacters.map((char) => {
-                          const isActive = activeCharacters.includes(char.id);
-                          return (
-                            <Chip
-                              key={char.id}
-                              label={char.name}
-                              avatar={
-                                <Avatar
-                                  sx={{
-                                    bgcolor: isActive
-                                      ? "primary.main"
-                                      : "action.disabled",
-                                  }}
-                                >
-                                  {char.name?.charAt(0) || "?"}
-                                </Avatar>
-                              }
-                              onClick={() => {
-                                setActiveCharacters((prev) => {
-                                  if (prev.includes(char.id)) {
-                                    // Deselect, but keep at least one selected
-                                    return prev.length > 1
-                                      ? prev.filter((id) => id !== char.id)
-                                      : prev;
-                                  } else {
-                                    // Select (allow multiple)
-                                    return [...prev, char.id];
-                                  }
-                                });
-                              }}
-                              color={isActive ? "primary" : "default"}
-                              variant={isActive ? "filled" : "outlined"}
-                              sx={{
-                                cursor: "pointer",
-                                fontWeight: isActive ? 600 : 400,
-                                "&:hover": {
-                                  transform: "translateY(-2px)",
-                                  boxShadow: 2,
-                                },
-                                transition: "all 0.2s",
-                              }}
-                            />
-                          );
-                        })}
-                      </Stack>
-                    </Box>
-                  )}
-
-                  {/* Response Suggestion Chips */}
-                  {messages.length > 0 && !sending && !loadingGen && (
-                    <ResponseSuggestionChips
-                      lastMessage={messages[messages.length - 1]}
-                      onSuggestionClick={(suggestedText) => {
-                        setMessage(suggestedText);
-                      }}
-                    />
-                  )}
-
-                  {/* Character Quick Select Bar */}
-                  {availableCharacters && availableCharacters.length > 0 && (
-                    <CharacterQuickSelect
-                      characters={availableCharacters}
-                      activeCharacterIds={activeCharacters}
-                      onToggleCharacter={(charId) => {
-                        setActiveCharacters((prev) =>
-                          prev.includes(charId)
-                            ? prev.filter((id) => id !== charId)
-                            : [...prev, charId]
-                        );
-                      }}
-                    />
-                  )}
-
-                  <TextField
-                    fullWidth
-                    multiline
-                    maxRows={6}
-                    placeholder="Ask the Dungeon Master anything about D&D rules, spells, monsters..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
-                    disabled={sending || loadingGen}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        bgcolor: "background.default",
-                      },
-                    }}
-                  />
-                  <Stack direction="row" spacing={1}>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={sendMessage}
-                      disabled={!message.trim() || sending || loadingGen}
-                      endIcon={
-                        sending || loadingGen ? (
-                          <CircularProgress size={16} />
-                        ) : (
-                          <SendIcon />
-                        )
-                      }
-                      sx={{
-                        px: 3,
-                        py: 1,
-                        fontWeight: 600,
-                        textTransform: "none",
-                      }}
-                    >
-                      {sending
-                        ? "Sending..."
-                        : loadingGen
-                        ? "Generating..."
-                        : "Send"}
-                    </Button>
-                    {(sending || loadingGen) && (
-                      <Button
-                        variant="outlined"
-                        onClick={abortGeneration}
-                        color="error"
-                        startIcon={<StopIcon />}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </Stack>
-                </Stack>
-              </Paper>
-
-              {/* Messages Area - BOTTOM (scrollable) */}
+          <Box
+            sx={{
+              display: "flex",
+              flexGrow: 1,
+              overflow: "auto", // Single scrollbar for entire page
+              position: "relative",
+              p: 3,
+              bgcolor: "background.default",
+            }}
+          >
+            {messages.length === 0 ? (
               <Box
                 sx={{
-                  flexGrow: 1,
-                  overflow: "auto",
-                  p: 3,
-                  bgcolor: "background.default",
-                  minHeight: 0,
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
                 }}
               >
-                {messages.length === 0 ? (
-                  <Box
+                <Box>
+                  <AutoAwesomeIcon
+                    sx={{ fontSize: 80, color: "secondary.main", mb: 2 }}
+                  />
+                  <Typography variant="h5" color="primary" gutterBottom>
+                    Welcome, Dungeon Master
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Select an existing session or create a new campaign to begin
+                  </Typography>
+                </Box>
+              </Box>
+            ) : messages.length === 0 ? (
+              <Box
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                }}
+              >
+                <Box>
+                  <ChatIcon
+                    sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
+                  />
+                  <Typography variant="h6" color="text.secondary">
+                    No messages yet
+                  </Typography>
+                  <Typography variant="body2" color="text.disabled">
+                    Start the conversation below
+                  </Typography>
+                </Box>
+              </Box>
+            ) : (
+              <Stack spacing={2}>
+                {messages.map((msg) => (
+                  <Card
+                    key={msg.id}
+                    elevation={2}
                     sx={{
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      textAlign: "center",
+                      bgcolor:
+                        msg.role === "assistant"
+                          ? "primary.light"
+                          : "background.paper",
+                      color:
+                        msg.role === "assistant" ? "white" : "text.primary",
+                      maxWidth: "85%",
+                      alignSelf:
+                        msg.role === "assistant" ? "flex-start" : "flex-end",
+                      opacity: msg._optimistic ? 0.6 : 1,
                     }}
                   >
-                    <Box>
-                      <AutoAwesomeIcon
-                        sx={{ fontSize: 80, color: "secondary.main", mb: 2 }}
-                      />
-                      <Typography variant="h5" color="primary" gutterBottom>
-                        Welcome, Dungeon Master
-                      </Typography>
-                      <Typography variant="body1" color="text.secondary">
-                        Select an existing session or create a new campaign to
-                        begin
-                      </Typography>
-                    </Box>
-                  </Box>
-                ) : messages.length === 0 ? (
-                  <Box
-                    sx={{
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      textAlign: "center",
-                    }}
-                  >
-                    <Box>
-                      <ChatIcon
-                        sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
-                      />
-                      <Typography variant="h6" color="text.secondary">
-                        No messages yet
-                      </Typography>
-                      <Typography variant="body2" color="text.disabled">
-                        Start the conversation below
-                      </Typography>
-                    </Box>
-                  </Box>
-                ) : (
-                  <Stack spacing={2}>
-                    {messages.map((msg) => (
-                      <Card
-                        key={msg.id}
-                        elevation={2}
-                        sx={{
-                          bgcolor:
-                            msg.role === "assistant"
-                              ? "primary.light"
-                              : "background.paper",
-                          color:
-                            msg.role === "assistant" ? "white" : "text.primary",
-                          maxWidth: "85%",
-                          alignSelf:
-                            msg.role === "assistant"
-                              ? "flex-start"
-                              : "flex-end",
-                          opacity: msg._optimistic ? 0.6 : 1,
-                        }}
+                    <CardContent>
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        alignItems="flex-start"
                       >
-                        <CardContent>
-                          <Stack
-                            direction="row"
-                            spacing={1.5}
-                            alignItems="flex-start"
+                        <Avatar
+                          sx={{
+                            bgcolor:
+                              msg.role === "assistant"
+                                ? "secondary.main"
+                                : "primary.main",
+                            width: 40,
+                            height: 40,
+                          }}
+                        >
+                          {msg.role === "assistant" ? (
+                            <SmartToyIcon />
+                          ) : (
+                            <PersonIcon />
+                          )}
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 600,
+                              mb: 1,
+                              textTransform: "capitalize",
+                            }}
                           >
-                            <Avatar
+                            {msg.role === "assistant"
+                              ? "Dungeon Master"
+                              : "Player"}
+                          </Typography>
+
+                          {/* Render Markdown for assistant, plain text for user */}
+                          {msg.role === "assistant" ? (
+                            <Box
                               sx={{
-                                bgcolor:
-                                  msg.role === "assistant"
-                                    ? "secondary.main"
-                                    : "primary.main",
-                                width: 40,
-                                height: 40,
+                                wordBreak: "break-word",
+                                overflowWrap: "break-word",
+                                "& p": { mb: 1, lineHeight: 1.6 },
+                                "& h1, & h2, & h3, & h4, & h5, & h6": {
+                                  fontWeight: 600,
+                                  mt: 2,
+                                  mb: 1,
+                                  color: "inherit",
+                                },
+                                "& ul, & ol": { pl: 3, mb: 1 },
+                                "& li": { mb: 0.5 },
+                                "& strong": { fontWeight: 700 },
+                                "& em": { fontStyle: "italic" },
+                                "& code": {
+                                  bgcolor: "rgba(0,0,0,0.2)",
+                                  px: 0.5,
+                                  py: 0.25,
+                                  borderRadius: 0.5,
+                                  fontFamily: "monospace",
+                                  fontSize: "0.9em",
+                                  wordBreak: "break-all",
+                                },
+                                "& pre": {
+                                  bgcolor: "rgba(0,0,0,0.3)",
+                                  p: 1.5,
+                                  borderRadius: 1,
+                                  overflow: "auto",
+                                  "& code": {
+                                    bgcolor: "transparent",
+                                    px: 0,
+                                    py: 0,
+                                  },
+                                },
+                                "& hr": {
+                                  borderColor: "rgba(255,255,255,0.2)",
+                                  my: 2,
+                                },
                               }}
                             >
-                              {msg.role === "assistant" ? (
-                                <SmartToyIcon />
-                              ) : (
-                                <PersonIcon />
-                              )}
-                            </Avatar>
-                            <Box sx={{ flex: 1 }}>
-                              <Typography
-                                variant="subtitle2"
-                                sx={{
-                                  fontWeight: 600,
-                                  mb: 1,
-                                  textTransform: "capitalize",
-                                }}
-                              >
-                                {msg.role === "assistant"
-                                  ? "Dungeon Master"
-                                  : "Player"}
-                              </Typography>
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </Box>
+                          ) : (
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                                overflowWrap: "break-word",
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              {msg.content}
+                            </Typography>
+                          )}
 
-                              {/* Render Markdown for assistant, plain text for user */}
-                              {msg.role === "assistant" ? (
-                                <Box
+                          {/* Action Chips Parser - Parse tables and create interactive chips */}
+                          {msg.role === "assistant" && (
+                            <ActionChipsParser
+                              content={msg.content}
+                              onActionClick={(action, roll, dc) => {
+                                // Open ability check panel if it's an ability/skill check
+                                const hasAbilityCheck =
+                                  roll && roll.toLowerCase().includes("d20");
+
+                                if (
+                                  hasAbilityCheck &&
+                                  availableCharacters.length > 0
+                                ) {
+                                  // Open the ability check panel
+                                  setAbilityCheckOpen(true);
+                                } else {
+                                  // Fallback: construct a formatted message
+                                  let actionMessage = `I want to ${action}`;
+                                  if (roll) {
+                                    actionMessage += `\n\nSuggested roll: ${roll}`;
+                                  }
+                                  if (dc) {
+                                    actionMessage += `\nDC: ${dc}`;
+                                  }
+                                  setMessage(actionMessage);
+                                }
+                              }}
+                            />
+                          )}
+
+                          {/* TTS Audio Player */}
+                          {msg.role === "assistant" &&
+                            ttsEnabled &&
+                            msg.id &&
+                            !msg._optimistic && (
+                              <Box sx={{ mt: 1.5 }}>
+                                <TTSAudioPlayer
+                                  sessionId={selectedSession.id}
+                                  messageId={msg.id}
+                                  autoPlay={ttsAutoPlay}
+                                  compact={true}
+                                  defaultVoice={ttsVoice}
+                                  defaultFlavorTextOnly={ttsFlavorTextOnly}
                                   sx={{
-                                    wordBreak: "break-word",
-                                    overflowWrap: "break-word",
-                                    "& p": { mb: 1, lineHeight: 1.6 },
-                                    "& h1, & h2, & h3, & h4, & h5, & h6": {
-                                      fontWeight: 600,
-                                      mt: 2,
-                                      mb: 1,
-                                      color: "inherit",
-                                    },
-                                    "& ul, & ol": { pl: 3, mb: 1 },
-                                    "& li": { mb: 0.5 },
-                                    "& strong": { fontWeight: 700 },
-                                    "& em": { fontStyle: "italic" },
-                                    "& code": {
-                                      bgcolor: "rgba(0,0,0,0.2)",
-                                      px: 0.5,
-                                      py: 0.25,
-                                      borderRadius: 0.5,
-                                      fontFamily: "monospace",
-                                      fontSize: "0.9em",
-                                      wordBreak: "break-all",
-                                    },
-                                    "& pre": {
-                                      bgcolor: "rgba(0,0,0,0.3)",
-                                      p: 1.5,
-                                      borderRadius: 1,
-                                      overflow: "auto",
-                                      "& code": {
-                                        bgcolor: "transparent",
-                                        px: 0,
-                                        py: 0,
-                                      },
-                                    },
-                                    "& hr": {
-                                      borderColor: "rgba(255,255,255,0.2)",
-                                      my: 2,
-                                    },
-                                  }}
-                                >
-                                  <ReactMarkdown>{msg.content}</ReactMarkdown>
-                                </Box>
-                              ) : (
-                                <Typography
-                                  variant="body1"
-                                  sx={{
-                                    whiteSpace: "pre-wrap",
-                                    wordBreak: "break-word",
-                                    overflowWrap: "break-word",
-                                    lineHeight: 1.6,
-                                  }}
-                                >
-                                  {msg.content}
-                                </Typography>
-                              )}
-
-                              {/* Action Chips Parser - Parse tables and create interactive chips */}
-                              {msg.role === "assistant" && (
-                                <ActionChipsParser
-                                  content={msg.content}
-                                  onActionClick={(action, roll, dc) => {
-                                    // Open ability check panel if it's an ability/skill check
-                                    const hasAbilityCheck =
-                                      roll &&
-                                      roll.toLowerCase().includes("d20");
-
-                                    if (
-                                      hasAbilityCheck &&
-                                      availableCharacters.length > 0
-                                    ) {
-                                      // Open the ability check panel
-                                      setAbilityCheckOpen(true);
-                                    } else {
-                                      // Fallback: construct a formatted message
-                                      let actionMessage = `I want to ${action}`;
-                                      if (roll) {
-                                        actionMessage += `\n\nSuggested roll: ${roll}`;
-                                      }
-                                      if (dc) {
-                                        actionMessage += `\nDC: ${dc}`;
-                                      }
-                                      setMessage(actionMessage);
-                                    }
+                                    bgcolor: "rgba(255,255,255,0.1)",
+                                    borderRadius: 1,
+                                    p: 1,
                                   }}
                                 />
-                              )}
+                              </Box>
+                            )}
 
-                              {/* TTS Audio Player */}
-                              {msg.role === "assistant" &&
-                                ttsEnabled &&
-                                msg.id &&
-                                !msg._optimistic && (
-                                  <Box sx={{ mt: 1.5 }}>
-                                    <TTSAudioPlayer
-                                      sessionId={selectedSession.id}
-                                      messageId={msg.id}
-                                      autoPlay={ttsAutoPlay}
-                                      compact={true}
-                                      defaultVoice={ttsVoice}
-                                      defaultFlavorTextOnly={ttsFlavorTextOnly}
+                          {/* Scene Image Generator */}
+                          {msg.role === "assistant" &&
+                            msg.id &&
+                            !msg._optimistic && (
+                              <SceneImageDisplay
+                                sessionId={selectedSession.id}
+                                messageId={msg.id}
+                                messageContent={msg.content}
+                                compact={true}
+                                autoGenerate={sceneImageAutoGenerate}
+                              />
+                            )}
+
+                          {/* Source Citations */}
+                          {msg.role === "assistant" &&
+                            msg.metadata &&
+                            msg.metadata.retrievals &&
+                            msg.metadata.retrievals.length > 0 && (
+                              <Box
+                                sx={{
+                                  mt: 2,
+                                  pt: 2,
+                                  borderTop: "1px solid rgba(255,255,255,0.2)",
+                                }}
+                              >
+                                <Stack
+                                  direction="row"
+                                  spacing={0.5}
+                                  alignItems="center"
+                                  sx={{ mb: 1 }}
+                                >
+                                  <MenuBookIcon fontSize="small" />
+                                  <Typography
+                                    variant="caption"
+                                    sx={{ fontWeight: 600 }}
+                                  >
+                                    Sources Referenced:
+                                  </Typography>
+                                </Stack>
+                                <Stack spacing={0.5}>
+                                  {msg.metadata.retrievals.map((r, idx) => (
+                                    <Chip
+                                      key={idx}
+                                      label={r.name || r.id || "Unknown"}
+                                      size="small"
+                                      onClick={
+                                        r.source_url
+                                          ? () =>
+                                              window.open(
+                                                r.source_url,
+                                                "_blank"
+                                              )
+                                          : undefined
+                                      }
                                       sx={{
-                                        bgcolor: "rgba(255,255,255,0.1)",
-                                        borderRadius: 1,
-                                        p: 1,
+                                        bgcolor: "rgba(255,255,255,0.15)",
+                                        color: "white",
+                                        "&:hover": {
+                                          bgcolor: "rgba(255,255,255,0.25)",
+                                        },
                                       }}
                                     />
-                                  </Box>
-                                )}
-
-                              {/* Scene Image Generator */}
-                              {msg.role === "assistant" &&
-                                msg.id &&
-                                !msg._optimistic && (
-                                  <SceneImageDisplay
-                                    sessionId={selectedSession.id}
-                                    messageId={msg.id}
-                                    messageContent={msg.content}
-                                    compact={true}
-                                    autoGenerate={sceneImageAutoGenerate}
-                                  />
-                                )}
-
-                              {/* Source Citations */}
-                              {msg.role === "assistant" &&
-                                msg.metadata &&
-                                msg.metadata.retrievals &&
-                                msg.metadata.retrievals.length > 0 && (
-                                  <Box
-                                    sx={{
-                                      mt: 2,
-                                      pt: 2,
-                                      borderTop:
-                                        "1px solid rgba(255,255,255,0.2)",
-                                    }}
-                                  >
-                                    <Stack
-                                      direction="row"
-                                      spacing={0.5}
-                                      alignItems="center"
-                                      sx={{ mb: 1 }}
-                                    >
-                                      <MenuBookIcon fontSize="small" />
-                                      <Typography
-                                        variant="caption"
-                                        sx={{ fontWeight: 600 }}
-                                      >
-                                        Sources Referenced:
-                                      </Typography>
-                                    </Stack>
-                                    <Stack spacing={0.5}>
-                                      {msg.metadata.retrievals.map((r, idx) => (
-                                        <Chip
-                                          key={idx}
-                                          label={r.name || r.id || "Unknown"}
-                                          size="small"
-                                          onClick={
-                                            r.source_url
-                                              ? () =>
-                                                  window.open(
-                                                    r.source_url,
-                                                    "_blank"
-                                                  )
-                                              : undefined
-                                          }
-                                          sx={{
-                                            bgcolor: "rgba(255,255,255,0.15)",
-                                            color: "white",
-                                            "&:hover": {
-                                              bgcolor: "rgba(255,255,255,0.25)",
-                                            },
-                                          }}
-                                        />
-                                      ))}
-                                    </Stack>
-                                  </Box>
-                                )}
-                            </Box>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    ))}
-                    <div ref={bottomRef} />
-                  </Stack>
-                )}
-              </Box>
-            </Box>
+                                  ))}
+                                </Stack>
+                              </Box>
+                            )}
+                        </Box>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                ))}
+                <div ref={bottomRef} />
+              </Stack>
+            )}
 
             {/* Right Column - Party/Combat Panel (Collapsible) */}
             {activeCampaign && (
@@ -1618,6 +1518,34 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
               </Paper>
             )}
           </Box>
+        )}
+
+        {/* Compact Draggable Floating Chat Input */}
+        {selectedSession && (
+          <FloatingChatInput
+            message={message}
+            setMessage={setMessage}
+            onSend={sendMessage}
+            sending={sending}
+            loading={loadingGen}
+            onCancel={abortGeneration}
+            availableCharacters={availableCharacters}
+            activeCharacters={activeCharacters}
+            onToggleCharacter={(charId) => {
+              setActiveCharacters((prev) => {
+                if (prev.includes(charId)) {
+                  return prev.length > 1
+                    ? prev.filter((id) => id !== charId)
+                    : prev;
+                } else {
+                  return [...prev, charId];
+                }
+              });
+            }}
+            showCharacterSelect={
+              activeCampaign && availableCharacters.length > 0
+            }
+          />
         )}
 
         {/* Campaign Setup Wizard */}
