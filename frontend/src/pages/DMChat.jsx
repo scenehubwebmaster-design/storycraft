@@ -1201,34 +1201,51 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                           : undefined
                       }
                     >
+                      {/* Scene Image Generator - Appears first for visual hierarchy */}
+                      {msg.role === "assistant" &&
+                        msg.id &&
+                        !msg._optimistic && (
+                          <Box sx={{ mb: 1.5 }}>
+                            <SceneImageDisplay
+                              sessionId={selectedSession.id}
+                              messageId={msg.id}
+                              messageContent={msg.content}
+                              compact={true}
+                              autoGenerate={sceneImageAutoGenerate}
+                            />
+                          </Box>
+                        )}
+
                       {/* Action Chips Parser - Parse tables and create interactive chips */}
                       {msg.role === "assistant" && (
-                        <ActionChipsParser
-                          content={msg.content}
-                          onActionClick={(action, roll, dc) => {
-                            // Open ability check panel if it's an ability/skill check
-                            const hasAbilityCheck =
-                              roll && roll.toLowerCase().includes("d20");
+                        <Box sx={{ mb: 1 }}>
+                          <ActionChipsParser
+                            content={msg.content}
+                            onActionClick={(action, roll, dc) => {
+                              // Open ability check panel if it's an ability/skill check
+                              const hasAbilityCheck =
+                                roll && roll.toLowerCase().includes("d20");
 
-                            if (
-                              hasAbilityCheck &&
-                              availableCharacters.length > 0
-                            ) {
-                              // Open the ability check panel
-                              setAbilityCheckOpen(true);
-                            } else {
-                              // Fallback: construct a formatted message
-                              let actionMessage = `I want to ${action}`;
-                              if (roll) {
-                                actionMessage += `\n\nSuggested roll: ${roll}`;
+                              if (
+                                hasAbilityCheck &&
+                                availableCharacters.length > 0
+                              ) {
+                                // Open the ability check panel
+                                setAbilityCheckOpen(true);
+                              } else {
+                                // Fallback: construct a formatted message
+                                let actionMessage = `I want to ${action}`;
+                                if (roll) {
+                                  actionMessage += `\n\nSuggested roll: ${roll}`;
+                                }
+                                if (dc) {
+                                  actionMessage += `\nDC: ${dc}`;
+                                }
+                                setMessage(actionMessage);
                               }
-                              if (dc) {
-                                actionMessage += `\nDC: ${dc}`;
-                              }
-                              setMessage(actionMessage);
-                            }
-                          }}
-                        />
+                            }}
+                          />
+                        </Box>
                       )}
 
                       {/* TTS Audio Player */}
@@ -1236,7 +1253,7 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                         ttsEnabled &&
                         msg.id &&
                         !msg._optimistic && (
-                          <Box sx={{ mt: 1.5 }}>
+                          <Box sx={{ mb: 1 }}>
                             <TTSAudioPlayer
                               sessionId={selectedSession.id}
                               messageId={msg.id}
@@ -1251,19 +1268,6 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                               }}
                             />
                           </Box>
-                        )}
-
-                      {/* Scene Image Generator */}
-                      {msg.role === "assistant" &&
-                        msg.id &&
-                        !msg._optimistic && (
-                          <SceneImageDisplay
-                            sessionId={selectedSession.id}
-                            messageId={msg.id}
-                            messageContent={msg.content}
-                            compact={true}
-                            autoGenerate={sceneImageAutoGenerate}
-                          />
                         )}
 
                       {/* Source Citations */}

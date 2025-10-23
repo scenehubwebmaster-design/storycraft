@@ -21,8 +21,8 @@ import PersonIcon from "@mui/icons-material/Person";
 import ReactMarkdown from "react-markdown";
 
 /**
- * Cinematic Message Card - Visual-first design
- * Features: Hero images, collapsible text, compact user messages, modern layout
+ * Messenger-style Message Card
+ * Features: Preview lines with expansion, hero images, clean bubble design
  */
 export default function CinematicMessageCard({
   message,
@@ -31,222 +31,236 @@ export default function CinematicMessageCard({
   onImageGenerate,
   children, // For TTS, action chips, etc.
 }) {
-  const [textExpanded, setTextExpanded] = useState(!isUser);
-  const [showUserMessage, setShowUserMessage] = useState(false);
+  const [textExpanded, setTextExpanded] = useState(false);
 
-  // User messages - super compact, hidden by default
+  // Extract first line for preview (up to first newline or 80 chars)
+  const getFirstLine = (content) => {
+    const plainText = content.replace(/[#*_`\[\]]/g, "").trim();
+    const firstLineBreak = plainText.indexOf("\n");
+    const firstLine =
+      firstLineBreak > 0 ? plainText.substring(0, firstLineBreak) : plainText;
+    return firstLine.length > 80 ? firstLine.substring(0, 80) + "..." : firstLine;
+  };
+
+  // User messages - messenger bubble on right
   if (isUser) {
     return (
       <Fade in timeout={300}>
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
-          <Chip
-            avatar={
-              <Avatar sx={{ bgcolor: "primary.main", width: 24, height: 24 }}>
-                <PersonIcon sx={{ fontSize: 14 }} />
-              </Avatar>
-            }
-            label="You asked..."
-            onClick={() => setShowUserMessage(!showUserMessage)}
-            size="small"
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            mb: 1.5,
+            width: "100%",
+          }}
+        >
+          <Paper
+            elevation={2}
             sx={{
-              bgcolor: "rgba(61, 47, 31, 0.6)",
-              color: "text.secondary",
-              fontSize: "0.75rem",
-              height: 24,
-              cursor: "pointer",
-              border: "1px solid rgba(185, 167, 0, 0.2)",
+              maxWidth: "75%",
+              bgcolor: "rgba(61, 47, 31, 0.85)",
+              border: "1px solid rgba(185, 167, 0, 0.3)",
+              borderRadius: 2,
+              overflow: "hidden",
+              transition: "all 0.2s ease-in-out",
               "&:hover": {
-                bgcolor: "rgba(61, 47, 31, 0.8)",
                 borderColor: "primary.main",
+                boxShadow: "0 4px 12px rgba(185, 167, 0, 0.2)",
               },
             }}
-          />
-          <Collapse in={showUserMessage} orientation="horizontal">
-            <Paper
-              elevation={2}
+          >
+            {/* Preview/Header */}
+            <Box
+              onClick={() => setTextExpanded(!textExpanded)}
               sx={{
-                ml: 1,
-                p: 1,
-                maxWidth: "400px",
-                bgcolor: "rgba(61, 47, 31, 0.8)",
-                border: "1px solid rgba(185, 167, 0, 0.3)",
+                p: 1.5,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                bgcolor: "rgba(0, 0, 0, 0.2)",
               }}
             >
+              <Avatar sx={{ bgcolor: "primary.main", width: 28, height: 28 }}>
+                <PersonIcon sx={{ fontSize: 16 }} />
+              </Avatar>
               <Typography
                 variant="body2"
-                sx={{ fontSize: "0.85rem", color: "text.primary" }}
+                sx={{
+                  flex: 1,
+                  fontSize: "0.9rem",
+                  color: "text.primary",
+                  fontWeight: 500,
+                }}
               >
-                {message.content}
+                {getFirstLine(message.content)}
               </Typography>
-            </Paper>
-          </Collapse>
+              <IconButton
+                size="small"
+                sx={{
+                  color: "primary.main",
+                  transform: textExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.3s",
+                }}
+              >
+                <ExpandMoreIcon fontSize="small" />
+              </IconButton>
+            </Box>
+
+            {/* Expanded Content */}
+            <Collapse in={textExpanded}>
+              <Box
+                sx={{
+                  p: 2,
+                  pt: 1.5,
+                  maxHeight: "300px",
+                  overflow: "auto",
+                  borderTop: "1px solid rgba(185, 167, 0, 0.2)",
+                  "&::-webkit-scrollbar": { width: "6px" },
+                  "&::-webkit-scrollbar-track": {
+                    bgcolor: "rgba(0, 0, 0, 0.2)",
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    bgcolor: "rgba(185, 167, 0, 0.5)",
+                    borderRadius: "3px",
+                    "&:hover": { bgcolor: "primary.main" },
+                  },
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "0.9rem",
+                    color: "text.primary",
+                    lineHeight: 1.6,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {message.content}
+                </Typography>
+              </Box>
+            </Collapse>
+          </Paper>
         </Box>
       </Fade>
     );
   }
 
-  // DM messages - Visual-first with scene hero
+  // DM messages - Messenger bubble on left with optional hero image
   const hasImage = sceneImage?.image_url;
 
   return (
     <Fade in timeout={500}>
-      <Card
-        elevation={6}
-        sx={{
-          position: "relative",
-          borderRadius: 3,
-          overflow: "hidden",
-          border: "2px solid",
-          borderColor: "primary.main",
-          bgcolor: "rgba(28, 20, 16, 0.95)",
-          mb: 2,
-          transition: "all 0.3s ease-in-out",
-          "&:hover": {
-            boxShadow: "0 8px 32px rgba(185, 167, 0, 0.4)",
-            borderColor: "primary.light",
-          },
-        }}
-      >
-        {/* Hero Image Section */}
-        {hasImage ? (
-          <Box sx={{ position: "relative" }}>
-            <CardMedia
-              component="img"
-              image={sceneImage.image_url}
-              alt="Scene"
-              sx={{
-                height: "400px",
-                objectFit: "cover",
-                filter: "brightness(0.9)",
-              }}
-            />
-            {/* Gradient Overlay for text readability */}
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: "120px",
-                background:
-                  "linear-gradient(to top, rgba(28, 20, 16, 0.95), transparent)",
-              }}
-            />
-            {/* DM Badge on Image */}
-            <Chip
-              icon={<SmartToyIcon />}
-              label="Dungeon Master"
-              size="small"
-              sx={{
-                position: "absolute",
-                top: 16,
-                left: 16,
-                bgcolor: "rgba(139, 0, 0, 0.9)",
-                color: "white",
-                fontWeight: 700,
-                backdropFilter: "blur(8px)",
-                border: "2px solid",
-                borderColor: "primary.main",
-              }}
-            />
-          </Box>
-        ) : (
-          // No image - show placeholder with generate button
-          <Box
-            sx={{
-              height: "200px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              bgcolor: "rgba(0, 0, 0, 0.4)",
-              borderBottom: "2px solid rgba(185, 167, 0, 0.2)",
-              position: "relative",
-            }}
-          >
-            <Stack alignItems="center" spacing={1}>
-              <ImageIcon
-                sx={{ fontSize: 48, color: "primary.main", opacity: 0.5 }}
+      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2, width: "100%" }}>
+        <Paper
+          elevation={6}
+          sx={{
+            maxWidth: "85%",
+            bgcolor: "rgba(28, 20, 16, 0.95)",
+            border: "2px solid",
+            borderColor: "primary.main",
+            borderRadius: 3,
+            overflow: "hidden",
+            transition: "all 0.3s ease-in-out",
+            "&:hover": {
+              boxShadow: "0 8px 32px rgba(185, 167, 0, 0.4)",
+              borderColor: "primary.light",
+            },
+          }}
+        >
+          {/* Hero Image Section (Optional) */}
+          {hasImage && (
+            <Box sx={{ position: "relative" }}>
+              <CardMedia
+                component="img"
+                image={sceneImage.image_url}
+                alt="Scene"
+                sx={{
+                  height: "300px",
+                  objectFit: "cover",
+                  filter: "brightness(0.9)",
+                }}
               />
-              <Typography variant="caption" color="text.secondary">
-                Scene illustration
-              </Typography>
-              {onImageGenerate && (
-                <IconButton
-                  size="small"
-                  onClick={onImageGenerate}
-                  sx={{
-                    bgcolor: "primary.main",
-                    color: "primary.contrastText",
-                    "&:hover": { bgcolor: "primary.light" },
-                  }}
-                >
-                  <ImageIcon />
-                </IconButton>
-              )}
-            </Stack>
-            {/* DM Badge */}
-            <Chip
-              icon={<SmartToyIcon />}
-              label="DM"
-              size="small"
-              sx={{
-                position: "absolute",
-                top: 12,
-                left: 12,
-                bgcolor: "rgba(139, 0, 0, 0.9)",
-                color: "white",
-                fontWeight: 700,
-                border: "2px solid",
-                borderColor: "primary.main",
-              }}
-            />
-          </Box>
-        )}
+              {/* Gradient Overlay */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: "80px",
+                  background:
+                    "linear-gradient(to top, rgba(28, 20, 16, 0.95), transparent)",
+                }}
+              />
+              {/* DM Badge on Image */}
+              <Chip
+                icon={<SmartToyIcon sx={{ fontSize: 14 }} />}
+                label="DM"
+                size="small"
+                sx={{
+                  position: "absolute",
+                  top: 12,
+                  left: 12,
+                  bgcolor: "rgba(139, 0, 0, 0.9)",
+                  color: "white",
+                  fontWeight: 700,
+                  backdropFilter: "blur(8px)",
+                  border: "2px solid",
+                  borderColor: "primary.main",
+                  height: 24,
+                  fontSize: "0.7rem",
+                }}
+              />
+            </Box>
+          )}
 
-        {/* Text Content Section - Collapsible */}
-        <Box>
-          {/* Collapsed View - Just a preview bar */}
+          {/* Message Preview/Header */}
           <Box
             onClick={() => setTextExpanded(!textExpanded)}
             sx={{
-              p: 2,
+              p: 1.5,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              bgcolor: textExpanded ? "transparent" : "rgba(0, 0, 0, 0.3)",
-              borderTop: textExpanded
-                ? "none"
-                : "1px solid rgba(185, 167, 0, 0.2)",
+              gap: 1,
+              bgcolor: "rgba(0, 0, 0, 0.3)",
+              borderTop: hasImage ? "1px solid rgba(185, 167, 0, 0.2)" : "none",
               "&:hover": {
-                bgcolor: "rgba(185, 167, 0, 0.1)",
+                bgcolor: "rgba(185, 167, 0, 0.15)",
               },
             }}
           >
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{ flex: 1 }}
+            <Avatar
+              sx={{
+                bgcolor: "secondary.main",
+                width: 28,
+                height: 28,
+                border: "2px solid",
+                borderColor: "primary.main",
+              }}
             >
-              <AutoStoriesIcon sx={{ fontSize: 20, color: "primary.main" }} />
+              <SmartToyIcon sx={{ fontSize: 16 }} />
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
                 variant="body2"
                 sx={{
                   fontSize: "0.9rem",
                   color: "text.primary",
+                  fontWeight: 500,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  whiteSpace: textExpanded ? "normal" : "nowrap",
+                  display: "-webkit-box",
+                  WebkitLineClamp: textExpanded ? "unset" : 1,
+                  WebkitBoxOrient: "vertical",
                   lineHeight: 1.4,
                 }}
               >
-                {textExpanded
-                  ? ""
-                  : message.content.slice(0, 120) +
-                    (message.content.length > 120 ? "..." : "")}
+                {getFirstLine(message.content)}
               </Typography>
-            </Stack>
+            </Box>
             <IconButton
               size="small"
               sx={{
@@ -255,7 +269,7 @@ export default function CinematicMessageCard({
                 transition: "transform 0.3s",
               }}
             >
-              <ExpandMoreIcon />
+              <ExpandMoreIcon fontSize="small" />
             </IconButton>
           </Box>
 
@@ -348,8 +362,8 @@ export default function CinematicMessageCard({
               {children}
             </Box>
           )}
-        </Box>
-      </Card>
+        </Paper>
+      </Box>
     </Fade>
   );
 }
