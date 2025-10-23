@@ -1186,21 +1186,27 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                     ) : null;
                   };
 
-                  return (
-                    <CinematicMessageCard
-                      key={msg.id}
-                      message={msg}
-                      isUser={msg.role !== "assistant"}
-                      sceneImage={null} // Will be populated by SceneImageDisplay
-                      onImageGenerate={
-                        msg.role === "assistant" && msg.id && !msg._optimistic
-                          ? async () => {
-                              // Trigger image generation via SceneImageDisplay
-                              // This will be handled by the SceneImageDisplay component itself
-                            }
-                          : undefined
-                      }
-                    >
+                  // Track TTS playing state for this message
+                  const MessageWithTTS = () => {
+                    const [ttsPlaying, setTtsPlaying] = React.useState(false);
+                    
+                    return (
+                      <CinematicMessageCard
+                        key={msg.id}
+                        message={msg}
+                        isUser={msg.role !== "assistant"}
+                        sceneImage={null} // Will be populated by SceneImageDisplay
+                        onImageGenerate={
+                          msg.role === "assistant" && msg.id && !msg._optimistic
+                            ? async () => {
+                                // Trigger image generation via SceneImageDisplay
+                                // This will be handled by the SceneImageDisplay component itself
+                              }
+                            : undefined
+                        }
+                        ttsPlaying={ttsPlaying}
+                        ttsAutoPlay={ttsAutoPlay}
+                      >
                       {/* Scene Image Generator - Appears first for visual hierarchy */}
                       {msg.role === "assistant" &&
                         msg.id &&
@@ -1248,80 +1254,84 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                         </Box>
                       )}
 
-                      {/* TTS Audio Player */}
-                      {msg.role === "assistant" &&
-                        ttsEnabled &&
-                        msg.id &&
-                        !msg._optimistic && (
-                          <Box sx={{ mb: 1 }}>
-                            <TTSAudioPlayer
-                              sessionId={selectedSession.id}
-                              messageId={msg.id}
-                              autoPlay={ttsAutoPlay}
-                              compact={true}
-                              defaultVoice={ttsVoice}
-                              defaultFlavorTextOnly={ttsFlavorTextOnly}
-                              sx={{
-                                bgcolor: "rgba(255,255,255,0.1)",
-                                borderRadius: 1,
-                                p: 1,
-                              }}
-                            />
-                          </Box>
-                        )}
+                        {/* TTS Audio Player */}
+                        {msg.role === "assistant" &&
+                          ttsEnabled &&
+                          msg.id &&
+                          !msg._optimistic && (
+                            <Box sx={{ mb: 1 }}>
+                              <TTSAudioPlayer
+                                sessionId={selectedSession.id}
+                                messageId={msg.id}
+                                autoPlay={ttsAutoPlay}
+                                compact={true}
+                                defaultVoice={ttsVoice}
+                                defaultFlavorTextOnly={ttsFlavorTextOnly}
+                                onPlayingChange={setTtsPlaying}
+                                sx={{
+                                  bgcolor: "rgba(255,255,255,0.1)",
+                                  borderRadius: 1,
+                                  p: 1,
+                                }}
+                              />
+                            </Box>
+                          )}
 
-                      {/* Source Citations */}
-                      {msg.role === "assistant" &&
-                        msg.metadata &&
-                        msg.metadata.retrievals &&
-                        msg.metadata.retrievals.length > 0 && (
-                          <Box
-                            sx={{
-                              mt: 2,
-                              pt: 2,
-                              borderTop: "1px solid rgba(255,255,255,0.2)",
-                            }}
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={0.5}
-                              alignItems="center"
-                              sx={{ mb: 1 }}
+                        {/* Source Citations */}
+                        {msg.role === "assistant" &&
+                          msg.metadata &&
+                          msg.metadata.retrievals &&
+                          msg.metadata.retrievals.length > 0 && (
+                            <Box
+                              sx={{
+                                mt: 2,
+                                pt: 2,
+                                borderTop: "1px solid rgba(255,255,255,0.2)",
+                              }}
                             >
-                              <MenuBookIcon fontSize="small" />
-                              <Typography
-                                variant="caption"
-                                sx={{ fontWeight: 600 }}
+                              <Stack
+                                direction="row"
+                                spacing={0.5}
+                                alignItems="center"
+                                sx={{ mb: 1 }}
                               >
-                                Sources Referenced:
-                              </Typography>
-                            </Stack>
-                            <Stack spacing={0.5}>
-                              {msg.metadata.retrievals.map((r, idx) => (
-                                <Chip
-                                  key={idx}
-                                  label={r.name || r.id || "Unknown"}
-                                  size="small"
-                                  onClick={
-                                    r.source_url
-                                      ? () =>
-                                          window.open(r.source_url, "_blank")
-                                      : undefined
-                                  }
-                                  sx={{
-                                    bgcolor: "rgba(255,255,255,0.15)",
-                                    color: "white",
-                                    "&:hover": {
-                                      bgcolor: "rgba(255,255,255,0.25)",
-                                    },
-                                  }}
-                                />
-                              ))}
-                            </Stack>
-                          </Box>
-                        )}
-                    </CinematicMessageCard>
-                  );
+                                <MenuBookIcon fontSize="small" />
+                                <Typography
+                                  variant="caption"
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  Sources Referenced:
+                                </Typography>
+                              </Stack>
+                              <Stack spacing={0.5}>
+                                {msg.metadata.retrievals.map((r, idx) => (
+                                  <Chip
+                                    key={idx}
+                                    label={r.name || r.id || "Unknown"}
+                                    size="small"
+                                    onClick={
+                                      r.source_url
+                                        ? () =>
+                                            window.open(r.source_url, "_blank")
+                                        : undefined
+                                    }
+                                    sx={{
+                                      bgcolor: "rgba(255,255,255,0.15)",
+                                      color: "white",
+                                      "&:hover": {
+                                        bgcolor: "rgba(255,255,255,0.25)",
+                                      },
+                                    }}
+                                  />
+                                ))}
+                              </Stack>
+                            </Box>
+                          )}
+                      </CinematicMessageCard>
+                    );
+                  };
+
+                  return <MessageWithTTS key={msg.id} />;
                 })}
                 <div ref={bottomRef} />
               </Stack>

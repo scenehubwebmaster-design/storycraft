@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Card,
@@ -18,11 +18,15 @@ import AutoStoriesIcon from "@mui/icons-material/AutoStories";
 import ImageIcon from "@mui/icons-material/Image";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PersonIcon from "@mui/icons-material/Person";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ReactMarkdown from "react-markdown";
+
+// D&D Emblem URL
+const DND_EMBLEM_URL = "https://logos-world.net/wp-content/uploads/2021/12/DnD-Emblem.png";
 
 /**
  * Messenger-style Message Card
- * Features: Preview lines with expansion, hero images, clean bubble design
+ * Features: Preview lines with expansion, hero images, ChatGPT-style typing animation
  */
 export default function CinematicMessageCard({
   message,
@@ -30,17 +34,64 @@ export default function CinematicMessageCard({
   sceneImage = null,
   onImageGenerate,
   children, // For TTS, action chips, etc.
+  ttsPlaying = false, // Whether TTS is currently playing
+  ttsAutoPlay = false, // Whether TTS auto-play is enabled
 }) {
   const [textExpanded, setTextExpanded] = useState(false);
+  const [displayedText, setDisplayedText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
 
-  // Extract first line for preview (up to first newline or 80 chars)
-  const getFirstLine = (content) => {
+  // Extract first 1-2 lines for preview (up to 2 newlines or 120 chars)
+  const getPreviewLines = (content) => {
     const plainText = content.replace(/[#*_`\[\]]/g, "").trim();
-    const firstLineBreak = plainText.indexOf("\n");
-    const firstLine =
-      firstLineBreak > 0 ? plainText.substring(0, firstLineBreak) : plainText;
-    return firstLine.length > 80 ? firstLine.substring(0, 80) + "..." : firstLine;
+    const lines = plainText.split("\n").filter(line => line.trim());
+    const preview = lines.slice(0, 2).join(" ");
+    return preview.length > 120 ? preview.substring(0, 120) + "..." : preview;
   };
+
+  // ChatGPT-style typing animation for DM messages
+  useEffect(() => {
+    if (!isUser && message.content && !message._optimistic) {
+      // Start typing animation
+      setIsTyping(true);
+      setDisplayedText("");
+      
+      const text = message.content;
+      let currentIndex = 0;
+      
+      // Typing speed: faster for normal text, slower for punctuation
+      const typeNextChar = () => {
+        if (currentIndex < text.length) {
+          setDisplayedText(text.substring(0, currentIndex + 1));
+          currentIndex++;
+          
+          // Variable speed: slower after punctuation
+          const char = text[currentIndex - 1];
+          const delay = ['.', '!', '?', '\n'].includes(char) ? 40 : 15;
+          
+          typingTimeoutRef.current = setTimeout(typeNextChar, delay);
+        } else {
+          setIsTyping(false);
+        }
+      };
+      
+      // If TTS auto-play is enabled, sync with TTS
+      if (ttsAutoPlay && ttsPlaying) {
+        // Slower typing to sync with voice
+        typeNextChar();
+      } else {
+        // Fast typing for visual effect
+        typeNextChar();
+      }
+      
+      return () => {
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+      };
+    }
+  }, [message.content, message._optimistic, isUser, ttsAutoPlay, ttsPlaying]);
 
   // User messages - messenger bubble on right
   if (isUser) {
@@ -69,19 +120,22 @@ export default function CinematicMessageCard({
               },
             }}
           >
-            {/* Preview/Header */}
+            {/* Preview/Header - Shows 1-2 lines */}
             <Box
               onClick={() => setTextExpanded(!textExpanded)}
               sx={{
                 p: 1.5,
                 cursor: "pointer",
                 display: "flex",
-                alignItems: "center",
+                alignItems: "flex-start",
                 gap: 1,
                 bgcolor: "rgba(0, 0, 0, 0.2)",
+                "&:hover": {
+                  bgcolor: "rgba(185, 167, 0, 0.1)",
+                },
               }}
             >
-              <Avatar sx={{ bgcolor: "primary.main", width: 28, height: 28 }}>
+              <Avatar sx={{ bgcolor: "primary.main", width: 32, height: 32 }}>
                 <PersonIcon sx={{ fontSize: 16 }} />
               </Avatar>
               <Typography
@@ -91,9 +145,15 @@ export default function CinematicMessageCard({
                   fontSize: "0.9rem",
                   color: "text.primary",
                   fontWeight: 500,
+                  lineHeight: 1.5,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2, // Show 2 lines in preview
+                  WebkitBoxOrient: "vertical",
                 }}
               >
-                {getFirstLine(message.content)}
+                {getPreviewLines(message.content)}
               </Typography>
               <IconButton
                 size="small"
@@ -152,7 +212,14 @@ export default function CinematicMessageCard({
 
   return (
     <Fade in timeout={500}>
-      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2, width: "100%" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-start",
+          mb: 2,
+          width: "100%",
+        }}
+      >
         <Paper
           elevation={6}
           sx={{
@@ -216,53 +283,122 @@ export default function CinematicMessageCard({
             </Box>
           )}
 
-          {/* Message Preview/Header */}
+          {/* Message Preview/Header - Always shows 1-2 lines */}
           <Box
-            onClick={() => setTextExpanded(!textExpanded)}
             sx={{
               p: 1.5,
-              cursor: "pointer",
               display: "flex",
-              alignItems: "center",
+              alignItems: "flex-start",
               gap: 1,
               bgcolor: "rgba(0, 0, 0, 0.3)",
               borderTop: hasImage ? "1px solid rgba(185, 167, 0, 0.2)" : "none",
-              "&:hover": {
-                bgcolor: "rgba(185, 167, 0, 0.15)",
-              },
             }}
           >
             <Avatar
+              src={DND_EMBLEM_URL}
               sx={{
-                bgcolor: "secondary.main",
-                width: 28,
-                height: 28,
+                bgcolor: "#8b0000",
+                width: 32,
+                height: 32,
                 border: "2px solid",
                 borderColor: "primary.main",
+                "& img": {
+                  objectFit: "contain",
+                },
               }}
             >
               <SmartToyIcon sx={{ fontSize: 16 }} />
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: "0.9rem",
-                  color: "text.primary",
-                  fontWeight: 500,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  display: "-webkit-box",
-                  WebkitLineClamp: textExpanded ? "unset" : 1,
-                  WebkitBoxOrient: "vertical",
-                  lineHeight: 1.4,
-                }}
+              {/* Preview Text - Always collapsed, shows 1-2 lines */}
+              <Box
+                onClick={() => setTextExpanded(!textExpanded)}
+                sx={{ cursor: "pointer", mb: 0.5 }}
               >
-                {getFirstLine(message.content)}
-              </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "0.9rem",
+                    color: "text.primary",
+                    lineHeight: 1.5,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2, // Always show 2 lines in preview
+                    WebkitBoxOrient: "vertical",
+                  }}
+                >
+                  {textExpanded ? getPreviewLines(message.content) : (
+                    isTyping ? displayedText : getPreviewLines(message.content)
+                  )}
+                </Typography>
+              </Box>
+
+              {/* TTS Bubble Animation */}
+              {ttsPlaying && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    mt: 0.5,
+                  }}
+                >
+                  <PlayArrowIcon
+                    sx={{
+                      fontSize: 14,
+                      color: "primary.main",
+                      animation: "pulse 1.5s infinite",
+                    }}
+                  />
+                  <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
+                    <Box
+                      className="tts-dot"
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        bgcolor: "primary.main",
+                        animation: "bounce 1.4s infinite",
+                      }}
+                    />
+                    <Box
+                      className="tts-dot"
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        bgcolor: "primary.main",
+                        animation: "bounce 1.4s infinite 0.2s",
+                      }}
+                    />
+                    <Box
+                      className="tts-dot"
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        bgcolor: "primary.main",
+                        animation: "bounce 1.4s infinite 0.4s",
+                      }}
+                    />
+                  </Box>
+                  <style>{`
+                    @keyframes bounce {
+                      0%, 60%, 100% { transform: translateY(0); }
+                      30% { transform: translateY(-8px); }
+                    }
+                    @keyframes pulse {
+                      0%, 100% { opacity: 1; }
+                      50% { opacity: 0.5; }
+                    }
+                  `}</style>
+                </Box>
+              )}
             </Box>
             <IconButton
               size="small"
+              onClick={() => setTextExpanded(!textExpanded)}
               sx={{
                 color: "primary.main",
                 transform: textExpanded ? "rotate(180deg)" : "rotate(0deg)",
@@ -273,13 +409,13 @@ export default function CinematicMessageCard({
             </IconButton>
           </Box>
 
-          {/* Expanded Text Content */}
+          {/* Expanded Text Content - Shows full message with typing animation */}
           <Collapse in={textExpanded}>
             <Box
               sx={{
                 p: 2,
                 pt: 1,
-                maxHeight: "300px",
+                maxHeight: "400px",
                 overflow: "auto",
                 borderTop: "1px solid rgba(185, 167, 0, 0.2)",
                 "&::-webkit-scrollbar": {
@@ -345,7 +481,27 @@ export default function CinematicMessageCard({
                   },
                 }}
               >
-                <ReactMarkdown>{message.content}</ReactMarkdown>
+                <ReactMarkdown>
+                  {isTyping ? displayedText : message.content}
+                </ReactMarkdown>
+                {/* Typing cursor */}
+                {isTyping && (
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-block",
+                      width: "8px",
+                      height: "16px",
+                      bgcolor: "primary.main",
+                      ml: 0.25,
+                      animation: "blink 1s infinite",
+                      "@keyframes blink": {
+                        "0%, 49%": { opacity: 1 },
+                        "50%, 100%": { opacity: 0 },
+                      },
+                    }}
+                  />
+                )}
               </Box>
             </Box>
           </Collapse>
