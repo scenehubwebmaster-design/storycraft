@@ -135,26 +135,26 @@ def chunk_document(content: str, max_tokens: int = 512, overlap_tokens: int = 50
     return chunks
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--max-tokens', type=int, default=512, help='Maximum tokens per chunk')
-    parser.add_argument('--overlap', type=int, default=50, help='Overlap tokens between chunks')
-    parser.add_argument('--limit', type=int, help='Limit number of documents to process (for testing)')
-    args = parser.parse_args()
+def chunk_all_documents(max_tokens=512, overlap=50, limit=None):
+    """
+    Chunk all documents and return statistics.
     
+    Returns:
+        dict: Statistics about the chunking process
+    """
     engine = create_engine(f'sqlite:///{DEFAULT_DB_FILE}', connect_args={"check_same_thread": False})
     Session = sessionmaker(bind=engine)
     session = Session()
     
     # Get all references
     query = session.query(Reference)
-    if args.limit:
-        query = query.limit(args.limit)
+    if limit:
+        query = query.limit(limit)
     refs = query.all()
     
     print(f'Chunking {len(refs)} documents...')
-    print(f'  Max tokens per chunk: {args.max_tokens}')
-    print(f'  Overlap: {args.overlap} tokens')
+    print(f'  Max tokens per chunk: {max_tokens}')
+    print(f'  Overlap: {overlap} tokens')
     
     total_chunks = 0
     refs_with_chunks = 0
@@ -171,7 +171,7 @@ def main():
         session.query(DocumentChunk).filter(DocumentChunk.source_id == ref.id).delete()
         
         # Create chunks
-        chunks = chunk_document(content, max_tokens=args.max_tokens, overlap_tokens=args.overlap)
+        chunks = chunk_document(content, max_tokens=max_tokens, overlap_tokens=overlap)
         
         if not chunks:
             continue
@@ -202,15 +202,36 @@ def main():
     session.commit()
     session.close()
     
-    print(f'\n✅ Chunking complete!')
-    print(f'\nStatistics:')
-    print(f'  Documents processed: {len(refs)}')
-    print(f'  Documents with chunks: {refs_with_chunks}')
-    print(f'  Single-chunk documents: {single_chunk_docs}')
-    print(f'  Multi-chunk documents: {multi_chunk_docs}')
-    print(f'  Total chunks created: {total_chunks}')
-    print(f'  Average chunks per document: {total_chunks / refs_with_chunks:.2f}')
-    print(f'\nNext step: Run generate_chunk_embeddings.py')
+    stats = {
+        'documents_processed': len(refs),
+        'documents_with_chunks': refs_with_chunks,
+        'single_chunk_documents': single_chunk_docs,
+        'multi_chunk_documents': multi_chunk_docs,
+        'total_chunks': total_chunks,
+        'avg_chunks_per_doc': total_chunks / refs_with_chunks if refs_with_chunks > 0 else 0
+    }
+    
+    print('\n✅ Chunking complete!')
+    print('\nStatistics:')
+    print(f'  Documents processed: {stats["documents_processed"]}')
+    print(f'  Documents with chunks: {stats["documents_with_chunks"]}')
+    print(f'  Single-chunk documents: {stats["single_chunk_documents"]}')
+    print(f'  Multi-chunk documents: {stats["multi_chunk_documents"]}')
+    print(f'  Total chunks created: {stats["total_chunks"]}')
+    print(f'  Average chunks per document: {stats["avg_chunks_per_doc"]:.2f}')
+    
+    return stats
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--max-tokens', type=int, default=512, help='Maximum tokens per chunk')
+    parser.add_argument('--overlap', type=int, default=50, help='Overlap tokens between chunks')
+    parser.add_argument('--limit', type=int, help='Limit number of documents to process (for testing)')
+    args = parser.parse_args()
+    
+    chunk_all_documents(max_tokens=args.max_tokens, overlap=args.overlap, limit=args.limit)
+    print('\nNext step: Run generate_chunk_embeddings.py')
 
 
 if __name__ == '__main__':

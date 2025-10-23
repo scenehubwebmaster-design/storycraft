@@ -20,7 +20,7 @@ from typing import Iterator, Optional
 
 try:
     from kittentts import KittenTTS
-    import soundfile as sf
+    import soundfile as sf  # type: ignore[import-not-found]
     KITTEN_AVAILABLE = True
 except ImportError:
     KITTEN_AVAILABLE = False
@@ -199,9 +199,10 @@ class TTSService:
         # Remove code blocks
         text = text.replace('```', '').replace('`', '')
         
-        # Limit length (Kitten TTS ONNX model fails with very long texts)
-        # Safe limit is around 400 characters to avoid ONNX expand node errors
-        max_length = 400  # characters
+        # Limit length for ONNX model stability
+        # Increased from 400 to 2000 characters to support full DM responses
+        # Kitten TTS can handle longer texts, but very long ones may cause issues
+        max_length = 2000  # characters
         if len(text) > max_length:
             # Try to break at sentence boundary
             truncated = text[:max_length]

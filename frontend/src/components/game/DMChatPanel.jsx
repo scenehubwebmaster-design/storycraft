@@ -26,6 +26,7 @@ import {
   Castle as DMIcon,
 } from "@mui/icons-material";
 import TTSAudioPlayer from "./TTSAudioPlayer";
+import DMMessageFormatter from "./DMMessageFormatter";
 
 function DMChatPanel({
   messages = [],
@@ -90,7 +91,7 @@ function DMChatPanel({
       <Box
         sx={{
           p: 2,
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          background: "linear-gradient(135deg, #d4af37 0%, #8b0000 100%)",
           color: "white",
         }}
       >
@@ -165,7 +166,7 @@ function DMChatPanel({
                 {/* Avatar */}
                 <Avatar
                   sx={{
-                    bgcolor: isUser ? "#4caf50" : "#764ba2",
+                    bgcolor: isUser ? "#2e7d32" : "#8b0000",
                     width: 36,
                     height: 36,
                   }}
@@ -183,10 +184,16 @@ function DMChatPanel({
                   sx={{
                     p: 1.5,
                     flex: 1,
-                    backgroundColor: isUser ? "#e8f5e9" : "white",
+                    backgroundColor: isUser
+                      ? "rgba(46, 125, 50, 0.1)"
+                      : "rgba(212, 175, 55, 0.05)",
                     borderRadius: 2,
                     borderTopLeftRadius: isUser ? 2 : 0,
                     borderTopRightRadius: isUser ? 0 : 2,
+                    border: "1px solid",
+                    borderColor: isUser
+                      ? "rgba(46, 125, 50, 0.3)"
+                      : "rgba(212, 175, 55, 0.3)",
                   }}
                 >
                   <Typography
@@ -196,15 +203,22 @@ function DMChatPanel({
                   >
                     {isUser ? "You" : "Dungeon Master"}
                   </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {formatMessage(msg.content)}
-                  </Typography>
+
+                  {/* Use DMMessageFormatter for DM messages to identify speakers */}
+                  {isDM ? (
+                    <DMMessageFormatter content={msg.content} />
+                  ) : (
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {formatMessage(msg.content)}
+                    </Typography>
+                  )}
                 </Paper>
               </Box>
 
@@ -227,14 +241,14 @@ function DMChatPanel({
         {/* Loading Indicator */}
         {isGenerating && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Avatar sx={{ bgcolor: "#764ba2", width: 36, height: 36 }}>
+            <Avatar sx={{ bgcolor: "#8b0000", width: 36, height: 36 }}>
               <DMIcon fontSize="small" />
             </Avatar>
             <Paper elevation={1} sx={{ p: 1.5, borderRadius: 2 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <CircularProgress size={16} />
+                <CircularProgress size={16} sx={{ color: "#d4af37" }} />
                 <Typography variant="body2" color="text.secondary">
-                  The DM is thinking...
+                  The DM is conjuring a response...
                 </Typography>
               </Box>
             </Paper>

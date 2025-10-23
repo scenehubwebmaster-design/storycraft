@@ -65,6 +65,8 @@ const CampaignSetupWizard = ({
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedOpening, setSelectedOpening] = useState("tavern_meeting");
   const [campaignTone, setCampaignTone] = useState("heroic_fantasy");
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [availableTemplates, setAvailableTemplates] = useState([]);
 
   // Party selection
   const [availableCharacters, setAvailableCharacters] = useState([]);
@@ -273,6 +275,31 @@ const CampaignSetupWizard = ({
       loadCharacters();
     }
   }, [open, activeStep]);
+
+  // Load adventure templates when wizard opens or campaign type changes
+  useEffect(() => {
+    if (open && activeStep === 1) {
+      loadAdventureTemplates();
+    }
+  }, [open, activeStep, campaignType]);
+
+  const loadAdventureTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/adventures/templates?campaign_type=${campaignType}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableTemplates(data.templates || []);
+      }
+    } catch (err) {
+      console.error("Error loading adventure templates:", err);
+      setError("Failed to load adventure templates");
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
 
   const loadCharacters = async () => {
     setLoadingCharacters(true);
@@ -502,14 +529,29 @@ const CampaignSetupWizard = ({
 
       case 1:
         // Adventure Template & Opening Scene Selection
-        const currentTemplates =
-          adventureTemplates[campaignType] || adventureTemplates.one_shot;
-        const selectedTemplateObj = currentTemplates.find(
-          (t) => t.id === selectedTemplate
-        );
         const selectedOpeningObj = openingScenes.find(
           (s) => s.id === selectedOpening
         );
+
+        // Helper to get icon for template
+        const getTemplateIcon = (template) => {
+          const sourceIcons = {
+            guild_modules: "📚",
+            generated: "✨",
+            homebrew: "🎨",
+          };
+          return sourceIcons[template.source] || "🎲";
+        };
+
+        // Helper to get source label
+        const getSourceLabel = (source) => {
+          const labels = {
+            guild_modules: "Official Module",
+            generated: "AI Generated",
+            homebrew: "Homebrew",
+          };
+          return labels[source] || source;
+        };
 
         return (
           <Stack spacing={4}>
@@ -519,9 +561,9 @@ const CampaignSetupWizard = ({
                 <strong>Your AI Dungeon Master Awaits</strong>
               </AlertTitle>
               <Typography variant="body2">
-                Choose an adventure template and opening scene. Your AI Dungeon
-                Master will craft a custom campaign using these elements and
-                guide your party through an epic journey!
+                Choose from {availableTemplates.length} curated adventures! Your
+                AI Dungeon Master will use your selection to craft an epic
+                campaign tailored to your party.
               </Typography>
             </Alert>
 
@@ -531,56 +573,106 @@ const CampaignSetupWizard = ({
                 Choose Your Adventure
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Select a pre-built adventure or let the AI create a custom one
+                {loadingTemplates
+                  ? "Loading adventures from the library..."
+                  : `${
+                      availableTemplates.length
+                    } adventures available for ${campaignType.replace(
+                      "_",
+                      " "
+                    )}`}
               </Typography>
 
-              <Grid container spacing={2}>
-                {currentTemplates.map((template) => (
-                  <Grid key={template.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                    <Card
-                      sx={{
-                        cursor: "pointer",
-                        border: 2,
-                        borderColor:
-                          selectedTemplate === template.id
-                            ? "primary.main"
-                            : "transparent",
-                        transition: "all 0.2s",
-                        height: "100%",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: 4,
-                        },
-                      }}
-                      onClick={() => setSelectedTemplate(template.id)}
-                    >
-                      <CardContent>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", mb: 1 }}
-                        >
-                          <Typography variant="h3" sx={{ mr: 1 }}>
-                            {template.icon}
-                          </Typography>
-                          <Box>
-                            <Typography variant="h6" component="div">
-                              {template.title}
+              {loadingTemplates ? (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : availableTemplates.length === 0 ? (
+                <Alert severity="info">
+                  No adventures found. The AI DM will create a custom adventure
+                  for you!
+                </Alert>
+              ) : (
+                <Grid container spacing={2}>
+                  {availableTemplates.map((template) => (
+                    <Grid key={template.id} size={{ xs: 12, sm: 6, md: 4 }}>
+                      <Card
+                        sx={{
+                          cursor: "pointer",
+                          border: 2,
+                          borderColor:
+                            selectedTemplate === template.id
+                              ? "primary.main"
+                              : "transparent",
+                          transition: "all 0.2s",
+                          height: "100%",
+                          "&:hover": {
+                            transform: "translateY(-2px)",
+                            boxShadow: 4,
+                          },
+                        }}
+                        onClick={() => setSelectedTemplate(template.id)}
+                      >
+                        <CardContent>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              mb: 1,
+                            }}
+                          >
+                            <Typography variant="h3" sx={{ mr: 1 }}>
+                              {getTemplateIcon(template)}
                             </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {template.type} • Levels {template.level}
-                            </Typography>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography
+                                variant="h6"
+                                component="div"
+                                sx={{ fontSize: "0.95rem" }}
+                              >
+                                {template.title}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {getSourceLabel(template.source)} • Levels{" "}
+                                {template.level_range}
+                              </Typography>
+                            </Box>
                           </Box>
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
-                          {template.description}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mb: 1 }}
+                          >
+                            {template.description}
+                          </Typography>
+                          {template.themes && template.themes.length > 0 && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                gap: 0.5,
+                                flexWrap: "wrap",
+                                mt: 1,
+                              }}
+                            >
+                              {template.themes.slice(0, 3).map((theme, idx) => (
+                                <Chip
+                                  key={idx}
+                                  label={theme}
+                                  size="small"
+                                  sx={{ fontSize: "0.7rem", height: "20px" }}
+                                />
+                              ))}
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
             </Box>
 
             {/* Opening Scene Selection */}

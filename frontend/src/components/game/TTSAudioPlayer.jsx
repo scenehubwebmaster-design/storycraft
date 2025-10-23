@@ -24,6 +24,7 @@ import {
   InputLabel,
   Checkbox,
   FormControlLabel,
+  Badge,
 } from "@mui/material";
 import {
   PlayArrow as PlayIcon,
@@ -32,6 +33,7 @@ import {
   VolumeUp as VolumeIcon,
   VolumeOff as MuteIcon,
   RecordVoiceOver as VoiceIcon,
+  CheckCircle as ReadyIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 
@@ -269,18 +271,57 @@ function TTSAudioPlayer({
         <audio ref={audioRef} src={audioUrl} />
 
         {isLoading ? (
-          <CircularProgress size={24} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <CircularProgress size={24} />
+            <Typography variant="caption" color="text.secondary">
+              Generating voice...
+            </Typography>
+          </Box>
         ) : (
-          <Tooltip title={isPlaying ? "Pause" : "Play DM Voice"}>
-            <IconButton
-              size="small"
-              onClick={handlePlayPause}
-              disabled={!!error}
-              color="primary"
+          <Badge
+            badgeContent={
+              audioUrl && !isPlaying ? <ReadyIcon fontSize="small" /> : null
+            }
+            color="success"
+            overlap="circular"
+            anchorOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+          >
+            <Tooltip
+              title={
+                !audioUrl
+                  ? "Generate Voice Narration"
+                  : isPlaying
+                  ? "Pause"
+                  : "Play DM Voice (Ready!)"
+              }
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
-            </IconButton>
-          </Tooltip>
+              <IconButton
+                size="small"
+                onClick={handlePlayPause}
+                disabled={!!error}
+                color={audioUrl && !isPlaying ? "success" : "primary"}
+                sx={{
+                  ...(audioUrl &&
+                    !isPlaying && {
+                      animation: "pulse 2s infinite",
+                      "@keyframes pulse": {
+                        "0%, 100%": {
+                          boxShadow: "0 0 0 0 rgba(46, 125, 50, 0.7)",
+                        },
+                        "50%": {
+                          boxShadow: "0 0 0 8px rgba(46, 125, 50, 0)",
+                        },
+                      },
+                    }),
+                }}
+              >
+                {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              </IconButton>
+            </Tooltip>
+          </Badge>
         )}
 
         {error && (
@@ -402,21 +443,54 @@ function TTSAudioPlayer({
       {/* Playback Controls */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
         {isLoading ? (
-          <CircularProgress size={32} sx={{ color: "#667eea" }} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <CircularProgress size={32} sx={{ color: "#d4af37" }} />
+            <Typography variant="body2" sx={{ color: "#b89968" }}>
+              Conjuring voice narration...
+            </Typography>
+          </Box>
         ) : (
           <>
-            <IconButton
-              onClick={handlePlayPause}
-              disabled={!!error}
-              sx={{
-                color: "white",
-                "&:hover": {
-                  backgroundColor: "#34495e",
-                },
-              }}
+            <Badge
+              badgeContent={
+                audioUrl && !isPlaying ? <ReadyIcon fontSize="small" /> : null
+              }
+              color="success"
+              overlap="circular"
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
-            </IconButton>
+              <IconButton
+                onClick={handlePlayPause}
+                disabled={!!error}
+                sx={{
+                  color: audioUrl && !isPlaying ? "#4caf50" : "white",
+                  backgroundColor:
+                    audioUrl && !isPlaying
+                      ? "rgba(76, 175, 80, 0.1)"
+                      : "transparent",
+                  border: audioUrl && !isPlaying ? "2px solid #4caf50" : "none",
+                  "&:hover": {
+                    backgroundColor:
+                      audioUrl && !isPlaying
+                        ? "rgba(76, 175, 80, 0.2)"
+                        : "#34495e",
+                  },
+                  ...(audioUrl &&
+                    !isPlaying && {
+                      animation: "glow 2s infinite",
+                      "@keyframes glow": {
+                        "0%, 100%": {
+                          boxShadow: "0 0 0 0 rgba(76, 175, 80, 0.7)",
+                        },
+                        "50%": {
+                          boxShadow: "0 0 0 10px rgba(76, 175, 80, 0)",
+                        },
+                      },
+                    }),
+                }}
+              >
+                {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              </IconButton>
+            </Badge>
             <IconButton
               onClick={handleStop}
               disabled={!audioUrl || !!error}

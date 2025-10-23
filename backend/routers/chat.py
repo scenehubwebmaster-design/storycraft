@@ -350,6 +350,61 @@ You are the Dungeon Master for this campaign. Maintain consistency with the camp
     except Exception as e:
         print(f"[DEBUG] Could not load campaign context: {e}")
 
+    # Build character context from active characters in recent messages
+    character_context = ""
+    try:
+        # Get active character IDs from last few user messages
+        recent_user_msgs = db.query(models.ChatMessage).filter(
+            models.ChatMessage.session_id == session_id,
+            models.ChatMessage.role == 'user',
+            models.ChatMessage.is_deleted.is_(False)
+        ).order_by(models.ChatMessage.message_index.desc()).limit(3).all()
+        
+        active_char_ids = set()
+        for msg in recent_user_msgs:
+            if msg.meta and 'active_character_ids' in msg.meta:
+                active_char_ids.update(msg.meta['active_character_ids'])
+        
+        if active_char_ids:
+            # Load full character details
+            characters = db.query(models.Character).filter(
+                models.Character.id.in_(active_char_ids)
+            ).all()
+            
+            if characters:
+                character_context = "\n**ACTIVE PLAYER CHARACTERS:**\n"
+                for char in characters:
+                    character_context += f"\n{char.name}"
+                    if char.dnd_class:
+                        character_context += f" (Level {char.dnd_level or 1} {char.dnd_class}"
+                        if char.dnd_species:
+                            character_context += f" {char.dnd_species}"
+                        character_context += ")"
+                    
+                    # Add personality and background details from structured_data
+                    if char.structured_data:
+                        sd = char.structured_data
+                        if sd.get('personality_traits'):
+                            character_context += f"\n  Personality: {', '.join(sd['personality_traits']) if isinstance(sd['personality_traits'], list) else sd['personality_traits']}"
+                        if sd.get('ideals'):
+                            character_context += f"\n  Ideals: {sd['ideals']}"
+                        if sd.get('bonds'):
+                            character_context += f"\n  Bonds: {sd['bonds']}"
+                        if sd.get('flaws'):
+                            character_context += f"\n  Flaws: {sd['flaws']}"
+                    
+                    # Add legacy fields if structured_data not available
+                    if char.personality and not char.structured_data:
+                        character_context += f"\n  Personality: {char.personality[:200]}"
+                    if char.background and not char.structured_data:
+                        character_context += f"\n  Background: {char.background[:200]}"
+                    
+                    character_context += "\n"
+                
+                character_context += "\nAs DM, you should reference these character details when appropriate to create a more immersive, personalized experience. Mention their ideals when moral choices arise, their bonds when relationships are relevant, and their flaws to create interesting roleplay moments.\n"
+    except Exception as e:
+        print(f"[DEBUG] Could not load character context: {e}")
+
     system_prompt = """You are an expert Dungeon Master for Dungeons & Dragons 5th Edition. 
 
 Your responsibilities:
@@ -366,7 +421,7 @@ When describing scenes, use evocative language. When voicing NPCs, give them per
 
 """
 
-    prompt = f"{system_prompt}{campaign_context}Use the following documents as context:\n\n{context}\n\nConversation:\n{conversation}\n\nAssistant:"
+    prompt = f"{system_prompt}{campaign_context}{character_context}Use the following documents as context:\n\n{context}\n\nConversation:\n{conversation}\n\nAssistant:"
 
     # Call the centralized LLM helper
     try:
@@ -460,7 +515,7 @@ async def generate_tts_for_message(
             }
         )
         
-    except ImportError as e:
+    except ImportError:
         import traceback
         traceback.print_exc()
         raise HTTPException(
@@ -475,4 +530,126 @@ async def generate_tts_for_message(
         raise HTTPException(
             status_code=500,
             detail=f"TTS generation failed: {str(e)}"
+        )
+
+
+@router.post("/sessions/{session_id}/messages/{message_id}/scene-image")
+async def generate_scene_image_for_message(
+    session_id: int,
+    message_id: int,
+    force_generate: bool = False,
+    location_hint: str | None = None,
+    db: Session = Depends(get_db)
+):
+    """Generate a scene image for a chat message using Stable Diffusion.
+    
+    Analyzes the DM response and generates a contextual fantasy scene image.
+    
+    Args:
+        session_id: Chat session ID
+        message_id: Message ID to generate scene for
+        force_generate: Force generation even if content seems unsuitable
+        location_hint: Optional location type hint (e.g., "tavern", "dungeon")
+    
+    Returns:
+        Dict with base64 image and prompt info
+    """
+    # Verify session exists
+    session = db.query(models.ChatSession).filter(
+        models.ChatSession.id == session_id
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Get message
+    message = db.query(models.ChatMessage).filter(
+        models.ChatMessage.id == message_id,
+        models.ChatMessage.session_id == session_id
+    ).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Only generate images for assistant messages
+    if message.role != 'assistant':
+        raise HTTPException(
+            status_code=400, 
+            detail="Scene images only available for DM responses"
+        )
+    
+    try:
+        from ..scene_image_utils import (
+            extract_scene_prompt,
+            build_scene_negative_prompt,
+            enhance_prompt_for_location,
+            should_generate_scene_image
+        )
+        from ..stablediffusion_client import StableDiffusionClient
+        
+        # Check if scene is worth generating
+        if not force_generate and not should_generate_scene_image(message.content):
+            raise HTTPException(
+                status_code=400,
+                detail="Message does not contain suitable scene description for image generation"
+            )
+        
+        # Extract visual prompt from DM response
+        base_prompt = extract_scene_prompt(message.content)
+        if not base_prompt:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not extract visual description from message"
+            )
+        
+        # Enhance with location hint if provided
+        if location_hint:
+            base_prompt = enhance_prompt_for_location(base_prompt, location_hint)
+        
+        # Build negative prompt
+        negative_prompt = build_scene_negative_prompt()
+        
+        # Generate image using SD
+        sd_client = StableDiffusionClient()
+        result = sd_client.generate_image(
+            prompt=base_prompt,
+            negative_prompt=negative_prompt,
+            steps=30,
+            width=768,
+            height=512,
+            cfg_scale=7.5
+        )
+        
+        # Check for image in response (supports both 'image' and 'image_base64' keys)
+        image_data = result.get('image') or result.get('image_base64')
+        if not image_data:
+            raise HTTPException(
+                status_code=500,
+                detail="Stable Diffusion did not return an image"
+            )
+        
+        return {
+            "image": image_data,
+            "prompt": base_prompt,
+            "negative_prompt": negative_prompt,
+            "generation_info": result.get('info', {}),
+            "message_id": message_id,
+            "session_id": session_id
+        }
+        
+    except ImportError as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Scene image generation dependencies not available: {str(e)}"
+        )
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Scene image generation failed for message {message_id}: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Scene image generation failed: {str(e)}"
         )

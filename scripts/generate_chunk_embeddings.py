@@ -19,19 +19,21 @@ from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model', default='all-MiniLM-L6-v2', help='Sentence transformer model')
-    parser.add_argument('--batch-size', type=int, default=32, help='Batch size for encoding')
-    args = parser.parse_args()
+def generate_embeddings(model_name='all-MiniLM-L6-v2', batch_size=32):
+    """
+    Generate embeddings for all chunks and return statistics.
     
+    Returns:
+        dict: Statistics about the embedding generation
+    """
     engine = create_engine(f'sqlite:///{DEFAULT_DB_FILE}', connect_args={"check_same_thread": False})
     Session = sessionmaker(bind=engine)
     session = Session()
     
-    print(f'Loading sentence transformer model: {args.model}...')
-    model = SentenceTransformer(args.model)
-    print(f'Model loaded. Embedding dimension: {model.get_sentence_embedding_dimension()}')
+    print(f'Loading sentence transformer model: {model_name}...')
+    model = SentenceTransformer(model_name)
+    embedding_dim = model.get_sentence_embedding_dimension()
+    print(f'Model loaded. Embedding dimension: {embedding_dim}')
     
     # Get all chunks
     chunks = session.query(DocumentChunk).all()
@@ -47,7 +49,7 @@ def main():
     # Encode in batches with progress bar
     embeddings = model.encode(
         texts,
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         show_progress_bar=True,
         convert_to_numpy=True
     )
@@ -60,12 +62,12 @@ def main():
         emb = session.query(ChunkEmbedding).filter(ChunkEmbedding.chunk_id == chunk.id).first()
         if emb:
             emb.vector = vec_json
-            emb.model = args.model
+            emb.model = model_name
         else:
             emb = ChunkEmbedding(
                 chunk_id=chunk.id,
                 vector=vec_json,
-                model=args.model
+                model=model_name
             )
             session.add(emb)
         
@@ -77,9 +79,26 @@ def main():
     session.commit()
     session.close()
     
+    stats = {
+        'total_embeddings': len(chunks),
+        'model': model_name,
+        'embedding_dimension': embedding_dim
+    }
+    
     print(f'\n✅ Done! Generated embeddings for {len(chunks)} chunks.')
-    print(f'   Model: {args.model}')
-    print(f'   Dimensions: {model.get_sentence_embedding_dimension()}')
+    print(f'   Model: {model_name}')
+    print(f'   Dimensions: {embedding_dim}')
+    
+    return stats
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', default='all-MiniLM-L6-v2', help='Sentence transformer model')
+    parser.add_argument('--batch-size', type=int, default=32, help='Batch size for encoding')
+    args = parser.parse_args()
+    
+    generate_embeddings(model_name=args.model, batch_size=args.batch_size)
 
 
 if __name__ == '__main__':

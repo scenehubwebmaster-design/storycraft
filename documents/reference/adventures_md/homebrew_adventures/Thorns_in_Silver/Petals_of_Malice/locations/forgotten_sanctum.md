@@ -1,0 +1,7 @@
+---
+id: "petals_of_malice:loc:forgotten_sanctum"
+title: "forgotten sanctum"
+tags: ["location"]
+---
+
+Dust-laced pews and faint humming of unseen voices.

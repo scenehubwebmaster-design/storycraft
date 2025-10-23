@@ -14,36 +14,36 @@ export const darkTheme = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#9c27b0", // Deep purple
-      light: "#ba68c8",
-      dark: "#7b1fa2",
-      contrastText: "#ffffff",
+      main: "rgba(185, 167, 0, 1)", // Rich gold (coins, treasure, magic)
+      light: "#685202ff",
+      dark: "#6d550cff",
+      contrastText: "#1a0f00",
     },
     secondary: {
-      main: "#00bcd4", // Cyan
-      light: "#4dd0e1",
-      dark: "#0097a7",
-      contrastText: "#000000",
+      main: "#8b0000", // Deep burgundy/crimson (dragons, epic battles)
+      light: "#b71c1c",
+      dark: "#5a0000",
+      contrastText: "#ffffff",
     },
     background: {
-      default: "#0a0a0a",
-      paper: "#1a1a1a",
+      default: "#0d0d0d", // Deep dungeon black
+      paper: "#1c1410", // Aged parchment brown-black
     },
     text: {
-      primary: "#ffffff",
-      secondary: "#b0b0b0",
+      primary: "#f5e6d3", // Warm parchment white
+      secondary: "#b89968", // Faded gold text
     },
     error: {
-      main: "#f44336",
+      main: "#d32f2f", // Blood red
     },
     warning: {
-      main: "#ff9800",
+      main: "#ff8f00", // Torch orange
     },
     info: {
-      main: "#2196f3",
+      main: "#4a90e2", // Arcane blue
     },
     success: {
-      main: "#4caf50",
+      main: "#2e7d32", // Forest green (nature, healing)
     },
   },
   typography: {
@@ -156,11 +156,20 @@ export const darkTheme = createTheme({
         },
       },
     },
-    // Card spacing adjustments
+    // Card spacing adjustments with fantasy border
     MuiCard: {
       styleOverrides: {
         root: {
           backgroundImage: "none",
+          backgroundColor: "#1c1410",
+          borderWidth: "1px",
+          borderStyle: "solid",
+          borderColor: "#3d2f1f", // Subtle wood/leather border
+          transition: "all 0.2s ease-in-out",
+          "&:hover": {
+            borderColor: "#d4af37", // Gold border on hover
+            boxShadow: "0 0 12px rgba(212, 175, 55, 0.3)", // Golden glow
+          },
           "@media (max-width:600px)": {
             borderRadius: "4px", // Slightly less rounded on mobile
           },
@@ -179,14 +188,29 @@ export const darkTheme = createTheme({
         },
       },
     },
-    // Paper component
+    // Paper component with enhanced borders for panels
     MuiPaper: {
       styleOverrides: {
         root: {
           backgroundImage: "none",
+          backgroundColor: "#1c1410",
+          borderWidth: "1px",
+          borderStyle: "solid",
+          borderColor: "#3d2f1f",
           "@media (max-width:600px)": {
             borderRadius: "4px",
           },
+        },
+        elevation1: {
+          boxShadow: "0 2px 4px rgba(0,0,0,0.4)",
+        },
+        elevation2: {
+          borderColor: "#4d3f2f", // Slightly lighter border for elevated panels
+          boxShadow: "0 3px 6px rgba(0,0,0,0.5)",
+        },
+        elevation4: {
+          borderColor: "#d4af37", // Gold border for highly elevated elements
+          boxShadow: "0 4px 12px rgba(212,175,55,0.2)",
         },
       },
     },

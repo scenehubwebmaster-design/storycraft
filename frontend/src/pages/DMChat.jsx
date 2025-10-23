@@ -57,12 +57,16 @@ import {
 import { darkTheme } from "../theme/darkTheme";
 import ReactMarkdown from "react-markdown";
 import TTSAudioPlayer from "../components/game/TTSAudioPlayer";
+import SceneImageDisplay from "../components/game/SceneImageDisplay";
 import CampaignSetupWizard from "../components/CampaignSetupWizard";
 import CampaignManager from "../components/CampaignManager";
+import CheckpointManager from "../components/CheckpointManager";
 import PartyPanel from "../components/PartyPanel";
 import InitiativeTracker from "../components/InitiativeTracker";
 import DiceRoller from "../components/DiceRoller";
 import CombatActionPanel from "../components/CombatActionPanel";
+import SettingsDrawer from "../components/SettingsDrawer";
+import ResponseSuggestionChips from "../components/game/ResponseSuggestionChips";
 
 const drawerWidth = 320;
 
@@ -84,9 +88,10 @@ export default function DMChatPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [ttsEnabled, setTtsEnabled] = useState(true);
-  const [ttsAutoPlay, setTtsAutoPlay] = useState(false);
+  const [ttsAutoPlay, setTtsAutoPlay] = useState(true); // Changed default to true for auto-play
   const [ttsVoice, setTtsVoice] = useState("tara");
   const [ttsFlavorTextOnly, setTtsFlavorTextOnly] = useState(false);
+  const [sceneImageAutoGenerate, setSceneImageAutoGenerate] = useState(true); // Auto-generate scene images by default
   const bottomRef = useRef(null);
 
   // Campaign & Combat State
@@ -95,10 +100,63 @@ export default function DMChatPage() {
   const [combatMode, setCombatMode] = useState(false);
   const [diceRollerOpen, setDiceRollerOpen] = useState(false);
   const [rightPanelView, setRightPanelView] = useState("party"); // 'party', 'initiative', 'combat'
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+
+  // Active character selection state
+  const [activeCharacters, setActiveCharacters] = useState([]); // Array of character IDs currently acting
+  const [availableCharacters, setAvailableCharacters] = useState([]); // Characters available to select
 
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  // Load available characters when campaign changes
+  useEffect(() => {
+    const loadPartyCharacters = async () => {
+      if (!activeCampaign || !activeCampaign.party) {
+        setAvailableCharacters([]);
+        setActiveCharacters([]);
+        return;
+      }
+
+      try {
+        // Get full character details for party members
+        const characterPromises = activeCampaign.party.map(async (member) => {
+          try {
+            const r = await fetch(`/api/characters/${member.character_id}`);
+            if (r.ok) {
+              const char = await r.json();
+              return {
+                id: char.id,
+                name: char.name || member.name,
+                ...char,
+              };
+            }
+          } catch (e) {
+            console.error(
+              `Failed to load character ${member.character_id}:`,
+              e
+            );
+          }
+          return null;
+        });
+
+        const characters = (await Promise.all(characterPromises)).filter(
+          Boolean
+        );
+        setAvailableCharacters(characters);
+
+        // Auto-select first character if none selected
+        if (characters.length > 0 && activeCharacters.length === 0) {
+          setActiveCharacters([characters[0].id]);
+        }
+      } catch (e) {
+        console.error("Failed to load party characters:", e);
+      }
+    };
+
+    loadPartyCharacters();
+  }, [activeCampaign]);
 
   // fetch provider models when provider changes
   useEffect(() => {
@@ -246,13 +304,29 @@ export default function DMChatPage() {
     setSending(true);
     setError(null);
     try {
+      // Build message payload with active character context
+      const messagePayload = {
+        role: "user",
+        content: message,
+        // Include active character IDs in metadata for DM context
+        meta:
+          activeCharacters.length > 0
+            ? {
+                active_character_ids: activeCharacters,
+                active_character_names: availableCharacters
+                  .filter((c) => activeCharacters.includes(c.id))
+                  .map((c) => c.name),
+              }
+            : undefined,
+      };
+
       // persist user message
       const r = await fetch(
         `/api/chat/sessions/${selectedSession.id}/messages`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ role: "user", content: message }),
+          body: JSON.stringify(messagePayload),
         }
       );
       if (!r.ok) throw new Error(`Send failed: ${r.status}`);
@@ -570,13 +644,26 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
               <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                 🎲 Campaign Active
               </Typography>
-              <Typography variant="caption" display="block">
+              <Typography
+                variant="caption"
+                display="block"
+                sx={{
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                  whiteSpace: "normal",
+                }}
+              >
                 {activeCampaign.title}
               </Typography>
               <Typography
                 variant="caption"
                 color="text.secondary"
                 display="block"
+                sx={{
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                  whiteSpace: "normal",
+                }}
               >
                 Level {activeCampaign.current_level} •{" "}
                 {activeCampaign.campaign_type?.replace("_", " ")}
@@ -589,7 +676,15 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
             fullWidth
             variant={activeCampaign ? "outlined" : "contained"}
             color={activeCampaign ? "secondary" : "primary"}
-            onClick={() => setCampaignWizardOpen(true)}
+            onClick={() => {
+              if (activeCampaign) {
+                // Open settings drawer to campaign section
+                setSettingsOpen(true);
+              } else {
+                // Open campaign wizard
+                setCampaignWizardOpen(true);
+              }
+            }}
             disabled={!selectedSession}
             startIcon={activeCampaign ? <SettingsIcon /> : <MenuBookIcon />}
             sx={{ mt: 2 }}
@@ -831,8 +926,9 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
           flexDirection: "column",
           height: "100vh",
           overflow: "hidden",
+          width: drawerOpen ? `calc(100vw - ${drawerWidth}px)` : "100vw",
           marginLeft: drawerOpen ? 0 : `-${drawerWidth}px`,
-          transition: "margin 0.3s ease-in-out",
+          transition: "all 0.3s ease-in-out",
         }}
       >
         {/* App Bar */}
@@ -864,13 +960,50 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                 : "Dungeon Master Chat"}
             </Typography>
             {selectedSession && (
-              <Badge
-                badgeContent={messages.length}
-                color="secondary"
-                sx={{ mr: 2 }}
-              >
-                <ChatIcon />
-              </Badge>
+              <>
+                <Tooltip
+                  title={settingsOpen ? "Hide Settings" : "Show Settings"}
+                >
+                  <IconButton
+                    onClick={() => setSettingsOpen(!settingsOpen)}
+                    sx={{ color: "white", mr: 1 }}
+                  >
+                    <SettingsIcon />
+                  </IconButton>
+                </Tooltip>
+                {activeCampaign && (
+                  <>
+                    <CheckpointManager
+                      campaignId={activeCampaign.id}
+                      onRestoreComplete={(restoredCampaign) => {
+                        setActiveCampaign(restoredCampaign);
+                        setError(null);
+                        // Optionally reload party data
+                        fetchSessions();
+                      }}
+                    />
+                    <Tooltip
+                      title={
+                        rightPanelOpen ? "Hide Party Panel" : "Show Party Panel"
+                      }
+                    >
+                      <IconButton
+                        onClick={() => setRightPanelOpen(!rightPanelOpen)}
+                        sx={{ color: "white", mr: 1, ml: 1 }}
+                      >
+                        <PersonIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </>
+                )}
+                <Badge
+                  badgeContent={messages.length}
+                  color="secondary"
+                  sx={{ mr: 2 }}
+                >
+                  <ChatIcon />
+                </Badge>
+              </>
             )}
           </Toolbar>
         </AppBar>
@@ -886,180 +1019,10 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
           </Alert>
         )}
 
-        {/* Content Area - Two Column Layout */}
+        {/* Content Area - Flexible Layout */}
         {selectedSession && (
           <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
-            {/* Left Column - Session Controls (25%) */}
-            <Paper
-              elevation={0}
-              sx={{
-                width: "25%",
-                minWidth: "300px",
-                maxWidth: "400px",
-                borderRight: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.paper",
-                overflow: "auto",
-                p: 2,
-              }}
-            >
-              <Stack spacing={3} direction="column">
-                {/* Campaign Manager Section */}
-                {activeCampaign && (
-                  <>
-                    <CampaignManager
-                      campaignId={activeCampaign.id}
-                      onCampaignUpdate={handleCampaignUpdate}
-                    />
-                    <Divider />
-                  </>
-                )}
-
-                {/* RAG Context Section */}
-                <Box>
-                  <Typography variant="subtitle2" color="primary" gutterBottom>
-                    <MenuBookIcon
-                      fontSize="small"
-                      sx={{ verticalAlign: "middle", mr: 0.5 }}
-                    />
-                    RAG Context
-                  </Typography>
-                  <Stack spacing={1.5}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={!!selectedSession.include_context}
-                          onChange={(e) =>
-                            updateSessionSettings({
-                              include_context: e.target.checked,
-                            })
-                          }
-                          color="secondary"
-                        />
-                      }
-                      label={
-                        <Typography variant="body2">
-                          Enable RAG Context
-                        </Typography>
-                      }
-                    />
-
-                    <TextField
-                      size="small"
-                      label="Context (k)"
-                      type="number"
-                      fullWidth
-                      value={selectedSession.top_k || k}
-                      onChange={(e) =>
-                        updateSessionSettings({
-                          top_k: Number(e.target.value || 1),
-                        })
-                      }
-                      InputProps={{
-                        inputProps: { min: 1, max: 20 },
-                      }}
-                    />
-
-                    {selectedSession.include_context && (
-                      <Chip
-                        icon={<MenuBookIcon />}
-                        label="RAG Enabled"
-                        color="secondary"
-                        size="small"
-                      />
-                    )}
-                  </Stack>
-                </Box>
-
-                <Divider />
-
-                {/* TTS Controls Section */}
-                <Box>
-                  <Typography variant="subtitle2" color="primary" gutterBottom>
-                    <VolumeUpIcon
-                      fontSize="small"
-                      sx={{ verticalAlign: "middle", mr: 0.5 }}
-                    />
-                    Voice Narration
-                  </Typography>
-                  <Stack spacing={1.5}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={ttsEnabled}
-                          onChange={(e) => setTtsEnabled(e.target.checked)}
-                          color="primary"
-                        />
-                      }
-                      label={
-                        <Typography variant="body2">Enable Voice</Typography>
-                      }
-                    />
-
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={ttsAutoPlay}
-                          onChange={(e) => setTtsAutoPlay(e.target.checked)}
-                          disabled={!ttsEnabled}
-                          color="primary"
-                        />
-                      }
-                      label={<Typography variant="body2">Auto-play</Typography>}
-                    />
-
-                    {/* Voice Selector */}
-                    {ttsEnabled && (
-                      <FormControl size="small" fullWidth>
-                        <Select
-                          value={ttsVoice}
-                          onChange={(e) => setTtsVoice(e.target.value)}
-                          startAdornment={
-                            <VoiceIcon fontSize="small" sx={{ mr: 1, ml: 1 }} />
-                          }
-                        >
-                          <MenuItem value="tara">Tara (Female, Warm)</MenuItem>
-                          <MenuItem value="leah">
-                            Leah (Female, Friendly)
-                          </MenuItem>
-                          <MenuItem value="jess">
-                            Jess (Female, Energetic)
-                          </MenuItem>
-                          <MenuItem value="mia">
-                            Mia (Female, Mysterious)
-                          </MenuItem>
-                          <MenuItem value="leo">Leo (Male, Deep)</MenuItem>
-                          <MenuItem value="dan">Dan (Male, Classic)</MenuItem>
-                          <MenuItem value="zac">Zac (Male, Young)</MenuItem>
-                          <MenuItem value="zoe">Zoe (Neutral)</MenuItem>
-                        </Select>
-                      </FormControl>
-                    )}
-
-                    {/* RP Text Only Toggle */}
-                    {ttsEnabled && (
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={ttsFlavorTextOnly}
-                            onChange={(e) =>
-                              setTtsFlavorTextOnly(e.target.checked)
-                            }
-                            color="primary"
-                            size="small"
-                          />
-                        }
-                        label={
-                          <Typography variant="body2">RP Text Only</Typography>
-                        }
-                      />
-                    )}
-                  </Stack>
-                </Box>
-              </Stack>
-            </Paper>
-
-            {/* Right Column - Chat Area (75%) */}
+            {/* Main Chat Area */}
             <Box
               sx={{
                 flexGrow: 1,
@@ -1080,6 +1043,80 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                 }}
               >
                 <Stack spacing={1.5}>
+                  {/* Active Character Selection (if campaign active) */}
+                  {activeCampaign && availableCharacters.length > 0 && (
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ mb: 0.5, display: "block" }}
+                      >
+                        🎭 Acting as:
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={0.5}
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        {availableCharacters.map((char) => {
+                          const isActive = activeCharacters.includes(char.id);
+                          return (
+                            <Chip
+                              key={char.id}
+                              label={char.name}
+                              avatar={
+                                <Avatar
+                                  sx={{
+                                    bgcolor: isActive
+                                      ? "primary.main"
+                                      : "action.disabled",
+                                  }}
+                                >
+                                  {char.name?.charAt(0) || "?"}
+                                </Avatar>
+                              }
+                              onClick={() => {
+                                setActiveCharacters((prev) => {
+                                  if (prev.includes(char.id)) {
+                                    // Deselect, but keep at least one selected
+                                    return prev.length > 1
+                                      ? prev.filter((id) => id !== char.id)
+                                      : prev;
+                                  } else {
+                                    // Select (allow multiple)
+                                    return [...prev, char.id];
+                                  }
+                                });
+                              }}
+                              color={isActive ? "primary" : "default"}
+                              variant={isActive ? "filled" : "outlined"}
+                              sx={{
+                                cursor: "pointer",
+                                fontWeight: isActive ? 600 : 400,
+                                "&:hover": {
+                                  transform: "translateY(-2px)",
+                                  boxShadow: 2,
+                                },
+                                transition: "all 0.2s",
+                              }}
+                            />
+                          );
+                        })}
+                      </Stack>
+                    </Box>
+                  )}
+
+                  {/* Response Suggestion Chips */}
+                  {messages.length > 0 && !sending && !loadingGen && (
+                    <ResponseSuggestionChips
+                      lastMessage={messages[messages.length - 1]}
+                      onSuggestionClick={(suggestedText) => {
+                        setMessage(suggestedText);
+                      }}
+                    />
+                  )}
+
                   <TextField
                     fullWidth
                     multiline
@@ -1256,6 +1293,8 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                               {msg.role === "assistant" ? (
                                 <Box
                                   sx={{
+                                    wordBreak: "break-word",
+                                    overflowWrap: "break-word",
                                     "& p": { mb: 1, lineHeight: 1.6 },
                                     "& h1, & h2, & h3, & h4, & h5, & h6": {
                                       fontWeight: 600,
@@ -1274,6 +1313,7 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                                       borderRadius: 0.5,
                                       fontFamily: "monospace",
                                       fontSize: "0.9em",
+                                      wordBreak: "break-all",
                                     },
                                     "& pre": {
                                       bgcolor: "rgba(0,0,0,0.3)",
@@ -1299,6 +1339,8 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                                   variant="body1"
                                   sx={{
                                     whiteSpace: "pre-wrap",
+                                    wordBreak: "break-word",
+                                    overflowWrap: "break-word",
                                     lineHeight: 1.6,
                                   }}
                                 >
@@ -1326,6 +1368,19 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                                       }}
                                     />
                                   </Box>
+                                )}
+
+                              {/* Scene Image Generator */}
+                              {msg.role === "assistant" &&
+                                msg.id &&
+                                !msg._optimistic && (
+                                  <SceneImageDisplay
+                                    sessionId={selectedSession.id}
+                                    messageId={msg.id}
+                                    messageContent={msg.content}
+                                    compact={true}
+                                    autoGenerate={sceneImageAutoGenerate}
+                                  />
                                 )}
 
                               {/* Source Citations */}
@@ -1393,24 +1448,31 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
               </Box>
             </Box>
 
-            {/* Right Column - Party/Combat Panel (25%) */}
+            {/* Right Column - Party/Combat Panel (Collapsible) */}
             {activeCampaign && (
               <Paper
                 elevation={0}
                 sx={{
-                  width: "25%",
-                  minWidth: "300px",
-                  maxWidth: "400px",
-                  borderLeft: "1px solid",
+                  width: rightPanelOpen ? "320px" : "0px",
+                  minWidth: rightPanelOpen ? "320px" : "0px",
+                  borderLeft: rightPanelOpen ? "1px solid" : "none",
                   borderColor: "divider",
                   bgcolor: "background.paper",
                   display: "flex",
                   flexDirection: "column",
-                  overflow: "hidden",
+                  overflow: rightPanelOpen ? "hidden" : "hidden",
+                  transition: "all 0.3s ease-in-out",
                 }}
               >
                 {/* Panel Tabs */}
-                <Box sx={{ p: 1, borderBottom: 1, borderColor: "divider" }}>
+                <Box
+                  sx={{
+                    p: 1,
+                    borderBottom: 1,
+                    borderColor: "divider",
+                    opacity: rightPanelOpen ? 1 : 0,
+                  }}
+                >
                   <Stack direction="row" spacing={1}>
                     <Button
                       size="small"
@@ -1507,6 +1569,31 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
           open={diceRollerOpen}
           onClose={() => setDiceRollerOpen(false)}
           onRollComplete={handleDiceRoll}
+        />
+
+        {/* Settings Drawer (Offcanvas) */}
+        <SettingsDrawer
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          provider={provider}
+          setProvider={setProvider}
+          model={model}
+          setModel={setModel}
+          availableModels={availableModels}
+          selectedSession={selectedSession}
+          updateSessionSettings={updateSessionSettings}
+          ttsEnabled={ttsEnabled}
+          setTtsEnabled={setTtsEnabled}
+          ttsAutoPlay={ttsAutoPlay}
+          setTtsAutoPlay={setTtsAutoPlay}
+          ttsVoice={ttsVoice}
+          setTtsVoice={setTtsVoice}
+          ttsFlavorTextOnly={ttsFlavorTextOnly}
+          setTtsFlavorTextOnly={setTtsFlavorTextOnly}
+          sceneImageAutoGenerate={sceneImageAutoGenerate}
+          setSceneImageAutoGenerate={setSceneImageAutoGenerate}
+          activeCampaign={activeCampaign}
+          handleCampaignUpdate={handleCampaignUpdate}
         />
       </Box>
     </Box>
