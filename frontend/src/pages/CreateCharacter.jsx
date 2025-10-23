@@ -639,17 +639,12 @@ export default function CreateCharacterPage() {
           }
         }
 
-        setSuccess("Character saved successfully!");
+        setSuccess("Character saved successfully! Redirecting...");
 
-        // Reset form after 2 seconds
+        // Redirect to Characters page after 1.5 seconds
         setTimeout(() => {
-          setActiveStep(0);
-          setGeneratedContent(null);
-          setCharacterName("");
-          setPortraitImage(null);
-          setImagePrompt(null);
-          setSuccess(null);
-        }, 2000);
+          navigate("/characters");
+        }, 1500);
       }
     } catch (err) {
       console.error("Save error:", err);

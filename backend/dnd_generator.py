@@ -15,7 +15,7 @@ This module handles:
 """
 
 import random
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from dnd_data import (
     DND_CLASSES,
     DND_SPECIES,
@@ -401,6 +401,79 @@ def generate_spellcasting_info(class_key: str, ability_scores: Dict[str, int],
     return spell_info
 
 
+def _generate_class_resources(class_key: str, level: int, ability_modifiers: Dict[str, int]) -> Dict[str, Any]:
+    """
+    Generate limited-use resources for a D&D class.
+    
+    Args:
+        class_key: Character class
+        level: Character level
+        ability_modifiers: Dict of ability modifiers
+    
+    Returns:
+        Dict of resources with max and current values
+    """
+    resources = {
+        "hit_dice": {"max": level, "current": level}
+    }
+    
+    class_lower = class_key.lower()
+    
+    if class_lower == "barbarian":
+        resources["rage"] = {"max": 2, "current": 2}  # Level 1
+        if level >= 3:
+            resources["rage"]["max"] = 3
+            resources["rage"]["current"] = 3
+        if level >= 6:
+            resources["rage"]["max"] = 4
+            resources["rage"]["current"] = 4
+    
+    elif class_lower == "bard":
+        # Bardic Inspiration
+        cha_mod = ability_modifiers.get("charisma", 0)
+        resources["bardic_inspiration"] = {"max": max(1, cha_mod), "current": max(1, cha_mod)}
+    
+    elif class_lower == "cleric":
+        resources["channel_divinity"] = {"max": 1, "current": 1}
+    
+    elif class_lower == "druid":
+        resources["wild_shape"] = {"max": 2, "current": 2}
+    
+    elif class_lower == "fighter":
+        resources["action_surge"] = {"max": 1, "current": 1}
+        resources["second_wind"] = {"max": 1, "current": 1}
+    
+    elif class_lower == "monk":
+        resources["ki"] = {"max": level, "current": level}
+    
+    elif class_lower == "paladin":
+        resources["channel_divinity"] = {"max": 1, "current": 1}
+        resources["lay_on_hands"] = {"max": level * 5, "current": level * 5}
+    
+    elif class_lower == "ranger":
+        if level >= 3:
+            # Primeval Awareness
+            resources["primeval_awareness"] = {"max": 1, "current": 1}
+    
+    elif class_lower == "rogue":
+        # Sneak Attack scales with level
+        dice_count = (level + 1) // 2
+        resources["sneak_attack_dice"] = f"{dice_count}d6"
+    
+    elif class_lower == "sorcerer":
+        resources["sorcery_points"] = {"max": level, "current": level}
+    
+    elif class_lower == "warlock":
+        # Pact Magic slots (short rest recovery)
+        resources["pact_magic_slots"] = {"max": 1, "current": 1}
+    
+    elif class_lower == "wizard":
+        # Arcane Recovery (once per day)
+        resources["arcane_recovery"] = {"max": 1, "current": 1}
+    
+    return resources
+
+
 # ============================================================================
 # MAIN CHARACTER GENERATOR
 # ============================================================================
@@ -487,12 +560,26 @@ def generate_dnd_character(
         "ability_modifiers": ability_modifiers,
         
         # Combat Stats
-        "hit_points": hit_points,
+        "hit_points": hit_points,  # DEPRECATED: Use hit_points_max instead
+        "hit_points_max": hit_points,
+        "hit_points_current": hit_points,  # Start at full HP
+        "temporary_hp": 0,
         "hit_dice": f"1d{class_info.get('hit_die', 8)}",
         "armor_class": armor_class,
         "initiative": format_modifier(initiative_bonus),
         "speed": species_info.get("speed", 30),
         "proficiency_bonus": format_modifier(proficiency_bonus),
+        
+        # Attack Bonuses (for combat system)
+        "melee_attack_bonus": ability_modifiers.get("strength", 0) + proficiency_bonus,
+        "ranged_attack_bonus": ability_modifiers.get("dexterity", 0) + proficiency_bonus,
+        
+        # Combat State
+        "conditions": [],
+        "death_saves": {"successes": 0, "failures": 0},
+        
+        # Resources (limited-use features)
+        "resources": _generate_class_resources(class_key, level, ability_modifiers),
         
         # Proficiencies
         "saving_throws": class_info.get("saving_throws", []),

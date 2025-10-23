@@ -22,6 +22,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import {
   PlayArrow as PlayIcon,
@@ -41,6 +43,8 @@ function TTSAudioPlayer({
   autoPlay = false,
   showVoiceSelector = false,
   compact = false,
+  defaultVoice = "tara",
+  defaultFlavorTextOnly = false,
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +52,8 @@ function TTSAudioPlayer({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState("tara");
+  const [selectedVoice, setSelectedVoice] = useState(defaultVoice);
+  const [flavorTextOnly, setFlavorTextOnly] = useState(defaultFlavorTextOnly);
   const [audioUrl, setAudioUrl] = useState(null);
   const [error, setError] = useState(null);
 
@@ -71,6 +76,15 @@ function TTSAudioPlayer({
       fetchAudio();
     }
   }, [autoPlay]);
+
+  // Update voice and flavor text settings when props change
+  useEffect(() => {
+    setSelectedVoice(defaultVoice);
+  }, [defaultVoice]);
+
+  useEffect(() => {
+    setFlavorTextOnly(defaultFlavorTextOnly);
+  }, [defaultFlavorTextOnly]);
 
   // Update audio element volume
   useEffect(() => {
@@ -117,7 +131,7 @@ function TTSAudioPlayer({
 
     try {
       const response = await axios.post(
-        `${API_BASE}/chat/sessions/${sessionId}/messages/${messageId}/tts?voice=${voice}`,
+        `${API_BASE}/chat/sessions/${sessionId}/messages/${messageId}/tts?voice=${voice}&flavor_text_only=${flavorTextOnly}`,
         {},
         {
           responseType: "blob",
@@ -217,6 +231,22 @@ function TTSAudioPlayer({
     }
   };
 
+  const handleFlavorTextToggle = async (event) => {
+    const newValue = event.target.checked;
+    setFlavorTextOnly(newValue);
+
+    // Re-fetch audio with new setting if already loaded
+    if (audioUrl) {
+      // Cleanup old URL
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+      setProgress(0);
+      setIsPlaying(false);
+
+      await fetchAudio();
+    }
+  };
+
   const formatTime = (seconds) => {
     if (!seconds || !isFinite(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
@@ -266,44 +296,137 @@ function TTSAudioPlayer({
     <Box
       sx={{
         p: 2,
-        backgroundColor: "#f5f5f5",
+        backgroundColor: "#2c3e50",
         borderRadius: 2,
-        border: "1px solid #ddd",
+        border: "1px solid #34495e",
+        boxShadow: 2,
       }}
     >
       <audio ref={audioRef} src={audioUrl} />
 
       {/* Voice Selector */}
       {showVoiceSelector && (
-        <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-          <InputLabel>DM Voice</InputLabel>
-          <Select
-            value={selectedVoice}
-            label="DM Voice"
-            onChange={handleVoiceChange}
-            startAdornment={
-              <VoiceIcon fontSize="small" sx={{ mr: 1, ml: 1 }} />
-            }
+        <>
+          <FormControl
+            fullWidth
+            size="small"
+            sx={{
+              mb: 1,
+              backgroundColor: "#34495e",
+              "& .MuiOutlinedInput-root": {
+                color: "white",
+                "& fieldset": {
+                  borderColor: "#4a5f7f",
+                },
+                "&:hover fieldset": {
+                  borderColor: "#5a7fa8",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#667eea",
+                },
+              },
+            }}
           >
-            {voices.map((voice) => (
-              <MenuItem key={voice.value} value={voice.value}>
-                {voice.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            <InputLabel
+              sx={{ color: "#9ca3af", "&.Mui-focused": { color: "#667eea" } }}
+            >
+              DM Voice
+            </InputLabel>
+            <Select
+              value={selectedVoice}
+              label="DM Voice"
+              onChange={handleVoiceChange}
+              startAdornment={
+                <VoiceIcon
+                  fontSize="small"
+                  sx={{ mr: 1, ml: 1, color: "#9ca3af" }}
+                />
+              }
+              sx={{
+                backgroundColor: "#34495e",
+                color: "white",
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    backgroundColor: "#34495e",
+                    "& .MuiMenuItem-root": {
+                      color: "white",
+                      "&:hover": {
+                        backgroundColor: "#4a5f7f",
+                      },
+                      "&.Mui-selected": {
+                        backgroundColor: "#667eea",
+                        "&:hover": {
+                          backgroundColor: "#5568d3",
+                        },
+                      },
+                    },
+                  },
+                },
+              }}
+            >
+              {voices.map((voice) => (
+                <MenuItem key={voice.value} value={voice.value}>
+                  {voice.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* RP Text Only Toggle */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={flavorTextOnly}
+                onChange={handleFlavorTextToggle}
+                size="small"
+                sx={{
+                  color: "#9ca3af",
+                  "&.Mui-checked": {
+                    color: "#667eea",
+                  },
+                }}
+              />
+            }
+            label={
+              <Typography variant="body2" sx={{ color: "white" }}>
+                RP Text Only (skip mechanics)
+              </Typography>
+            }
+            sx={{ mb: 1, ml: 0 }}
+          />
+        </>
       )}
 
       {/* Playback Controls */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
         {isLoading ? (
-          <CircularProgress size={32} />
+          <CircularProgress size={32} sx={{ color: "#667eea" }} />
         ) : (
           <>
-            <IconButton onClick={handlePlayPause} disabled={!!error}>
+            <IconButton
+              onClick={handlePlayPause}
+              disabled={!!error}
+              sx={{
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#34495e",
+                },
+              }}
+            >
               {isPlaying ? <PauseIcon /> : <PlayIcon />}
             </IconButton>
-            <IconButton onClick={handleStop} disabled={!audioUrl || !!error}>
+            <IconButton
+              onClick={handleStop}
+              disabled={!audioUrl || !!error}
+              sx={{
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#34495e",
+                },
+              }}
+            >
               <StopIcon />
             </IconButton>
           </>
@@ -316,12 +439,24 @@ function TTSAudioPlayer({
             onChange={handleProgressChange}
             disabled={!audioUrl || !!error}
             size="small"
+            sx={{
+              color: "#667eea",
+              "& .MuiSlider-track": {
+                backgroundColor: "#667eea",
+              },
+              "& .MuiSlider-rail": {
+                backgroundColor: "#4a5f7f",
+              },
+              "& .MuiSlider-thumb": {
+                backgroundColor: "#667eea",
+              },
+            }}
           />
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: "#9ca3af" }}>
               {formatTime(audioRef.current?.currentTime || 0)}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: "#9ca3af" }}>
               {formatTime(duration)}
             </Typography>
           </Box>
@@ -331,21 +466,42 @@ function TTSAudioPlayer({
         <Box
           sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 120 }}
         >
-          <IconButton size="small" onClick={toggleMute}>
+          <IconButton
+            size="small"
+            onClick={toggleMute}
+            sx={{
+              color: "white",
+              "&:hover": {
+                backgroundColor: "#34495e",
+              },
+            }}
+          >
             {isMuted || volume === 0 ? <MuteIcon /> : <VolumeIcon />}
           </IconButton>
           <Slider
             value={isMuted ? 0 : volume * 100}
             onChange={handleVolumeChange}
             size="small"
-            sx={{ width: 80 }}
+            sx={{
+              width: 80,
+              color: "#667eea",
+              "& .MuiSlider-track": {
+                backgroundColor: "#667eea",
+              },
+              "& .MuiSlider-rail": {
+                backgroundColor: "#4a5f7f",
+              },
+              "& .MuiSlider-thumb": {
+                backgroundColor: "#667eea",
+              },
+            }}
           />
         </Box>
       </Box>
 
       {/* Error Message */}
       {error && (
-        <Typography variant="caption" color="error">
+        <Typography variant="caption" sx={{ color: "#ff6b6b" }}>
           {error}
         </Typography>
       )}

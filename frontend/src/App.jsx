@@ -37,6 +37,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import PublicIcon from "@mui/icons-material/Public";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import CampaignIcon from "@mui/icons-material/Campaign";
 
 // Route Components
 import HomePage from "./pages/Home";
@@ -89,9 +90,14 @@ function Layout({ children }) {
     { label: "References", path: "/references", icon: <MenuBookIcon /> },
     { label: "Stories", path: "/stories", icon: <AutoStoriesIcon /> },
     { label: "Characters", path: "/characters", icon: <PeopleIcon /> },
+    {
+      label: "Campaigns",
+      path: "/dm-chat",
+      icon: <CampaignIcon />,
+      highlight: true,
+    },
     { label: "Worlds", path: "/worlds", icon: <PublicIcon /> },
     { label: "Settings", path: "/settings", icon: <SettingsIcon /> },
-    { label: "DM Chat", path: "/dm-chat", icon: <ErrorOutlineIcon /> },
   ];
 
   const handleDrawerToggle = () => {

@@ -75,17 +75,26 @@ class Character(Base):
     dnd_background = Column(String(100))  # Background (e.g., "Sage", "Soldier")
     dnd_alignment = Column(String(50))  # Alignment (e.g., "Neutral Good")
     dnd_ability_scores = Column(JSON)  # {"strength": 15, "dexterity": 14, ...}
-    dnd_hit_points = Column(Integer)  # Maximum hit points
+    dnd_ability_modifiers = Column(JSON)  # Pre-calculated modifiers: {"strength": 3, "dexterity": 2, ...}
+    dnd_hit_points = Column(Integer)  # DEPRECATED: Use dnd_hit_points_max instead (kept for backward compatibility)
+    dnd_hit_points_max = Column(Integer)  # Maximum hit points
+    dnd_hit_points_current = Column(Integer)  # Current hit points (for tracking damage)
+    dnd_temporary_hp = Column(Integer, default=0)  # Temporary hit points
     dnd_armor_class = Column(Integer)  # Armor class
     dnd_initiative = Column(String(10))  # Initiative modifier (e.g., "+2")
     dnd_speed = Column(Integer)  # Movement speed in feet
     dnd_proficiency_bonus = Column(String(10))  # Proficiency bonus (e.g., "+2")
+    dnd_melee_attack_bonus = Column(Integer)  # Pre-calculated melee attack bonus
+    dnd_ranged_attack_bonus = Column(Integer)  # Pre-calculated ranged attack bonus
     dnd_skills = Column(JSON)  # ["Arcana", "History", "Investigation", ...]
     dnd_proficiencies = Column(JSON)  # {"saves": [...], "armor": [...], "weapons": [...], "tools": [...]}
     dnd_features = Column(JSON)  # {"racial": [...], "class": [...], "background": {...}}
     dnd_equipment = Column(JSON)  # {"weapons": [...], "armor": [...], "gear": [...]}
     dnd_spellcasting = Column(JSON)  # {"ability": "Intelligence", "dc": 12, "attack": 4, ...} or null
     dnd_languages = Column(JSON)  # ["Common", "Elvish", ...]
+    dnd_conditions = Column(JSON)  # Combat conditions: ["poisoned", "prone", ...]
+    dnd_death_saves = Column(JSON)  # {"successes": 0, "failures": 0}
+    dnd_resources = Column(JSON)  # Limited-use features: {"rage": {"max": 2, "current": 1}, ...}
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -694,3 +703,84 @@ class GameLocation(Base):
             "discovered_at": self.discovered_at.isoformat() if self.discovered_at else None,
         }
 
+
+class Campaign(Base):
+    """D&D Campaign management"""
+    __tablename__ = "campaigns"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    setting = Column(String(100), nullable=True)  # Forgotten Realms, Eberron, Homebrew, etc.
+    difficulty = Column(String(20), nullable=True)  # Easy, Normal, Hard, Deadly
+    campaign_type = Column(String(50), nullable=True)  # one_shot, short_adventure, epic_campaign
+    starting_level = Column(Integer, default=1)
+    current_level = Column(Integer, default=1)
+    chat_session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=True, index=True)
+    current_scene_type = Column(String(50), default='roleplay')  # roleplay, combat, exploration, rest, shop
+    current_location = Column(String(200), nullable=True)
+    quest_log = Column(Text, nullable=True)  # JSON string of quests
+    npc_tracker = Column(Text, nullable=True)  # JSON string of NPCs
+    session_notes = Column(Text, nullable=True)  # JSON string of session notes
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    chat_session = relationship("ChatSession", foreign_keys=[chat_session_id])
+    campaign_characters = relationship("CampaignCharacter", back_populates="campaign", cascade="all, delete-orphan")
+    
+    def to_dict(self):
+        import json
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "setting": self.setting,
+            "difficulty": self.difficulty,
+            "campaign_type": self.campaign_type,
+            "starting_level": self.starting_level,
+            "current_level": self.current_level,
+            "chat_session_id": self.chat_session_id,
+            "current_scene_type": self.current_scene_type,
+            "current_location": self.current_location,
+            "quest_log": json.loads(self.quest_log) if self.quest_log else [],
+            "npc_tracker": json.loads(self.npc_tracker) if self.npc_tracker else {},
+            "session_notes": json.loads(self.session_notes) if self.session_notes else [],
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class CampaignCharacter(Base):
+    """Junction table linking characters to campaigns with current state"""
+    __tablename__ = "campaign_characters"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False, index=True)
+    character_id = Column(Integer, ForeignKey("characters.id"), nullable=False, index=True)
+    current_hp = Column(Integer, nullable=True)
+    current_resources = Column(Text, nullable=True)  # JSON string of current resources
+    status = Column(String(20), default='active')  # active, unconscious, dead
+    conditions = Column(Text, nullable=True)  # JSON array of active conditions
+    position_in_initiative = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    campaign = relationship("Campaign", back_populates="campaign_characters")
+    character = relationship("Character")
+    
+    def to_dict(self):
+        import json
+        return {
+            "id": self.id,
+            "campaign_id": self.campaign_id,
+            "character_id": self.character_id,
+            "current_hp": self.current_hp,
+            "current_resources": json.loads(self.current_resources) if self.current_resources else {},
+            "status": self.status,
+            "conditions": json.loads(self.conditions) if self.conditions else [],
+            "position_in_initiative": self.position_in_initiative,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

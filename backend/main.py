@@ -5,7 +5,7 @@ import sys
 try:
     # Preferred (when package is importable)
     from .database import engine, Base
-    from .routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game
+    from .routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns
 except Exception:
     # Fallback to absolute imports so running `python backend/main.py` or
     # starting uvicorn from other working directories still works. Ensure the
@@ -14,7 +14,7 @@ except Exception:
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     from backend.database import engine, Base
-    from backend.routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game
+    from backend.routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns
 import logging
 
 # Set up logging
@@ -83,6 +83,8 @@ app.include_router(references.router, tags=["references"])  # /api/references/
 app.include_router(monsters.router, tags=["monsters"])  # /api/monsters/
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])  # /api/chat/
 app.include_router(game.router, tags=["game"])  # /api/game/ - D&D game session management
+app.include_router(combat.router, prefix="/api/combat", tags=["combat"])  # /api/combat/ - Combat encounters
+app.include_router(campaigns.router, tags=["campaigns"])  # /api/campaigns/ - D&D Campaign management
 
 
 @app.on_event("startup")

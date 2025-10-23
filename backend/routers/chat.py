@@ -322,7 +322,51 @@ async def generate_for_session(session_id: int, db: Session = Depends(get_db)):
         for i, d in enumerate(docs or [])
     ])
 
-    prompt = f"Use the following documents as context and answer the user's last message as the assistant.\n\n{context}\n\nConversation:\n{conversation}\n\nAssistant:"
+    # Check if this session has an active campaign
+    campaign_context = ""
+    try:
+        from backend.models import Campaign
+        campaign = db.query(Campaign).filter(Campaign.chat_session_id == session_id).first()
+        if campaign:
+            # Extract template metadata from campaign description
+            import re
+            import json
+            metadata_match = re.search(r'\[AI_DM_METADATA: ({.*?})\]', campaign.description or '')
+            metadata = json.loads(metadata_match.group(1)) if metadata_match else {}
+            
+            campaign_context = f"""
+**ACTIVE CAMPAIGN: {campaign.title}**
+- Type: {campaign.campaign_type}
+- Setting: {campaign.setting}
+- Difficulty: {campaign.difficulty}
+- Current Level: {campaign.current_level}
+- Adventure Template: {metadata.get('template_id', 'custom')}
+- Opening Scene: {metadata.get('opening_scene', 'standard')}
+- Campaign Tone: {metadata.get('campaign_tone', 'heroic_fantasy')}
+
+You are the Dungeon Master for this campaign. Maintain consistency with the campaign details above, use the specified tone, and reference the adventure template from your knowledge base when appropriate.
+
+"""
+    except Exception as e:
+        print(f"[DEBUG] Could not load campaign context: {e}")
+
+    system_prompt = """You are an expert Dungeon Master for Dungeons & Dragons 5th Edition. 
+
+Your responsibilities:
+- Narrate vivid, immersive scenes with rich descriptions
+- Roleplay NPCs with distinct personalities and voices
+- Apply D&D 5e rules accurately and fairly
+- Ask for dice rolls when appropriate (attacks, saves, checks)
+- Track combat, initiative, HP, and conditions
+- Create engaging encounters and meaningful choices
+- Adapt to player actions and maintain story flow
+- Reference the Player's Handbook and other source material
+
+When describing scenes, use evocative language. When voicing NPCs, give them personality. When combat begins, be clear about initiative, positioning, and options.
+
+"""
+
+    prompt = f"{system_prompt}{campaign_context}Use the following documents as context:\n\n{context}\n\nConversation:\n{conversation}\n\nAssistant:"
 
     # Call the centralized LLM helper
     try:
@@ -355,9 +399,10 @@ async def generate_tts_for_message(
     session_id: int,
     message_id: int,
     voice: str = "tara",
+    flavor_text_only: bool = False,
     db: Session = Depends(get_db)
 ):
-    """Generate text-to-speech audio for a chat message using Orpheus TTS.
+    """Generate text-to-speech audio for a chat message using Kitten TTS.
     
     Returns WAV audio file (16-bit PCM, 24kHz, mono).
     
@@ -365,6 +410,7 @@ async def generate_tts_for_message(
         session_id: Chat session ID
         message_id: Message ID to convert to speech
         voice: Voice to use (tara, leah, jess, leo, dan, mia, zac, zoe)
+        flavor_text_only: If True, narrate only flavor/narrative text (skip mechanics)
     
     Returns:
         StreamingResponse: WAV audio file
@@ -401,7 +447,8 @@ async def generate_tts_for_message(
         audio_data = tts.generate_speech(
             text=message.content,
             voice=voice,
-            add_dm_personality=True
+            add_dm_personality=True,
+            flavor_text_only=flavor_text_only
         )
         
         # Return as streaming audio
@@ -413,13 +460,19 @@ async def generate_tts_for_message(
             }
         )
         
-    except ImportError:
+    except ImportError as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
-            detail="TTS service not available. Install orpheus-speech: pip install orpheus-speech"
+            detail="TTS service not available. Install kittentts: pip install https://github.com/KittenML/KittenTTS/releases/download/0.1/kittentts-0.1.0-py3-none-any.whl && pip install soundfile"
         )
     except Exception as e:
+        import traceback
+        print(f"[ERROR] TTS generation failed for message {message_id}: {e}")
+        print(f"[ERROR] Message content: {message.content[:100]}...")
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
-            detail=f"TTS generation failed: {e}"
+            detail=f"TTS generation failed: {str(e)}"
         )

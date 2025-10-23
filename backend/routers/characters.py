@@ -64,6 +64,16 @@ class CharacterResponse(CharacterBase):
     dnd_spellcasting: Dict[str, Any] | None = None
     dnd_languages: List[str] | None = None
     name_suggestions: List[str] | None = None
+    # Combat-ready fields (Phase A)
+    dnd_ability_modifiers: Dict[str, int] | None = None
+    dnd_melee_attack_bonus: int | None = None
+    dnd_ranged_attack_bonus: int | None = None
+    dnd_hit_points_max: int | None = None
+    dnd_hit_points_current: int | None = None
+    dnd_temporary_hp: int | None = None
+    dnd_conditions: List[str] | None = None
+    dnd_death_saves: Dict[str, int] | None = None
+    dnd_resources: Dict[str, Any] | None = None
 
     class Config:
         from_attributes = True
@@ -588,6 +598,16 @@ async def generate_dnd_character(request: DnDCharacterGenerateRequest, db: Sessi
             dnd_equipment=(dnd_char.get("equipment") or dnd_equipment_payload),
             dnd_spellcasting=dnd_char.get("spellcasting"),
             dnd_languages=dnd_char.get("languages"),
+            # Combat-ready fields (Phase A enhancements)
+            dnd_ability_modifiers=dnd_char.get("ability_modifiers"),
+            dnd_melee_attack_bonus=dnd_char.get("melee_attack_bonus"),
+            dnd_ranged_attack_bonus=dnd_char.get("ranged_attack_bonus"),
+            dnd_hit_points_max=dnd_char.get("hit_points_max"),
+            dnd_hit_points_current=dnd_char.get("hit_points_current"),
+            dnd_temporary_hp=dnd_char.get("temporary_hp", 0),
+            dnd_conditions=dnd_char.get("conditions", []),
+            dnd_death_saves=dnd_char.get("death_saves", {"successes": 0, "failures": 0}),
+            dnd_resources=dnd_char.get("resources", {}),
             structured_data=narrative_dict if (narrative_dict and "error" not in narrative_dict) else None,
             generation_log={
                 "type": "dnd_5e_character",

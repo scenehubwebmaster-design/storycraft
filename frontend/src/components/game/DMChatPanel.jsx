@@ -147,64 +147,76 @@ function DMChatPanel({
               key={index}
               sx={{
                 display: "flex",
+                flexDirection: "column",
                 gap: 1,
-                alignItems: "flex-start",
-                flexDirection: isUser ? "row-reverse" : "row",
+                alignItems: isUser ? "flex-end" : "flex-start",
               }}
             >
-              {/* Avatar */}
-              <Avatar
+              {/* Message with Avatar */}
+              <Box
                 sx={{
-                  bgcolor: isUser ? "#4caf50" : "#764ba2",
-                  width: 36,
-                  height: 36,
+                  display: "flex",
+                  gap: 1,
+                  alignItems: "flex-start",
+                  flexDirection: isUser ? "row-reverse" : "row",
+                  maxWidth: "85%",
                 }}
               >
-                {isUser ? (
-                  <PlayerIcon fontSize="small" />
-                ) : (
-                  <DMIcon fontSize="small" />
-                )}
-              </Avatar>
-
-              {/* Message Bubble */}
-              <Paper
-                elevation={1}
-                sx={{
-                  p: 1.5,
-                  maxWidth: "75%",
-                  backgroundColor: isUser ? "#e8f5e9" : "white",
-                  borderRadius: 2,
-                  borderTopLeftRadius: isUser ? 2 : 0,
-                  borderTopRightRadius: isUser ? 0 : 2,
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontWeight: "bold", mb: 0.5, display: "block" }}
-                >
-                  {isUser ? "You" : "Dungeon Master"}
-                </Typography>
-                <Typography
-                  variant="body1"
+                {/* Avatar */}
+                <Avatar
                   sx={{
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
+                    bgcolor: isUser ? "#4caf50" : "#764ba2",
+                    width: 36,
+                    height: 36,
                   }}
                 >
-                  {formatMessage(msg.content)}
-                </Typography>
-              </Paper>
+                  {isUser ? (
+                    <PlayerIcon fontSize="small" />
+                  ) : (
+                    <DMIcon fontSize="small" />
+                  )}
+                </Avatar>
+
+                {/* Message Bubble */}
+                <Paper
+                  elevation={1}
+                  sx={{
+                    p: 1.5,
+                    flex: 1,
+                    backgroundColor: isUser ? "#e8f5e9" : "white",
+                    borderRadius: 2,
+                    borderTopLeftRadius: isUser ? 2 : 0,
+                    borderTopRightRadius: isUser ? 0 : 2,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: "bold", mb: 0.5, display: "block" }}
+                  >
+                    {isUser ? "You" : "Dungeon Master"}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {formatMessage(msg.content)}
+                  </Typography>
+                </Paper>
+              </Box>
 
               {/* TTS Audio Player for DM messages */}
               {isDM && ttsEnabled && msg.id && sessionId && (
-                <Box sx={{ mt: 0.5 }}>
+                <Box sx={{ width: "85%", maxWidth: 600 }}>
                   <TTSAudioPlayer
                     sessionId={sessionId}
                     messageId={msg.id}
                     autoPlay={ttsAutoPlay}
-                    compact={true}
+                    showVoiceSelector={true}
+                    compact={false}
                   />
                 </Box>
               )}
