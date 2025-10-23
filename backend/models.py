@@ -784,3 +784,143 @@ class CampaignCharacter(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class CampaignCheckpoint(Base):
+    """Save points for campaign progress with LLM-generated summaries"""
+    __tablename__ = "campaign_checkpoints"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False, index=True)
+    chat_session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=True, index=True)
+    
+    # Checkpoint metadata
+    title = Column(String(200), nullable=False)  # User-provided or auto-generated
+    summary = Column(Text, nullable=False)  # LLM-generated narrative summary
+    checkpoint_type = Column(String(50), default='manual')  # manual, auto, session_end
+    
+    # Complete state snapshot
+    campaign_state = Column(JSON, nullable=False)  # Full campaign state at checkpoint
+    party_state = Column(JSON, nullable=False)  # All party member states (HP, conditions, resources)
+    combat_state = Column(JSON, nullable=True)  # Active combat if any
+    quest_state = Column(JSON, nullable=True)  # Quest progress
+    npc_state = Column(JSON, nullable=True)  # NPC relationships and states
+    
+    # Session context
+    recent_events = Column(JSON, nullable=True)  # Last N events for context
+    message_count = Column(Integer, default=0)  # Number of messages at checkpoint
+    
+    # ChromaDB reference for semantic search
+    chroma_doc_id = Column(String(100), nullable=True, index=True)  # UUID in ChromaDB
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_by_user_id = Column(Integer, nullable=True)  # Future: user who created checkpoint
+    
+    # Relationships
+    campaign = relationship("Campaign", foreign_keys=[campaign_id])
+    chat_session = relationship("ChatSession", foreign_keys=[chat_session_id])
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "campaign_id": self.campaign_id,
+            "chat_session_id": self.chat_session_id,
+            "title": self.title,
+            "summary": self.summary,
+            "checkpoint_type": self.checkpoint_type,
+            "campaign_state": self.campaign_state,
+            "party_state": self.party_state,
+            "combat_state": self.combat_state,
+            "quest_state": self.quest_state,
+            "npc_state": self.npc_state,
+            "recent_events": self.recent_events,
+            "message_count": self.message_count,
+            "chroma_doc_id": self.chroma_doc_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_by_user_id": self.created_by_user_id,
+        }
+
+
+class UserSettings(Base):
+    """User preferences and settings - persisted across sessions"""
+    __tablename__ = "user_settings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=True, index=True)  # Future: link to user auth
+    
+    # TTS Settings
+    tts_provider = Column(String(50), default="kitten")  # "kitten" or "openai"
+    tts_voice = Column(String(50), default="tara")  # Voice ID for current provider
+    tts_enabled = Column(Boolean, default=True)
+    tts_auto_play = Column(Boolean, default=False)
+    tts_speed = Column(Float, default=1.0)  # Speech speed (0.25 to 4.0)
+    tts_model = Column(String(50), default="standard")  # "standard" or "hd" (for OpenAI)
+    
+    # UI Preferences
+    theme = Column(String(20), default="dark")  # "light" or "dark"
+    compact_mode = Column(Boolean, default=False)
+    show_dice_rolls = Column(Boolean, default=True)
+    
+    # RAG Settings
+    rag_enabled = Column(Boolean, default=True)
+    rag_top_k = Column(Integer, default=5)
+    
+    # LLM Settings
+    preferred_provider = Column(String(50), default="groq")  # "groq", "openai", "gemini"
+    preferred_model = Column(String(100), nullable=True)
+    temperature = Column(Float, default=0.7)
+    max_tokens = Column(Integer, default=2000)
+    
+    # Accessibility Settings
+    font_size = Column(String(20), default="medium")  # "small", "medium", "large"
+    high_contrast = Column(Boolean, default=False)
+    reduce_animations = Column(Boolean, default=False)
+    
+    # Notification Settings
+    sound_enabled = Column(Boolean, default=True)
+    dice_sound_enabled = Column(Boolean, default=True)
+    combat_alerts = Column(Boolean, default=True)
+    
+    # Metadata
+    settings_version = Column(Integer, default=1)  # For future migrations
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        """Convert settings to dictionary"""
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            # TTS
+            "tts_provider": self.tts_provider,
+            "tts_voice": self.tts_voice,
+            "tts_enabled": self.tts_enabled,
+            "tts_auto_play": self.tts_auto_play,
+            "tts_speed": self.tts_speed,
+            "tts_model": self.tts_model,
+            # UI
+            "theme": self.theme,
+            "compact_mode": self.compact_mode,
+            "show_dice_rolls": self.show_dice_rolls,
+            # RAG
+            "rag_enabled": self.rag_enabled,
+            "rag_top_k": self.rag_top_k,
+            # LLM
+            "preferred_provider": self.preferred_provider,
+            "preferred_model": self.preferred_model,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            # Accessibility
+            "font_size": self.font_size,
+            "high_contrast": self.high_contrast,
+            "reduce_animations": self.reduce_animations,
+            # Notifications
+            "sound_enabled": self.sound_enabled,
+            "dice_sound_enabled": self.dice_sound_enabled,
+            "combat_alerts": self.combat_alerts,
+            # Metadata
+            "settings_version": self.settings_version,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

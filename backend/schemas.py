@@ -519,3 +519,96 @@ class DnDCharacterNarrative(BaseModel):
         return v
 
 
+# ============================================================================
+# USER SETTINGS SCHEMAS
+# ============================================================================
+
+class UserSettingsBase(BaseModel):
+    """Base schema for user settings"""
+    # TTS Settings
+    tts_provider: str = Field(default="kitten", description="TTS provider: 'kitten' or 'openai'")
+    tts_voice: str = Field(default="tara", description="Voice ID for current provider")
+    tts_enabled: bool = Field(default=True, description="Enable voice narration")
+    tts_auto_play: bool = Field(default=False, description="Auto-play DM responses")
+    tts_speed: float = Field(default=1.0, ge=0.25, le=4.0, description="Speech speed")
+    tts_model: str = Field(default="standard", description="TTS model: 'standard' or 'hd'")
+    
+    # UI Preferences
+    theme: str = Field(default="dark", description="UI theme: 'light' or 'dark'")
+    compact_mode: bool = Field(default=False, description="Compact UI mode")
+    show_dice_rolls: bool = Field(default=True, description="Show dice roll animations")
+    
+    # RAG Settings
+    rag_enabled: bool = Field(default=True, description="Enable RAG context retrieval")
+    rag_top_k: int = Field(default=5, ge=1, le=20, description="Number of RAG results")
+    
+    # LLM Settings
+    preferred_provider: str = Field(default="groq", description="LLM provider")
+    preferred_model: Optional[str] = Field(None, description="Specific model name")
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="LLM temperature")
+    max_tokens: int = Field(default=2000, ge=100, le=8000, description="Max response tokens")
+    
+    # Accessibility
+    font_size: str = Field(default="medium", description="Font size: 'small', 'medium', 'large'")
+    high_contrast: bool = Field(default=False, description="High contrast mode")
+    reduce_animations: bool = Field(default=False, description="Reduce UI animations")
+    
+    # Notifications
+    sound_enabled: bool = Field(default=True, description="Enable sound effects")
+    dice_sound_enabled: bool = Field(default=True, description="Enable dice roll sounds")
+    combat_alerts: bool = Field(default=True, description="Enable combat alerts")
+
+
+class UserSettingsCreate(UserSettingsBase):
+    """Schema for creating user settings"""
+    user_id: Optional[int] = None
+
+
+class UserSettingsUpdate(BaseModel):
+    """Schema for updating user settings (all fields optional)"""
+    # TTS Settings
+    tts_provider: Optional[str] = None
+    tts_voice: Optional[str] = None
+    tts_enabled: Optional[bool] = None
+    tts_auto_play: Optional[bool] = None
+    tts_speed: Optional[float] = Field(None, ge=0.25, le=4.0)
+    tts_model: Optional[str] = None
+    
+    # UI Preferences
+    theme: Optional[str] = None
+    compact_mode: Optional[bool] = None
+    show_dice_rolls: Optional[bool] = None
+    
+    # RAG Settings
+    rag_enabled: Optional[bool] = None
+    rag_top_k: Optional[int] = Field(None, ge=1, le=20)
+    
+    # LLM Settings
+    preferred_provider: Optional[str] = None
+    preferred_model: Optional[str] = None
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(None, ge=100, le=8000)
+    
+    # Accessibility
+    font_size: Optional[str] = None
+    high_contrast: Optional[bool] = None
+    reduce_animations: Optional[bool] = None
+    
+    # Notifications
+    sound_enabled: Optional[bool] = None
+    dice_sound_enabled: Optional[bool] = None
+    combat_alerts: Optional[bool] = None
+
+
+class UserSettingsResponse(UserSettingsBase):
+    """Schema for user settings response"""
+    id: int
+    user_id: Optional[int]
+    settings_version: int
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+

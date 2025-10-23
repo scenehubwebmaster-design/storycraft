@@ -18,6 +18,15 @@ import {
   TextField,
   Card,
   CardContent,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Checkbox,
+  Radio,
+  RadioGroup,
+  FormLabel,
 } from "@mui/material";
 import {
   Campaign as CampaignIcon,
@@ -26,7 +35,11 @@ import {
   Settings as SettingsIcon,
   Info as InfoIcon,
   Edit as EditIcon,
+  History as HistoryIcon,
+  VolumeUp as VoiceIcon,
+  RecordVoiceOver as TTSIcon,
 } from "@mui/icons-material";
+import CheckpointManager from "./CheckpointManager";
 
 /**
  * CampaignManager - Display and manage active campaign
@@ -38,6 +51,15 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
   const [xpDialogOpen, setXpDialogOpen] = useState(false);
   const [xpAmount, setXpAmount] = useState("");
   const [xpReason, setXpReason] = useState("");
+  const [metadataOpen, setMetadataOpen] = useState(false);
+
+  // TTS Settings (loaded from database)
+  const [ttsSettingsOpen, setTtsSettingsOpen] = useState(false);
+  const [ttsProvider, setTtsProvider] = useState("kitten");
+  const [ttsVoice, setTtsVoice] = useState("tara");
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [ttsAutoPlay, setTtsAutoPlay] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // XP thresholds for each level (D&D 5e)
   const XP_THRESHOLDS = {
@@ -71,6 +93,29 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
     const interval = setInterval(loadCampaign, 10000);
     return () => clearInterval(interval);
   }, [campaignId]);
+
+  // Load user settings from database
+  useEffect(() => {
+    loadUserSettings();
+  }, []);
+
+  const loadUserSettings = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/settings/");
+      if (response.ok) {
+        const settings = await response.json();
+        setTtsProvider(settings.tts_provider || "kitten");
+        setTtsVoice(settings.tts_voice || "tara");
+        setTtsEnabled(settings.tts_enabled ?? true);
+        setTtsAutoPlay(settings.tts_auto_play ?? false);
+        setSettingsLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error loading settings:", error);
+      // Use defaults on error
+      setSettingsLoaded(true);
+    }
+  };
 
   const loadCampaign = async () => {
     if (!campaignId) return;
@@ -180,6 +225,33 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
     };
   };
 
+  // Helpers for metadata parsing + copy
+  const copyMetadataToClipboard = async (text) => {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (e) {
+        // fallthrough to textarea fallback
+      }
+    }
+
+    // Fallback: create a temporary textarea
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      return true;
+    } catch (e) {
+      console.error("Copy to clipboard failed", e);
+      return false;
+    }
+  };
+
   // Get scene type badge color
   const getSceneColor = (sceneType) => {
     switch (sceneType) {
@@ -213,6 +285,68 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
         return "💰";
       default:
         return "📖";
+    }
+  };
+
+  // Save TTS settings to database
+  const saveTtsSettings = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/settings/", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tts_provider: ttsProvider,
+          tts_voice: ttsVoice,
+          tts_enabled: ttsEnabled,
+          tts_auto_play: ttsAutoPlay,
+        }),
+      });
+
+      if (response.ok) {
+        setTtsSettingsOpen(false);
+        // Settings saved successfully
+      } else {
+        console.error("Failed to save settings");
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+    }
+  };
+
+  // Get voice options based on provider
+  const getVoiceOptions = () => {
+    if (ttsProvider === "openai") {
+      return [
+        { value: "alloy", label: "Alloy (Neutral, Balanced)" },
+        { value: "echo", label: "Echo (Male, Clear)" },
+        { value: "fable", label: "Fable (British, Expressive)" },
+        { value: "onyx", label: "Onyx (Deep Male, Authoritative)" },
+        { value: "nova", label: "Nova (Female, Warm)" },
+        { value: "shimmer", label: "Shimmer (Female, Bright)" },
+      ];
+    } else {
+      // KittenTTS voices
+      return [
+        { value: "tara", label: "Tara (Female, Warm)" },
+        { value: "leah", label: "Leah (Female, Friendly)" },
+        { value: "jess", label: "Jess (Female, Energetic)" },
+        { value: "mia", label: "Mia (Female, Mysterious)" },
+        { value: "leo", label: "Leo (Male, Deep)" },
+        { value: "dan", label: "Dan (Male, Classic)" },
+        { value: "zac", label: "Zac (Male, Young)" },
+        { value: "zoe", label: "Zoe (Neutral)" },
+      ];
+    }
+  };
+
+  // Handle provider change - reset to default voice for that provider
+  const handleProviderChange = (newProvider) => {
+    setTtsProvider(newProvider);
+    // Set default voice for the provider
+    if (newProvider === "openai") {
+      setTtsVoice("alloy");
+    } else {
+      setTtsVoice("tara");
     }
   };
 
@@ -255,9 +389,76 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
             {campaign.title}
           </Typography>
           {campaign.description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {campaign.description}
-            </Typography>
+            <Box sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  // Show a short summary paragraph by default
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {campaign.description.split(/\n\n|\r\n\r\n/)[0]}
+              </Typography>
+
+              {/* Extract AI_DM_METADATA JSON if present and show collapsed */}
+              {(() => {
+                const m = campaign.description.match(
+                  /\[AI_DM_METADATA:\s*(\{[\s\S]*?\})\]/
+                );
+                if (!m) return null;
+
+                let parsed = null;
+                let metadataString = m[1];
+                try {
+                  parsed = JSON.parse(metadataString);
+                  metadataString = JSON.stringify(parsed, null, 2);
+                } catch (e) {
+                  // keep raw string
+                }
+
+                return (
+                  <Box sx={{ mt: 1 }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<InfoIcon />}
+                        onClick={() => setMetadataOpen((s) => !s)}
+                      >
+                        {metadataOpen ? "Hide Metadata" : "Show Metadata"}
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => copyMetadataToClipboard(metadataString)}
+                      >
+                        Copy Metadata
+                      </Button>
+                    </Stack>
+
+                    {metadataOpen && (
+                      <Paper
+                        sx={{
+                          p: 1,
+                          mt: 1,
+                          bgcolor: "rgba(0,0,0,0.04)",
+                          fontFamily: "monospace",
+                          fontSize: "0.85rem",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-all",
+                        }}
+                      >
+                        <Box component="pre" sx={{ m: 0 }}>
+                          {metadataString}
+                        </Box>
+                      </Paper>
+                    )}
+                  </Box>
+                );
+              })()}
+            </Box>
           )}
         </Box>
         <IconButton size="small">
@@ -400,7 +601,233 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
             </Box>
           </>
         )}
+
+        {/* Campaign Checkpoints */}
+        <Divider />
+        <Box>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 1,
+            }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+            >
+              <HistoryIcon fontSize="small" />
+              Save Progress
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Create checkpoints to save your campaign progress and restore later
+          </Typography>
+          <CheckpointManager
+            campaignId={campaign.id}
+            onRestoreComplete={(restoredCampaign) => {
+              setCampaign(restoredCampaign);
+              onCampaignUpdate && onCampaignUpdate(restoredCampaign);
+            }}
+          />
+        </Box>
+
+        {/* Voice Narration Settings */}
+        <Divider />
+        <Box>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 1,
+            }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+            >
+              <VoiceIcon fontSize="small" />
+              Voice Narration (TTS)
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<SettingsIcon />}
+              onClick={() => setTtsSettingsOpen(true)}
+            >
+              Configure
+            </Button>
+          </Box>
+          <Stack spacing={1}>
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              <Chip
+                icon={<TTSIcon />}
+                label={`Provider: ${
+                  ttsProvider === "openai" ? "OpenAI Whisper" : "KittenTTS"
+                }`}
+                size="small"
+                color={ttsEnabled ? "primary" : "default"}
+                variant={ttsEnabled ? "filled" : "outlined"}
+              />
+              <Chip
+                label={`Voice: ${ttsVoice}`}
+                size="small"
+                variant="outlined"
+              />
+              <Chip
+                label={ttsEnabled ? "Enabled" : "Disabled"}
+                size="small"
+                color={ttsEnabled ? "success" : "default"}
+              />
+              <Chip
+                label={ttsAutoPlay ? "Auto-play" : "Manual"}
+                size="small"
+                variant="outlined"
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Choose between KittenTTS (local, free) or OpenAI Whisper (cloud,
+              high-quality)
+            </Typography>
+          </Stack>
+        </Box>
       </Stack>
+
+      {/* TTS Settings Dialog */}
+      <Dialog
+        open={ttsSettingsOpen}
+        onClose={() => setTtsSettingsOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <VoiceIcon />
+            <Typography variant="h6">Voice Narration Settings</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {/* Enable TTS */}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={ttsEnabled}
+                  onChange={(e) => setTtsEnabled(e.target.checked)}
+                />
+              }
+              label="Enable Voice Narration"
+            />
+
+            {/* Auto-play */}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={ttsAutoPlay}
+                  onChange={(e) => setTtsAutoPlay(e.target.checked)}
+                  disabled={!ttsEnabled}
+                />
+              }
+              label="Auto-play DM Responses"
+            />
+
+            <Divider />
+
+            {/* Provider Selection */}
+            <FormControl component="fieldset" disabled={!ttsEnabled}>
+              <FormLabel component="legend">TTS Provider</FormLabel>
+              <RadioGroup
+                value={ttsProvider}
+                onChange={(e) => handleProviderChange(e.target.value)}
+              >
+                <FormControlLabel
+                  value="kitten"
+                  control={<Radio />}
+                  label={
+                    <Stack>
+                      <Typography variant="body2" fontWeight={600}>
+                        KittenTTS (Local)
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Free • CPU-optimized • No API key required • 8 voices
+                      </Typography>
+                    </Stack>
+                  }
+                />
+                <FormControlLabel
+                  value="openai"
+                  control={<Radio />}
+                  label={
+                    <Stack>
+                      <Typography variant="body2" fontWeight={600}>
+                        OpenAI Whisper (Cloud)
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Premium quality • Requires API key • 6 professional
+                        voices • $15/1M characters
+                      </Typography>
+                    </Stack>
+                  }
+                />
+              </RadioGroup>
+            </FormControl>
+
+            <Divider />
+
+            {/* Voice Selection */}
+            <FormControl fullWidth disabled={!ttsEnabled}>
+              <InputLabel>Voice Character</InputLabel>
+              <Select
+                value={ttsVoice}
+                label="Voice Character"
+                onChange={(e) => setTtsVoice(e.target.value)}
+              >
+                {getVoiceOptions().map((voice) => (
+                  <MenuItem key={voice.value} value={voice.value}>
+                    {voice.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Info Alert */}
+            <Alert severity="info" icon={<InfoIcon />}>
+              {ttsProvider === "openai" ? (
+                <>
+                  <Typography variant="body2" fontWeight={600} gutterBottom>
+                    OpenAI Whisper TTS
+                  </Typography>
+                  <Typography variant="caption">
+                    Uses OpenAI's professional text-to-speech API. Requires an
+                    OpenAI API key configured in your backend .env file. Offers
+                    high-quality neural voices with natural intonation and
+                    emotion.
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <Typography variant="body2" fontWeight={600} gutterBottom>
+                    KittenTTS
+                  </Typography>
+                  <Typography variant="caption">
+                    Ultra-lightweight local TTS (under 25MB). Runs on CPU with
+                    no GPU required. Perfect for offline use and
+                    privacy-conscious users. No external API calls.
+                  </Typography>
+                </>
+              )}
+            </Alert>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTtsSettingsOpen(false)}>Cancel</Button>
+          <Button onClick={saveTtsSettings} variant="contained">
+            Save Settings
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* XP Award Dialog */}
       <Dialog

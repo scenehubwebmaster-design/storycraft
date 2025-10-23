@@ -5,7 +5,7 @@ import sys
 try:
     # Preferred (when package is importable)
     from .database import engine, Base
-    from .routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns
+    from .routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns, checkpoints, adventures, openai_audio, user_settings
 except Exception:
     # Fallback to absolute imports so running `python backend/main.py` or
     # starting uvicorn from other working directories still works. Ensure the
@@ -14,7 +14,7 @@ except Exception:
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     from backend.database import engine, Base
-    from backend.routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns
+    from backend.routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns, checkpoints, adventures, openai_audio, user_settings
 import logging
 
 # Set up logging
@@ -85,6 +85,10 @@ app.include_router(chat.router, prefix="/api/chat", tags=["chat"])  # /api/chat/
 app.include_router(game.router, tags=["game"])  # /api/game/ - D&D game session management
 app.include_router(combat.router, prefix="/api/combat", tags=["combat"])  # /api/combat/ - Combat encounters
 app.include_router(campaigns.router, tags=["campaigns"])  # /api/campaigns/ - D&D Campaign management
+app.include_router(checkpoints.router, tags=["checkpoints"])  # /api/checkpoints/ - Campaign checkpoint system
+app.include_router(adventures.router, tags=["adventures"])  # /api/adventures/ - Adventure templates for campaign creation
+app.include_router(openai_audio.router, tags=["audio"])  # /api/audio/ - OpenAI TTS and Whisper services
+app.include_router(user_settings.router, tags=["user-settings"])  # /api/settings/ - User preferences and settings
 
 
 @app.on_event("startup")
