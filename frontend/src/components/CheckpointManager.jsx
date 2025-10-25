@@ -12,6 +12,7 @@ import {
   ListItemButton,
   ListItemText,
   ListItemSecondaryAction,
+  ListItemIcon,
   IconButton,
   Typography,
   Chip,
@@ -20,6 +21,9 @@ import {
   Divider,
   Paper,
   Stack,
+  Card,
+  CardContent,
+  CardMedia,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -28,6 +32,9 @@ import {
   History as HistoryIcon,
   Close as CloseIcon,
   Info as InfoIcon,
+  Person as PersonIcon,
+  Assignment as AssignmentIcon,
+  Timeline as TimelineIcon,
 } from "@mui/icons-material";
 
 /**
@@ -269,6 +276,87 @@ const CheckpointManager = ({ campaignId, onRestoreComplete }) => {
                       >
                         {checkpoint.summary}
                       </Typography>
+
+                      {/* Journal Preview - NPCs, Quests, Locations */}
+                      {(checkpoint.npc_state ||
+                        checkpoint.quest_state ||
+                        checkpoint.recent_events) && (
+                        <Box sx={{ mt: 1, mb: 1, width: "100%" }}>
+                          {/* NPCs Highlight */}
+                          {checkpoint.npc_state &&
+                            checkpoint.npc_state.length > 0 && (
+                              <Box sx={{ mb: 0.5 }}>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  NPCs:
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ ml: 0.5 }}
+                                >
+                                  {checkpoint.npc_state
+                                    .slice(0, 3)
+                                    .map((npc) => npc.name)
+                                    .join(", ")}
+                                  {checkpoint.npc_state.length > 3 &&
+                                    ` +${checkpoint.npc_state.length - 3} more`}
+                                </Typography>
+                              </Box>
+                            )}
+
+                          {/* Active Quests Highlight */}
+                          {checkpoint.quest_state &&
+                            checkpoint.quest_state.filter(
+                              (q) => q.status === "in_progress"
+                            ).length > 0 && (
+                              <Box sx={{ mb: 0.5 }}>
+                                <Typography
+                                  variant="caption"
+                                  color="warning.main"
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  Active Quests:
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ ml: 0.5 }}
+                                >
+                                  {checkpoint.quest_state
+                                    .filter((q) => q.status === "in_progress")
+                                    .slice(0, 2)
+                                    .map((q) => q.title)
+                                    .join(", ")}
+                                </Typography>
+                              </Box>
+                            )}
+
+                          {/* Recent Events */}
+                          {checkpoint.recent_events &&
+                            checkpoint.recent_events.length > 0 && (
+                              <Box>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  Recent:
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ ml: 0.5 }}
+                                >
+                                  {checkpoint.recent_events[0]}
+                                </Typography>
+                              </Box>
+                            )}
+                        </Box>
+                      )}
 
                       <Stack
                         direction="row"
@@ -536,6 +624,147 @@ const CheckpointManager = ({ campaignId, onRestoreComplete }) => {
                   </Box>
                 </>
               )}
+
+              {/* NPCs Section with Portraits */}
+              {detailsCheckpoint.npc_state &&
+                detailsCheckpoint.npc_state.length > 0 && (
+                  <>
+                    <Divider />
+                    <Box>
+                      <Typography variant="subtitle2" gutterBottom>
+                        NPCs Encountered ({detailsCheckpoint.npc_state.length})
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fill, minmax(150px, 1fr))",
+                          gap: 2,
+                          mt: 1,
+                        }}
+                      >
+                        {detailsCheckpoint.npc_state.map((npc, i) => (
+                          <Card
+                            key={i}
+                            variant="outlined"
+                            sx={{ textAlign: "center" }}
+                          >
+                            {npc.portrait_path ? (
+                              <CardMedia
+                                component="img"
+                                height="140"
+                                image={`/static/${npc.portrait_path}`}
+                                alt={npc.name}
+                                sx={{ objectFit: "cover" }}
+                              />
+                            ) : (
+                              <Box
+                                sx={{
+                                  height: 140,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  bgcolor: "action.hover",
+                                }}
+                              >
+                                <PersonIcon
+                                  sx={{ fontSize: 64, color: "text.disabled" }}
+                                />
+                              </Box>
+                            )}
+                            <CardContent sx={{ p: 1 }}>
+                              <Typography
+                                variant="caption"
+                                fontWeight={600}
+                                noWrap
+                              >
+                                {npc.name}
+                              </Typography>
+                              {npc.role && (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  display="block"
+                                  noWrap
+                                >
+                                  {npc.role}
+                                </Typography>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </Box>
+                    </Box>
+                  </>
+                )}
+
+              {/* Quests Section */}
+              {detailsCheckpoint.quest_state &&
+                detailsCheckpoint.quest_state.length > 0 && (
+                  <>
+                    <Divider />
+                    <Box>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Quests (
+                        {
+                          detailsCheckpoint.quest_state.filter(
+                            (q) => q.status === "in_progress"
+                          ).length
+                        }{" "}
+                        active)
+                      </Typography>
+                      <List dense>
+                        {detailsCheckpoint.quest_state
+                          .filter((q) => q.status === "in_progress")
+                          .map((quest, i) => (
+                            <ListItem key={i}>
+                              <ListItemIcon>
+                                <AssignmentIcon color="warning" />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={quest.title}
+                                secondary={quest.description}
+                              />
+                            </ListItem>
+                          ))}
+                        {detailsCheckpoint.quest_state.filter(
+                          (q) => q.status === "in_progress"
+                        ).length === 0 && (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ ml: 2 }}
+                          >
+                            No active quests
+                          </Typography>
+                        )}
+                      </List>
+                    </Box>
+                  </>
+                )}
+
+              {/* Recent Events Section */}
+              {detailsCheckpoint.recent_events &&
+                detailsCheckpoint.recent_events.length > 0 && (
+                  <>
+                    <Divider />
+                    <Box>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Recent Events
+                      </Typography>
+                      <List dense>
+                        {detailsCheckpoint.recent_events.map((event, i) => (
+                          <ListItem key={i}>
+                            <ListItemIcon>
+                              <TimelineIcon fontSize="small" color="primary" />
+                            </ListItemIcon>
+                            <ListItemText primary={event} />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Box>
+                  </>
+                )}
             </Stack>
           )}
         </DialogContent>

@@ -123,6 +123,10 @@ export default function CreateCharacterPage() {
   const [imageQuality, setImageQuality] = useState("standard"); // Quality setting
   const [showPortraitSettings, setShowPortraitSettings] = useState(false); // Toggle for portrait settings
 
+  // Custom refinement prompt for regeneration
+  const [customRefinementPrompt, setCustomRefinementPrompt] = useState("");
+  const [showRefinementField, setShowRefinementField] = useState(false);
+
   // Load prompt options on mount
   useEffect(() => {
     console.log("useEffect running - loading options");
@@ -2568,23 +2572,65 @@ export default function CreateCharacterPage() {
                             ? "Update"
                             : "Save Character"}
                         </Button>
+
+                        {/* Custom Refinement Toggle */}
+                        <Button
+                          variant="outlined"
+                          color="secondary"
+                          onClick={() =>
+                            setShowRefinementField(!showRefinementField)
+                          }
+                          disabled={saving || generating}
+                        >
+                          {showRefinementField ? "Hide" : "Add"} Custom
+                          Instructions
+                        </Button>
+
                         <Button
                           variant="outlined"
                           color="error"
                           onClick={() => {
-                            // Regenerate D&D character - reset to D&D generation form (step 0)
-                            setDndCharacter(null);
-                            setGeneratedContent(null);
-                            setActiveStep(0); // Go back to step 0 where DnDCharacterCreator is shown
-                            setDndRegenerationKey((prev) => prev + 1); // Force DnDCharacterCreator to remount
-                            setSuccess(null);
-                            setError(null);
+                            if (
+                              showRefinementField &&
+                              customRefinementPrompt.trim()
+                            ) {
+                              // Regenerate with custom instructions
+                              handleRefine(customRefinementPrompt);
+                              setCustomRefinementPrompt("");
+                              setShowRefinementField(false);
+                            } else {
+                              // Standard regenerate - reset to D&D generation form (step 0)
+                              setDndCharacter(null);
+                              setGeneratedContent(null);
+                              setActiveStep(0);
+                              setDndRegenerationKey((prev) => prev + 1);
+                              setSuccess(null);
+                              setError(null);
+                            }
                           }}
                           disabled={saving || generating}
                         >
                           Regenerate
                         </Button>
                       </Box>
+
+                      {/* Custom Refinement Field */}
+                      {showRefinementField && (
+                        <Box sx={{ mt: 2 }}>
+                          <TextField
+                            fullWidth
+                            multiline
+                            rows={3}
+                            label="Custom Refinement Instructions"
+                            value={customRefinementPrompt}
+                            onChange={(e) =>
+                              setCustomRefinementPrompt(e.target.value)
+                            }
+                            placeholder="E.g., 'Make the character more chaotic', 'Increase strength and constitution', 'Add more detailed backstory about their family'..."
+                            helperText="Describe how you'd like to refine this character. Click Regenerate to apply."
+                          />
+                        </Box>
+                      )}
                     </Box>
                   </Grid>
 
@@ -2626,34 +2672,78 @@ export default function CreateCharacterPage() {
                   <Box
                     sx={{
                       display: "flex",
-                      justifyContent: "flex-end",
+                      flexDirection: "column",
                       gap: 2,
                       mt: 3,
                     }}
                   >
-                    <Button
-                      variant="outlined"
-                      onClick={() =>
-                        handleRefine(
-                          "Please regenerate with different details while keeping the same structure"
-                        )
-                      }
-                      disabled={saving || generating}
-                    >
-                      Regenerate
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={() => handleSave(generatedContent)}
-                      disabled={saving || generating || !characterName.trim()}
-                      startIcon={saving ? <CircularProgress size={20} /> : null}
-                    >
-                      {saving
-                        ? "Saving..."
-                        : isEditMode
-                        ? "Update"
-                        : "Save Character"}
-                    </Button>
+                    <Box sx={{ display: "flex", gap: 2 }}>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() =>
+                          setShowRefinementField(!showRefinementField)
+                        }
+                        disabled={saving || generating}
+                      >
+                        {showRefinementField ? "Hide" : "Add"} Custom
+                        Instructions
+                      </Button>
+
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          if (
+                            showRefinementField &&
+                            customRefinementPrompt.trim()
+                          ) {
+                            // Regenerate with custom instructions
+                            handleRefine(customRefinementPrompt);
+                            setCustomRefinementPrompt("");
+                            setShowRefinementField(false);
+                          } else {
+                            // Standard regenerate
+                            handleRefine(
+                              "Please regenerate with different details while keeping the same structure"
+                            );
+                          }
+                        }}
+                        disabled={saving || generating}
+                      >
+                        Regenerate
+                      </Button>
+
+                      <Button
+                        variant="contained"
+                        onClick={() => handleSave(generatedContent)}
+                        disabled={saving || generating || !characterName.trim()}
+                        startIcon={
+                          saving ? <CircularProgress size={20} /> : null
+                        }
+                      >
+                        {saving
+                          ? "Saving..."
+                          : isEditMode
+                          ? "Update"
+                          : "Save Character"}
+                      </Button>
+                    </Box>
+
+                    {/* Custom Refinement Field */}
+                    {showRefinementField && (
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={3}
+                        label="Custom Refinement Instructions"
+                        value={customRefinementPrompt}
+                        onChange={(e) =>
+                          setCustomRefinementPrompt(e.target.value)
+                        }
+                        placeholder="E.g., 'Make the character more mysterious', 'Add more vivid descriptions', 'Change personality to be more cheerful'..."
+                        helperText="Describe how you'd like to refine this character. Click Regenerate to apply."
+                      />
+                    )}
                   </Box>
                 </Box>
               ) : (

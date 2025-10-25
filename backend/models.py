@@ -588,7 +588,21 @@ class NPC(Base):
     relationship_to_party = Column(Integer, default=0)  # -100 (hostile) to 100 (friendly)
     dialogue_history = Column(JSON, nullable=True)  # [{"turn": 1, "dialogue": "..."}, ...]
     is_alive = Column(Boolean, default=True)
+    
+    # Portrait storage (file path instead of base64 for performance)
+    portrait_path = Column(String(512), nullable=True)  # e.g., "npc_portraits/merchant_elara_123.png"
+    portrait_prompt = Column(Text, nullable=True)  # Prompt used to generate portrait
+    
+    # Enhanced tracking for journal system
+    first_met_location = Column(String(255), nullable=True)
+    first_met_session = Column(Integer, nullable=True)  # Chat session ID where first met
+    last_interaction = Column(DateTime, nullable=True)
+    importance = Column(Integer, default=1)  # 1 (minor) to 5 (critical) for journal filtering
+    tags = Column(JSON, nullable=True)  # ["quest_giver", "merchant", "villain", etc.]
+    quests_related = Column(JSON, nullable=True)  # Array of quest IDs this NPC is involved in
+    
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     game_session = relationship("GameSession", back_populates="npcs")
@@ -605,7 +619,16 @@ class NPC(Base):
             "relationship_to_party": self.relationship_to_party,
             "dialogue_history": self.dialogue_history,
             "is_alive": self.is_alive,
+            "portrait_path": self.portrait_path,
+            "portrait_prompt": self.portrait_prompt,
+            "first_met_location": self.first_met_location,
+            "first_met_session": self.first_met_session,
+            "last_interaction": self.last_interaction.isoformat() if self.last_interaction else None,
+            "importance": self.importance,
+            "tags": self.tags,
+            "quests_related": self.quests_related,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
@@ -839,6 +862,64 @@ class CampaignCheckpoint(Base):
             "chroma_doc_id": self.chroma_doc_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "created_by_user_id": self.created_by_user_id,
+        }
+
+
+class JournalEntry(Base):
+    """Campaign journal for tracking key events, NPCs, decisions, and quest progress"""
+    __tablename__ = "journal_entries"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False, index=True)
+    chat_session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=True, index=True)
+    chat_message_id = Column(Integer, ForeignKey("chat_messages.id"), nullable=True, index=True)
+    
+    # Entry classification
+    entry_type = Column(String(50), nullable=False, index=True)  # "npc_met", "decision", "quest_update", "location_visited", "combat", "loot", "rest"
+    title = Column(String(255), nullable=False)  # "Met Elara the Merchant", "Chose to help the villagers"
+    description = Column(Text, nullable=True)  # Detailed description of event
+    
+    # Entity references (for quick lookups)
+    npc_id = Column(Integer, ForeignKey("npcs.id"), nullable=True, index=True)  # If entry relates to NPC
+    quest_id = Column(Integer, ForeignKey("quests.id"), nullable=True, index=True)  # If entry relates to quest
+    location_name = Column(String(255), nullable=True)  # Location where event occurred
+    
+    # Additional metadata
+    importance = Column(Integer, default=3)  # 1 (minor) to 5 (critical) for filtering
+    tags = Column(JSON, nullable=True)  # ["combat", "social", "exploration", "puzzle", etc.]
+    involved_characters = Column(JSON, nullable=True)  # Array of character IDs who participated
+    game_session_number = Column(Integer, nullable=True)  # Track which play session this occurred in
+    
+    # Embedding for RAG retrieval
+    chroma_doc_id = Column(String(255), nullable=True, index=True)  # ID in ChromaDB for vector search
+    
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    # Relationships
+    campaign = relationship("Campaign", foreign_keys=[campaign_id])
+    chat_session = relationship("ChatSession", foreign_keys=[chat_session_id])
+    chat_message = relationship("ChatMessage", foreign_keys=[chat_message_id])
+    npc = relationship("NPC", foreign_keys=[npc_id])
+    quest = relationship("Quest", foreign_keys=[quest_id])
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "campaign_id": self.campaign_id,
+            "chat_session_id": self.chat_session_id,
+            "chat_message_id": self.chat_message_id,
+            "entry_type": self.entry_type,
+            "title": self.title,
+            "description": self.description,
+            "npc_id": self.npc_id,
+            "quest_id": self.quest_id,
+            "location_name": self.location_name,
+            "importance": self.importance,
+            "tags": self.tags,
+            "involved_characters": self.involved_characters,
+            "game_session_number": self.game_session_number,
+            "chroma_doc_id": self.chroma_doc_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 

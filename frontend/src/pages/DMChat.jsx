@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   Box,
   Button,
@@ -33,6 +33,8 @@ import {
   InputAdornment,
   Tooltip,
   Badge,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import FloatingChatInput from "../components/game/FloatingChatInput";
 import CinematicMessageCard from "../components/game/CinematicMessageCard";
@@ -61,9 +63,11 @@ import { darkTheme } from "../theme/darkTheme";
 import ReactMarkdown from "react-markdown";
 import TTSAudioPlayer from "../components/game/TTSAudioPlayer";
 import SceneImageDisplay from "../components/game/SceneImageDisplay";
+import DialogueNarrationPlayer from "../components/game/DialogueNarrationPlayer";
 import CampaignSetupWizard from "../components/CampaignSetupWizard";
 import CampaignManager from "../components/CampaignManager";
 import CheckpointManager from "../components/CheckpointManager";
+import CampaignJournal from "../components/CampaignJournal";
 import PartyPanel from "../components/PartyPanel";
 import InitiativeTracker from "../components/InitiativeTracker";
 import DiceRoller from "../components/DiceRoller";
@@ -74,9 +78,13 @@ import ActionChipsParser from "../components/game/ActionChipsParser";
 import AbilityCheckPanel from "../components/game/AbilityCheckPanel";
 import CharacterQuickSelect from "../components/game/CharacterQuickSelect";
 
-const drawerWidth = 320;
+const drawerWidth = { xs: "100%", sm: 280, md: 300, lg: 320 };
 
 export default function DMChatPage() {
+  const theme = useTheme();
+  const isLargeScreen = useMediaQuery(theme.breakpoints.up("lg")); // 1200px+
+  const isXLScreen = useMediaQuery(theme.breakpoints.up("xl")); // 1536px+
+
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [loadingSessions, setLoadingSessions] = useState(false);
@@ -108,6 +116,7 @@ export default function DMChatPage() {
   const [abilityCheckOpen, setAbilityCheckOpen] = useState(false);
   const [rightPanelView, setRightPanelView] = useState("party"); // 'party', 'initiative', 'combat'
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [journalOpen, setJournalOpen] = useState(false); // Journal drawer state
 
   // Active character selection state
   const [activeCharacters, setActiveCharacters] = useState([]); // Array of character IDs currently acting
@@ -116,6 +125,19 @@ export default function DMChatPage() {
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  // Auto-manage drawer state based on screen size
+  useEffect(() => {
+    if (!isLargeScreen) {
+      setDrawerOpen(false);
+      setRightPanelOpen(false);
+    } else {
+      setDrawerOpen(true);
+      if (activeCampaign) {
+        setRightPanelOpen(true);
+      }
+    }
+  }, [isLargeScreen, activeCampaign]);
 
   // Load available characters when campaign changes
   useEffect(() => {
@@ -195,6 +217,16 @@ export default function DMChatPage() {
       mounted = false;
     };
   }, [provider]);
+
+  // Scroll handler for typing animation progress
+  const handleTypingProgress = useCallback(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, []);
 
   useEffect(() => {
     // scroll to bottom on messages change
@@ -646,12 +678,18 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
 
   return (
     <Box
-      sx={{ display: "flex", height: "100vh", bgcolor: "background.default" }}
+      sx={{
+        display: "flex",
+        height: "100vh",
+        overflow: "hidden",
+        bgcolor: "background.default",
+      }}
     >
       {/* Session Drawer */}
       <Drawer
-        variant="persistent"
+        variant={isLargeScreen ? "persistent" : "temporary"}
         open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
@@ -659,10 +697,16 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
             width: drawerWidth,
             boxSizing: "border-box",
             bgcolor: "background.paper",
+            height: "100vh",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
           },
         }}
       >
-        <Toolbar sx={{ bgcolor: "primary.main", color: "white" }}>
+        <Toolbar
+          sx={{ bgcolor: "primary.main", color: "white", flexShrink: 0 }}
+        >
           <MenuBookIcon sx={{ mr: 1.5 }} />
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             DM Sessions
@@ -678,7 +722,7 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
         </Toolbar>
 
         {/* New Session Card */}
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p: 2, flexShrink: 0 }}>
           <Card
             elevation={2}
             sx={{ border: "1px solid", borderColor: "secondary.main" }}
@@ -777,10 +821,10 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
           </Button>
         </Box>
 
-        <Divider sx={{ borderColor: "secondary.light" }} />
+        <Divider sx={{ borderColor: "secondary.light", flexShrink: 0 }} />
 
         {/* Sessions List */}
-        <Box sx={{ flexGrow: 1, overflow: "auto", px: 2, py: 1 }}>
+        <Box sx={{ flexGrow: 1, overflow: "auto", px: 2, py: 1, minHeight: 0 }}>
           {loadingSessions ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
               <CircularProgress />
@@ -884,8 +928,8 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
         </Box>
 
         {/* Settings Section */}
-        <Divider sx={{ borderColor: "secondary.light" }} />
-        <Box sx={{ p: 2 }}>
+        <Divider sx={{ borderColor: "secondary.light", flexShrink: 0 }} />
+        <Box sx={{ p: 2, flexShrink: 0 }}>
           <ListItemButton
             onClick={() => setSettingsOpen(!settingsOpen)}
             sx={{
@@ -1010,8 +1054,7 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
           flexDirection: "column",
           height: "100vh",
           overflow: "hidden",
-          width: drawerOpen ? `calc(100vw - ${drawerWidth}px)` : "100vw",
-          marginLeft: drawerOpen ? 0 : `-${drawerWidth}px`,
+          position: "relative",
           transition: "all 0.3s ease-in-out",
         }}
       >
@@ -1066,6 +1109,14 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                         fetchSessions();
                       }}
                     />
+                    <Tooltip title="Campaign Journal">
+                      <IconButton
+                        onClick={() => setJournalOpen(true)}
+                        sx={{ color: "white", mr: 1, ml: 1 }}
+                      >
+                        <MenuBookIcon />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip
                       title={
                         rightPanelOpen ? "Hide Party Panel" : "Show Party Panel"
@@ -1073,7 +1124,7 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                     >
                       <IconButton
                         onClick={() => setRightPanelOpen(!rightPanelOpen)}
-                        sx={{ color: "white", mr: 1, ml: 1 }}
+                        sx={{ color: "white", mr: 1 }}
                       >
                         <PersonIcon />
                       </IconButton>
@@ -1097,28 +1148,27 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
           <Alert
             severity="error"
             onClose={() => setError(null)}
-            sx={{ m: 2, mb: 0 }}
+            sx={{ mx: 2, mt: 1, flexShrink: 0 }}
           >
             {error}
           </Alert>
         )}
 
-        {/* Content Area - Direct scrolling without nested containers */}
+        {/* Content Area - No scrolling, fixed height */}
         {selectedSession && (
           <Box
             sx={{
               display: "flex",
               flexGrow: 1,
-              overflow: "auto", // Single scrollbar for entire page
+              overflow: "hidden", // No scroll on outer container
               position: "relative",
-              p: 3,
-              bgcolor: "background.default",
+              minHeight: 0, // Important for flex overflow
             }}
           >
             {messages.length === 0 ? (
               <Box
                 sx={{
-                  height: "100%",
+                  flexGrow: 1,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1137,76 +1187,30 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                   </Typography>
                 </Box>
               </Box>
-            ) : messages.length === 0 ? (
+            ) : (
               <Box
                 sx={{
-                  height: "100%",
+                  flexGrow: 1,
+                  overflow: "auto",
+                  px: { xs: 2, sm: 3, md: 4 }, // Responsive padding
+                  py: 2,
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
+                  flexDirection: "column",
+                  width: "100%", // Use full available width
                 }}
               >
-                <Box>
-                  <ChatIcon
-                    sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
-                  />
-                  <Typography variant="h6" color="text.secondary">
-                    No messages yet
-                  </Typography>
-                  <Typography variant="body2" color="text.disabled">
-                    Start the conversation below
-                  </Typography>
-                </Box>
-              </Box>
-            ) : (
-              <Stack spacing={1.5}>
-                {messages.map((msg) => {
-                  // Create a stateful wrapper for SceneImageDisplay to extract image data
-                  const SceneImageWrapper = ({ onImageData }) => {
-                    const [imageData, setImageData] = useState(null);
-
-                    React.useEffect(() => {
-                      if (imageData && onImageData) {
-                        onImageData(imageData);
-                      }
-                    }, [imageData]);
-
-                    return msg.role === "assistant" &&
-                      msg.id &&
-                      !msg._optimistic ? (
-                      <SceneImageDisplay
-                        sessionId={selectedSession.id}
-                        messageId={msg.id}
-                        messageContent={msg.content}
-                        compact={true}
-                        autoGenerate={sceneImageAutoGenerate}
-                        onImageGenerated={(data) => setImageData(data)}
-                      />
-                    ) : null;
-                  };
-
-                  // Track TTS playing state for this message
-                  const MessageWithTTS = () => {
-                    const [ttsPlaying, setTtsPlaying] = React.useState(false);
-                    
-                    return (
-                      <CinematicMessageCard
-                        key={msg.id}
-                        message={msg}
-                        isUser={msg.role !== "assistant"}
-                        sceneImage={null} // Will be populated by SceneImageDisplay
-                        onImageGenerate={
-                          msg.role === "assistant" && msg.id && !msg._optimistic
-                            ? async () => {
-                                // Trigger image generation via SceneImageDisplay
-                                // This will be handled by the SceneImageDisplay component itself
-                              }
-                            : undefined
-                        }
-                        ttsPlaying={ttsPlaying}
-                        ttsAutoPlay={ttsAutoPlay}
-                      >
+                <Stack spacing={1.5} sx={{ pb: 2 }}>
+                  {messages.map((msg) => (
+                    <CinematicMessageCard
+                      key={msg.id || msg._tempId} // Use stable key
+                      message={msg}
+                      isUser={msg.role !== "assistant"}
+                      sceneImage={null} // Will be populated by SceneImageDisplay
+                      ttsPlaying={false} // Not needed with simplified UX
+                      ttsAutoPlay={ttsAutoPlay}
+                      ttsReady={false} // Not needed with simplified UX
+                      onTypingProgress={handleTypingProgress} // Auto-scroll during typing
+                    >
                       {/* Scene Image Generator - Appears first for visual hierarchy */}
                       {msg.role === "assistant" &&
                         msg.id &&
@@ -1218,6 +1222,7 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                               messageContent={msg.content}
                               compact={true}
                               autoGenerate={sceneImageAutoGenerate}
+                              messageMetadata={msg.metadata}
                             />
                           </Box>
                         )}
@@ -1239,14 +1244,24 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                                 // Open the ability check panel
                                 setAbilityCheckOpen(true);
                               } else {
-                                // Fallback: construct a formatted message
-                                let actionMessage = `I want to ${action}`;
+                                // Construct a formatted message for the action
+                                let actionMessage = action;
+
+                                // If the action doesn't start with "I", make it first-person
+                                if (!action.toLowerCase().startsWith("i ")) {
+                                  actionMessage = `I ${action
+                                    .charAt(0)
+                                    .toLowerCase()}${action.slice(1)}`;
+                                }
+
+                                // Add roll and DC info if present
                                 if (roll) {
                                   actionMessage += `\n\nSuggested roll: ${roll}`;
                                 }
                                 if (dc) {
                                   actionMessage += `\nDC: ${dc}`;
                                 }
+
                                 setMessage(actionMessage);
                               }
                             }}
@@ -1254,87 +1269,96 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                         </Box>
                       )}
 
-                        {/* TTS Audio Player */}
-                        {msg.role === "assistant" &&
-                          ttsEnabled &&
-                          msg.id &&
-                          !msg._optimistic && (
-                            <Box sx={{ mb: 1 }}>
-                              <TTSAudioPlayer
-                                sessionId={selectedSession.id}
-                                messageId={msg.id}
-                                autoPlay={ttsAutoPlay}
-                                compact={true}
-                                defaultVoice={ttsVoice}
-                                defaultFlavorTextOnly={ttsFlavorTextOnly}
-                                onPlayingChange={setTtsPlaying}
-                                sx={{
-                                  bgcolor: "rgba(255,255,255,0.1)",
-                                  borderRadius: 1,
-                                  p: 1,
-                                }}
-                              />
-                            </Box>
-                          )}
-
-                        {/* Source Citations */}
-                        {msg.role === "assistant" &&
-                          msg.metadata &&
-                          msg.metadata.retrievals &&
-                          msg.metadata.retrievals.length > 0 && (
-                            <Box
+                      {/* TTS Audio Player */}
+                      {msg.role === "assistant" &&
+                        ttsEnabled &&
+                        msg.id &&
+                        !msg._optimistic && (
+                          <Box sx={{ mb: 1 }}>
+                            <TTSAudioPlayer
+                              sessionId={selectedSession.id}
+                              messageId={msg.id}
+                              autoPlay={ttsAutoPlay}
+                              compact={true}
+                              defaultVoice={ttsVoice}
+                              defaultFlavorTextOnly={ttsFlavorTextOnly}
                               sx={{
-                                mt: 2,
-                                pt: 2,
-                                borderTop: "1px solid rgba(255,255,255,0.2)",
+                                bgcolor: "rgba(255,255,255,0.1)",
+                                borderRadius: 1,
+                                p: 1,
                               }}
-                            >
-                              <Stack
-                                direction="row"
-                                spacing={0.5}
-                                alignItems="center"
-                                sx={{ mb: 1 }}
-                              >
-                                <MenuBookIcon fontSize="small" />
-                                <Typography
-                                  variant="caption"
-                                  sx={{ fontWeight: 600 }}
-                                >
-                                  Sources Referenced:
-                                </Typography>
-                              </Stack>
-                              <Stack spacing={0.5}>
-                                {msg.metadata.retrievals.map((r, idx) => (
-                                  <Chip
-                                    key={idx}
-                                    label={r.name || r.id || "Unknown"}
-                                    size="small"
-                                    onClick={
-                                      r.source_url
-                                        ? () =>
-                                            window.open(r.source_url, "_blank")
-                                        : undefined
-                                    }
-                                    sx={{
-                                      bgcolor: "rgba(255,255,255,0.15)",
-                                      color: "white",
-                                      "&:hover": {
-                                        bgcolor: "rgba(255,255,255,0.25)",
-                                      },
-                                    }}
-                                  />
-                                ))}
-                              </Stack>
-                            </Box>
-                          )}
-                      </CinematicMessageCard>
-                    );
-                  };
+                            />
+                          </Box>
+                        )}
 
-                  return <MessageWithTTS key={msg.id} />;
-                })}
-                <div ref={bottomRef} />
-              </Stack>
+                      {/* Dialogue Narration Player */}
+                      {msg.role === "assistant" &&
+                        ttsEnabled &&
+                        msg.id &&
+                        !msg._optimistic && (
+                          <DialogueNarrationPlayer
+                            sessionId={selectedSession.id}
+                            messageId={msg.id}
+                            messageContent={msg.content}
+                            enabled={true}
+                          />
+                        )}
+
+                      {/* Source Citations */}
+                      {msg.role === "assistant" &&
+                        msg.metadata &&
+                        msg.metadata.retrievals &&
+                        msg.metadata.retrievals.length > 0 && (
+                          <Box
+                            sx={{
+                              mt: 2,
+                              pt: 2,
+                              borderTop: "1px solid rgba(255,255,255,0.2)",
+                            }}
+                          >
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                              sx={{ mb: 1 }}
+                            >
+                              <MenuBookIcon fontSize="small" />
+                              <Typography
+                                variant="caption"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Sources Referenced:
+                              </Typography>
+                            </Stack>
+                            <Stack spacing={0.5}>
+                              {msg.metadata.retrievals.map((r, idx) => (
+                                <Chip
+                                  key={idx}
+                                  label={r.name || r.id || "Unknown"}
+                                  size="small"
+                                  onClick={
+                                    r.source_url
+                                      ? () =>
+                                          window.open(r.source_url, "_blank")
+                                      : undefined
+                                  }
+                                  sx={{
+                                    bgcolor: "rgba(255,255,255,0.15)",
+                                    color: "white",
+                                    "&:hover": {
+                                      bgcolor: "rgba(255,255,255,0.25)",
+                                    },
+                                  }}
+                                />
+                              ))}
+                            </Stack>
+                          </Box>
+                        )}
+                    </CinematicMessageCard>
+                  ))}
+                  <div ref={bottomRef} />
+                </Stack>
+              </Box>
             )}
 
             {/* Right Column - Party/Combat Panel (Collapsible) */}
@@ -1342,14 +1366,19 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
               <Paper
                 elevation={0}
                 sx={{
-                  width: rightPanelOpen ? "320px" : "0px",
-                  minWidth: rightPanelOpen ? "320px" : "0px",
+                  width: rightPanelOpen
+                    ? { xs: "100%", sm: "280px", md: "300px", lg: "320px" }
+                    : "0px",
+                  minWidth: rightPanelOpen
+                    ? { xs: "100%", sm: "280px", md: "300px", lg: "320px" }
+                    : "0px",
+                  flexShrink: 0,
                   borderLeft: rightPanelOpen ? "1px solid" : "none",
                   borderColor: "divider",
                   bgcolor: "background.paper",
                   display: "flex",
                   flexDirection: "column",
-                  overflow: rightPanelOpen ? "hidden" : "hidden",
+                  overflow: "hidden",
                   transition: "all 0.3s ease-in-out",
                 }}
               >
@@ -1360,6 +1389,7 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                     borderBottom: 1,
                     borderColor: "divider",
                     opacity: rightPanelOpen ? 1 : 0,
+                    flexShrink: 0,
                   }}
                 >
                   <Stack direction="row" spacing={1}>
@@ -1401,7 +1431,7 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                 </Box>
 
                 {/* Panel Content */}
-                <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                <Box sx={{ flexGrow: 1, overflow: "auto", minHeight: 0 }}>
                   {rightPanelView === "party" && (
                     <PartyPanel
                       campaignId={activeCampaign.id}
@@ -1430,7 +1460,14 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
                 </Box>
 
                 {/* Dice Roller Button */}
-                <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderTop: 1,
+                    borderColor: "divider",
+                    flexShrink: 0,
+                  }}
+                >
                   <Stack spacing={1}>
                     <Button
                       fullWidth
@@ -1511,6 +1548,13 @@ You are now running this D&D 5th Edition campaign. Use the adventure template "$
             setMessage(message);
             setAbilityCheckOpen(false);
           }}
+        />
+
+        {/* Campaign Journal */}
+        <CampaignJournal
+          campaignId={activeCampaign?.id}
+          open={journalOpen}
+          onClose={() => setJournalOpen(false)}
         />
 
         {/* Settings Drawer (Offcanvas) */}

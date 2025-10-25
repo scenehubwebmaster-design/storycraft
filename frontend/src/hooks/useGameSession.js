@@ -12,8 +12,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { API_URL } from "../config/api";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = `${API_URL}/api`;
 
 export function useGameSession(initialGameSessionId = null) {
   // Core game state

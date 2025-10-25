@@ -24,6 +24,7 @@ import {
   Visibility as SearchIcon,
   Casino as RollIcon,
 } from "@mui/icons-material";
+import { API_URL } from "../config/api";
 
 /**
  * CombatActionPanel - Quick combat action buttons and damage/healing tracking
@@ -48,7 +49,7 @@ const CombatActionPanel = ({
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/campaigns/${campaignId}/combat/damage`,
+        `${API_URL}/api/campaigns/${campaignId}/combat/damage`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -86,7 +87,7 @@ const CombatActionPanel = ({
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/campaigns/${campaignId}/combat/heal`,
+        `${API_URL}/api/campaigns/${campaignId}/combat/heal`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

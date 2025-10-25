@@ -31,6 +31,7 @@ const SceneImageDisplay = ({
   messageContent,
   compact = false,
   autoGenerate = false,
+  messageMetadata = null, // Pass message.metadata to check for cached images
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -38,14 +39,29 @@ const SceneImageDisplay = ({
   const [prompt, setPrompt] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
+  const [isCached, setIsCached] = useState(false);
 
-  // Auto-generate on mount if enabled
+  // Check for cached scene image on mount
   React.useEffect(() => {
-    if (autoGenerate && !hasAttemptedGeneration && !image && !loading) {
+    if (messageMetadata && messageMetadata.scene_image) {
+      console.log(
+        `[Scene Image] Loading cached image for message ${messageId}`
+      );
+      const cached = messageMetadata.scene_image;
+      setImage(cached.image);
+      setPrompt(cached.prompt);
+      setIsCached(true);
+      setHasAttemptedGeneration(true); // Don't auto-generate if we have cached data
+      return;
+    }
+
+    // Auto-generate on mount if enabled (only once per component lifecycle)
+    if (autoGenerate && !hasAttemptedGeneration && !image) {
       setHasAttemptedGeneration(true);
       generateImage(false);
     }
-  }, [autoGenerate, hasAttemptedGeneration, image, loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount - empty dependency array
 
   const generateImage = async (forceGenerate = false) => {
     setLoading(true);
@@ -65,6 +81,17 @@ const SceneImageDisplay = ({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+
+        // If this is a 400 error during auto-generation, fail silently
+        // (message doesn't contain suitable scene description)
+        if (response.status === 400 && autoGenerate && !forceGenerate) {
+          console.log(
+            `[Scene Image] Message ${messageId} not suitable for scene generation (auto-generate)`
+          );
+          setLoading(false);
+          return; // Exit silently without setting error
+        }
+
         throw new Error(
           errorData.detail || `Failed to generate image: ${response.status}`
         );
@@ -73,6 +100,17 @@ const SceneImageDisplay = ({
       const data = await response.json();
       setImage(data.image);
       setPrompt(data.prompt);
+      setIsCached(data.cached || false);
+
+      if (data.cached) {
+        console.log(
+          `[Scene Image] Loaded cached image for message ${messageId}`
+        );
+      } else {
+        console.log(
+          `[Scene Image] Generated new image for message ${messageId}`
+        );
+      }
     } catch (err) {
       console.error("Scene image generation error:", err);
       setError(err.message || "Failed to generate scene image");
@@ -232,4 +270,5 @@ const SceneImageDisplay = ({
   );
 };
 
-export default SceneImageDisplay;
+// Memoize to prevent re-renders when parent state changes
+export default React.memo(SceneImageDisplay);

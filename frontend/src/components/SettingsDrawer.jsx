@@ -32,6 +32,7 @@ import {
   Image as ImageIcon,
 } from "@mui/icons-material";
 import CampaignManager from "./CampaignManager";
+import { API_URL } from "../config/api";
 
 /**
  * SettingsDrawer - Offcanvas settings panel
@@ -78,7 +79,7 @@ const SettingsDrawer = ({
 
   const loadTtsSettings = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/settings/tts");
+      const response = await fetch(`${API_URL}/api/settings/tts`);
       if (response.ok) {
         const settings = await response.json();
         setTtsProvider(settings.tts_provider || "kitten");
@@ -94,7 +95,7 @@ const SettingsDrawer = ({
 
   const saveTtsSettings = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/settings/", {
+      const response = await fetch(`${API_URL}/api/settings/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -124,12 +125,12 @@ const SettingsDrawer = ({
   const getVoiceOptions = () => {
     if (ttsProvider === "openai") {
       return [
-        { value: "alloy", label: "Alloy (Neutral)" },
-        { value: "echo", label: "Echo (Male)" },
-        { value: "fable", label: "Fable (British Male)" },
-        { value: "onyx", label: "Onyx (Deep Male)" },
-        { value: "nova", label: "Nova (Female)" },
-        { value: "shimmer", label: "Shimmer (Soft Female)" },
+        { value: "alloy", label: "Alloy (Neutral, balanced)" },
+        { value: "echo", label: "Echo (Male, clear)" },
+        { value: "fable", label: "Fable (British, expressive)" },
+        { value: "onyx", label: "Onyx (Deep male, authoritative)" },
+        { value: "nova", label: "Nova (Female, warm)" },
+        { value: "shimmer", label: "Shimmer (Female, bright)" },
       ];
     }
     // KittenTTS voices

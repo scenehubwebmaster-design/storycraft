@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -10,6 +11,7 @@ from .references import do_reference_search
 from .generation import call_llm
 from ..query_analyzer import analyze_query, get_search_summary
 from ..game.dm_chat_handler import DMChatHandler
+from ..journal_auto_logger import extract_journal_entries_from_message
 
 router = APIRouter()
 
@@ -213,6 +215,22 @@ async def generate_game_chat(
     db.commit()
     db.refresh(assistant_msg)
     db.refresh(game_session)
+    
+    # Auto-log journal entries from DM response (non-blocking)
+    if game_session.campaign_id:
+        try:
+            import asyncio
+            # Run auto-logging in background (don't await to avoid blocking response)
+            asyncio.create_task(
+                extract_journal_entries_from_message(
+                    db=db,
+                    message=assistant_msg,
+                    campaign_id=game_session.campaign_id
+                )
+            )
+        except Exception as e:
+            # Log error but don't fail the request
+            print(f"[Auto-Journal] Failed to extract entries: {e}")
     
     return {
         "assistant_message": assistant_msg.to_dict(),
@@ -419,6 +437,14 @@ Your responsibilities:
 
 When describing scenes, use evocative language. When voicing NPCs, give them personality. When combat begins, be clear about initiative, positioning, and options.
 
+**Action Formatting:** To help players respond quickly, format suggested actions using **bold text** for narrative choices (e.g., **Approach the stranger** – Ask about the quest) or markdown tables for skill checks:
+
+| Action | Suggested Roll | DC |
+|--------|----------------|-----|
+| Perception to search the room | d20 + Perception | 12 |
+
+These will automatically become clickable buttons for the player.
+
 """
 
     prompt = f"{system_prompt}{campaign_context}{character_context}Use the following documents as context:\n\n{context}\n\nConversation:\n{conversation}\n\nAssistant:"
@@ -562,6 +588,25 @@ async def generate_tts_for_message(
                 detail=f"Unsupported TTS provider: {tts_provider}. Supported providers: 'openai', 'kitten'"
             )
         
+        # Store TTS metadata in message (not the audio itself, which is too large)
+        # This helps frontend know TTS was previously generated
+        if message.meta is None:
+            message.meta = {}
+        
+        if 'tts_history' not in message.meta:
+            message.meta['tts_history'] = []
+        
+        message.meta['tts_history'].append({
+            "voice": voice,
+            "provider": tts_provider,
+            "model": tts_model,
+            "flavor_text_only": flavor_text_only,
+            "generated_at": datetime.utcnow().isoformat(),
+            "audio_size_bytes": len(audio_data)
+        })
+        db.commit()
+        print(f"[TTS] Saved generation metadata to message {message_id}")
+        
         # Return as streaming audio
         return StreamingResponse(
             iter([audio_data]),
@@ -632,6 +677,21 @@ async def generate_scene_image_for_message(
             detail="Scene images only available for DM responses"
         )
     
+    # Check for cached scene image in message metadata (unless force_generate)
+    if not force_generate and message.meta and 'scene_image' in message.meta:
+        cached_data = message.meta['scene_image']
+        print(f"[Scene Image] Returning cached image for message {message_id}")
+        return {
+            "image": cached_data.get('image'),
+            "prompt": cached_data.get('prompt'),
+            "negative_prompt": cached_data.get('negative_prompt'),
+            "generation_info": {},
+            "message_id": message_id,
+            "session_id": session_id,
+            "cached": True,  # Indicate this is from cache
+            "generated_at": cached_data.get('generated_at')
+        }
+    
     try:
         from ..scene_image_utils import (
             extract_scene_prompt,
@@ -682,13 +742,29 @@ async def generate_scene_image_for_message(
                 detail="Stable Diffusion did not return an image"
             )
         
+        # Cache the scene image in message metadata for persistence
+        if message.meta is None:
+            message.meta = {}
+        
+        message.meta['scene_image'] = {
+            "image": image_data,
+            "prompt": base_prompt,
+            "negative_prompt": negative_prompt,
+            "generated_at": datetime.utcnow().isoformat(),
+            "force_generate": force_generate,
+            "location_hint": location_hint
+        }
+        db.commit()
+        print(f"[Scene Image] Cached image in message {message_id} metadata")
+        
         return {
             "image": image_data,
             "prompt": base_prompt,
             "negative_prompt": negative_prompt,
             "generation_info": result.get('info', {}),
             "message_id": message_id,
-            "session_id": session_id
+            "session_id": session_id,
+            "cached": False  # Freshly generated
         }
         
     except ImportError as e:
@@ -708,4 +784,70 @@ async def generate_scene_image_for_message(
         raise HTTPException(
             status_code=500,
             detail=f"Scene image generation failed: {str(e)}"
+        )
+
+
+# ============================================================================
+# DIALOGUE TTS ENDPOINT - For sequential dialogue narration
+# ============================================================================
+
+class DialogueTTSRequest(BaseModel):
+    text: str
+    voice: str = "leah"  # Default female voice
+
+
+@router.post("/tts/dialogue")
+async def generate_dialogue_tts(
+    request: DialogueTTSRequest,
+    db: Session = Depends(get_db)
+):
+    """Generate TTS for a single dialogue snippet.
+    
+    Simplified endpoint for dialogue narration - no message association needed.
+    Always uses KittenTTS for consistent voice quality across dialogue.
+    
+    Args:
+        text: Dialogue text to narrate
+        voice: KittenTTS voice (tara, leah, jess, mia, leo, dan, zac, zoe)
+    
+    Returns:
+        StreamingResponse: WAV audio file
+    """
+    try:
+        from ..tts_service import get_tts_service
+        
+        tts = get_tts_service()
+        
+        # Generate speech audio with KittenTTS
+        # Use the chunking strategy to handle any length dialogue
+        audio_data = tts.generate_speech(
+            text=request.text,
+            voice=request.voice,
+            add_dm_personality=False,  # Dialogue is already in character
+            flavor_text_only=False  # Use full text as provided
+        )
+        
+        print(f"[Dialogue TTS] Generated {len(audio_data)} bytes for voice '{request.voice}'")
+        
+        # Return as streaming audio
+        return StreamingResponse(
+            iter([audio_data]),
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": f"inline; filename=dialogue_{request.voice}.wav"
+            }
+        )
+        
+    except ImportError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"TTS service not available: {str(e)}"
+        )
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Dialogue TTS generation failed: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Dialogue TTS generation failed: {str(e)}"
         )

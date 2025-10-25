@@ -22,13 +22,14 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ReactMarkdown from "react-markdown";
 
 // D&D Emblem URL
-const DND_EMBLEM_URL = "https://logos-world.net/wp-content/uploads/2021/12/DnD-Emblem.png";
+const DND_EMBLEM_URL =
+  "https://logos-world.net/wp-content/uploads/2021/12/DnD-Emblem.png";
 
 /**
  * Messenger-style Message Card
  * Features: Preview lines with expansion, hero images, ChatGPT-style typing animation
  */
-export default function CinematicMessageCard({
+function CinematicMessageCard({
   message,
   isUser = false,
   sceneImage = null,
@@ -36,62 +37,95 @@ export default function CinematicMessageCard({
   children, // For TTS, action chips, etc.
   ttsPlaying = false, // Whether TTS is currently playing
   ttsAutoPlay = false, // Whether TTS auto-play is enabled
+  onTypingProgress, // Callback fired periodically during typing for auto-scroll
 }) {
-  const [textExpanded, setTextExpanded] = useState(false);
+  const [textExpanded, setTextExpanded] = useState(true); // Always expanded for better UX
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
+  const charCountRef = useRef(0); // Track chars for throttled scroll callbacks
+  const hasAnimatedRef = useRef(false); // Track if this message has already animated
+  const messageCardRef = useRef(null); // Ref to message card for scrolling
+  const textContentRef = useRef(null); // Ref to scrollable text content area
 
   // Extract first 1-2 lines for preview (up to 2 newlines or 120 chars)
   const getPreviewLines = (content) => {
     const plainText = content.replace(/[#*_`\[\]]/g, "").trim();
-    const lines = plainText.split("\n").filter(line => line.trim());
+    const lines = plainText.split("\n").filter((line) => line.trim());
     const preview = lines.slice(0, 2).join(" ");
     return preview.length > 120 ? preview.substring(0, 120) + "..." : preview;
   };
 
-  // ChatGPT-style typing animation for DM messages
+  // Simplified: Show text immediately with typing animation (no TTS sync complexity)
   useEffect(() => {
     if (!isUser && message.content && !message._optimistic) {
-      // Start typing animation
+      // Check if message is "new" (just generated) or "existing" (from database reload)
+      // Messages with IDs but that haven't animated yet are existing messages
+      const isExistingMessage = message.id && !hasAnimatedRef.current;
+
+      if (isExistingMessage) {
+        // Skip animation for existing messages (on page reload/revisit)
+        setDisplayedText(message.content);
+        setIsTyping(false);
+        hasAnimatedRef.current = true;
+        return;
+      }
+
+      // Mark that we're about to animate this message
+      hasAnimatedRef.current = true;
+
+      // Start typing animation immediately when NEW message arrives
       setIsTyping(true);
       setDisplayedText("");
-      
+      charCountRef.current = 0;
+
       const text = message.content;
       let currentIndex = 0;
-      
+
       // Typing speed: faster for normal text, slower for punctuation
       const typeNextChar = () => {
         if (currentIndex < text.length) {
           setDisplayedText(text.substring(0, currentIndex + 1));
           currentIndex++;
-          
-          // Variable speed: slower after punctuation
+          charCountRef.current++;
+
+          // Trigger scroll callback every 10 characters or on newlines
           const char = text[currentIndex - 1];
-          const delay = ['.', '!', '?', '\n'].includes(char) ? 40 : 15;
-          
+          if (charCountRef.current % 10 === 0 || char === "\n") {
+            // Scroll the INNER text content area, not the outer message card
+            // This keeps the scroll within the message's expanded text box
+            if (textContentRef.current) {
+              // Scroll to bottom of the text content area
+              textContentRef.current.scrollTop =
+                textContentRef.current.scrollHeight;
+            }
+            // Don't call onTypingProgress - that scrolls the outer container
+            // We only want to scroll within the message itself
+          }
+
+          // Variable speed: slower after punctuation
+          const delay = [".", "!", "?", "\n"].includes(char) ? 40 : 15;
+
           typingTimeoutRef.current = setTimeout(typeNextChar, delay);
         } else {
           setIsTyping(false);
+          // Final scroll at end of typing
+          if (onTypingProgress) {
+            onTypingProgress();
+          }
         }
       };
-      
-      // If TTS auto-play is enabled, sync with TTS
-      if (ttsAutoPlay && ttsPlaying) {
-        // Slower typing to sync with voice
-        typeNextChar();
-      } else {
-        // Fast typing for visual effect
-        typeNextChar();
-      }
-      
+
+      // Start typing immediately for better UX
+      typeNextChar();
+
       return () => {
         if (typingTimeoutRef.current) {
           clearTimeout(typingTimeoutRef.current);
         }
       };
     }
-  }, [message.content, message._optimistic, isUser, ttsAutoPlay, ttsPlaying]);
+  }, [message.content, message._optimistic, isUser, onTypingProgress]);
 
   // User messages - messenger bubble on right
   if (isUser) {
@@ -213,6 +247,7 @@ export default function CinematicMessageCard({
   return (
     <Fade in timeout={500}>
       <Box
+        ref={messageCardRef}
         sx={{
           display: "flex",
           justifyContent: "flex-start",
@@ -328,9 +363,11 @@ export default function CinematicMessageCard({
                     WebkitBoxOrient: "vertical",
                   }}
                 >
-                  {textExpanded ? getPreviewLines(message.content) : (
-                    isTyping ? displayedText : getPreviewLines(message.content)
-                  )}
+                  {textExpanded
+                    ? getPreviewLines(message.content)
+                    : isTyping
+                    ? displayedText
+                    : getPreviewLines(message.content)}
                 </Typography>
               </Box>
 
@@ -412,6 +449,7 @@ export default function CinematicMessageCard({
           {/* Expanded Text Content - Shows full message with typing animation */}
           <Collapse in={textExpanded}>
             <Box
+              ref={textContentRef}
               sx={{
                 p: 2,
                 pt: 1,
@@ -523,3 +561,6 @@ export default function CinematicMessageCard({
     </Fade>
   );
 }
+
+// Memoize to prevent unnecessary re-renders when parent state changes
+export default React.memo(CinematicMessageCard);

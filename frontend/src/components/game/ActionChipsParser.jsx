@@ -55,6 +55,55 @@ const getIconForAction = (actionText) => {
   return null;
 };
 
+const parseBoldActions = (content) => {
+  // Match bold text patterns: **Action Text** or **Action Text** – Description
+  // Pattern captures: **Action** or **Action** – additional context
+  const boldActionRegex = /\*\*([^*]+)\*\*\s*[–—-]?\s*([^\n.]*)/g;
+  const matches = [...content.matchAll(boldActionRegex)];
+
+  const actions = [];
+  const seenActions = new Set(); // Prevent duplicates
+
+  matches.forEach((match) => {
+    const action = match[1].trim();
+    const description = match[2].trim();
+
+    // Skip if it's just a heading or title (all caps, or very short)
+    if (action.length < 5 || action === action.toUpperCase()) {
+      return;
+    }
+
+    // Skip if we've already added this action
+    if (seenActions.has(action)) {
+      return;
+    }
+
+    // Skip common non-action bold text patterns
+    const skipPatterns = [
+      /^(AC|HP|Speed|Initiative|STR|DEX|CON|INT|WIS|CHA|DC|CR):/i,
+      /^(Armor Class|Hit Points|Challenge Rating):/i,
+      /^Table /i,
+      /^Chapter /i,
+      /^\d+\./, // Numbered items
+    ];
+
+    if (skipPatterns.some((pattern) => pattern.test(action))) {
+      return;
+    }
+
+    seenActions.add(action);
+
+    actions.push({
+      action,
+      description: description || "",
+      label: action.length > 50 ? action.substring(0, 50) + "..." : action,
+      type: "bold",
+    });
+  });
+
+  return actions.length > 0 ? actions : null;
+};
+
 const parseActionTable = (content) => {
   // Match markdown tables for Quick Reference or Suggested Actions
   const tableRegex = /\|\s*Action\s*\|[^\n]*\n\|[-:\s|]+\n((?:\|[^\n]*\n)+)/gi;
@@ -91,6 +140,7 @@ const parseActionTable = (content) => {
             dc,
             label:
               action.length > 40 ? action.substring(0, 40) + "..." : action,
+            type: "table",
           });
         }
       }
@@ -101,9 +151,14 @@ const parseActionTable = (content) => {
 };
 
 export default function ActionChipsParser({ content, onActionClick }) {
-  const actions = parseActionTable(content);
+  // Parse both table-based and bold text actions
+  const tableActions = parseActionTable(content);
+  const boldActions = parseBoldActions(content);
 
-  if (!actions || actions.length === 0) {
+  // Combine actions, prioritizing table actions
+  const allActions = [...(tableActions || []), ...(boldActions || [])];
+
+  if (allActions.length === 0) {
     return null;
   }
 
@@ -130,15 +185,20 @@ export default function ActionChipsParser({ content, onActionClick }) {
         }}
       >
         <MenuBookIcon fontSize="small" />
-        Quick Reference Actions
+        {tableActions && tableActions.length > 0
+          ? "Quick Reference Actions"
+          : "Possible Actions"}
       </Typography>
 
       <Stack spacing={1}>
-        {actions.map((item, index) => {
+        {allActions.map((item, index) => {
           const icon = getIconForAction(item.action);
           const dcText = item.dc
             ? ` (DC ${item.dc.match(/\d+/)?.[0] || item.dc})`
             : "";
+
+          // Different styling for bold vs table actions
+          const isBoldAction = item.type === "bold";
 
           return (
             <Chip
@@ -156,13 +216,23 @@ export default function ActionChipsParser({ content, onActionClick }) {
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>
                     {item.label}
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "text.secondary", mt: 0.25 }}
-                  >
-                    {item.roll}
-                    {dcText}
-                  </Typography>
+                  {item.roll && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary", mt: 0.25 }}
+                    >
+                      {item.roll}
+                      {dcText}
+                    </Typography>
+                  )}
+                  {isBoldAction && item.description && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary", mt: 0.25 }}
+                    >
+                      {item.description}
+                    </Typography>
+                  )}
                 </Box>
               }
               onClick={() => onActionClick(item.action, item.roll, item.dc)}
@@ -172,8 +242,13 @@ export default function ActionChipsParser({ content, onActionClick }) {
                 py: 1,
                 px: 1.5,
                 justifyContent: "flex-start",
-                bgcolor: "rgba(144, 202, 249, 0.12)",
-                border: "1px solid rgba(144, 202, 249, 0.3)",
+                bgcolor: isBoldAction
+                  ? "rgba(255, 193, 7, 0.12)"
+                  : "rgba(144, 202, 249, 0.12)",
+                border: "1px solid",
+                borderColor: isBoldAction
+                  ? "rgba(255, 193, 7, 0.4)"
+                  : "rgba(144, 202, 249, 0.3)",
                 transition: "all 0.2s ease",
                 "& .MuiChip-label": {
                   width: "100%",
@@ -182,8 +257,10 @@ export default function ActionChipsParser({ content, onActionClick }) {
                   textAlign: "left",
                 },
                 "&:hover": {
-                  bgcolor: "rgba(144, 202, 249, 0.2)",
-                  borderColor: "primary.main",
+                  bgcolor: isBoldAction
+                    ? "rgba(255, 193, 7, 0.25)"
+                    : "rgba(144, 202, 249, 0.2)",
+                  borderColor: isBoldAction ? "warning.main" : "primary.main",
                   transform: "translateY(-1px)",
                   boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
                 },
@@ -207,7 +284,7 @@ export default function ActionChipsParser({ content, onActionClick }) {
           fontStyle: "italic",
         }}
       >
-        Click an action to send it to the DM
+        Click an action to add it to your message
       </Typography>
     </Box>
   );

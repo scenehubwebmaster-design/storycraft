@@ -31,6 +31,7 @@ import {
   PlayArrow as StartIcon,
   Stop as StopIcon,
 } from "@mui/icons-material";
+import { API_URL } from "../config/api";
 
 /**
  * InitiativeTracker - D&D combat initiative order display and management
@@ -55,7 +56,7 @@ const InitiativeTracker = ({
 
       try {
         const response = await fetch(
-          `http://localhost:8000/api/campaigns/${campaignId}/party`
+          `${API_URL}/api/campaigns/${campaignId}/party`
         );
         if (response.ok) {
           const data = await response.json();
@@ -107,22 +108,16 @@ const InitiativeTracker = ({
   const handleStartCombat = async () => {
     try {
       // Start combat mode
-      await fetch(
-        `http://localhost:8000/api/campaigns/${campaignId}/combat/start`,
-        {
-          method: "POST",
-        }
-      );
+      await fetch(`${API_URL}/api/campaigns/${campaignId}/combat/start`, {
+        method: "POST",
+      });
 
       // Send initiative order to server
-      await fetch(
-        `http://localhost:8000/api/campaigns/${campaignId}/combat/initiative`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(initiative),
-        }
-      );
+      await fetch(`${API_URL}/api/campaigns/${campaignId}/combat/initiative`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(initiative),
+      });
 
       setCurrentTurn(0);
       setRoundNumber(1);
@@ -135,12 +130,9 @@ const InitiativeTracker = ({
   // End combat
   const handleEndCombat = async () => {
     try {
-      await fetch(
-        `http://localhost:8000/api/campaigns/${campaignId}/combat/end`,
-        {
-          method: "POST",
-        }
-      );
+      await fetch(`${API_URL}/api/campaigns/${campaignId}/combat/end`, {
+        method: "POST",
+      });
 
       setCurrentTurn(0);
       setRoundNumber(1);

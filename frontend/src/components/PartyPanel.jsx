@@ -22,6 +22,7 @@ import {
   Close as CloseIcon,
   Warning as WarningIcon,
 } from "@mui/icons-material";
+import { API_URL } from "../config/api";
 
 /**
  * PartyPanel - Display party members with real-time HP, resources, and status
@@ -38,7 +39,7 @@ const PartyPanel = ({ campaignId, onCharacterClick, onRemoveCharacter }) => {
 
       try {
         const response = await fetch(
-          `http://localhost:8000/api/campaigns/${campaignId}/party`
+          `${API_URL}/api/campaigns/${campaignId}/party`
         );
         if (response.ok) {
           const data = await response.json();

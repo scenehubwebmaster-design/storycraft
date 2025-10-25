@@ -36,8 +36,9 @@ import {
   CheckCircle as ReadyIcon,
 } from "@mui/icons-material";
 import axios from "axios";
+import { API_URL } from "../../config/api";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = `${API_URL}/api`;
 
 function TTSAudioPlayer({
   sessionId,
@@ -47,6 +48,8 @@ function TTSAudioPlayer({
   compact = false,
   defaultVoice = "tara",
   defaultFlavorTextOnly = false,
+  onPlayingChange, // Callback when playing state changes
+  onReadyChange, // Callback when audio is ready to play
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,8 +63,10 @@ function TTSAudioPlayer({
   const [error, setError] = useState(null);
 
   const audioRef = useRef(null);
+  const abortControllerRef = useRef(null); // For cancelling TTS generation
 
-  const voices = [
+  // Voice options for both providers
+  const kittenVoices = [
     { value: "tara", label: "Tara (Female, Warm)" },
     { value: "leah", label: "Leah (Female, Clear)" },
     { value: "jess", label: "Jess (Female, Bright)" },
@@ -71,6 +76,19 @@ function TTSAudioPlayer({
     { value: "zac", label: "Zac (Male, Strong)" },
     { value: "zoe", label: "Zoe (Female, Energetic)" },
   ];
+
+  const openaiVoices = [
+    { value: "alloy", label: "Alloy (Neutral, balanced)" },
+    { value: "echo", label: "Echo (Male, clear)" },
+    { value: "fable", label: "Fable (British, expressive)" },
+    { value: "onyx", label: "Onyx (Deep male, authoritative)" },
+    { value: "nova", label: "Nova (Female, warm)" },
+    { value: "shimmer", label: "Shimmer (Female, bright)" },
+  ];
+
+  // Determine which voices to use based on selected voice
+  const isOpenAIVoice = openaiVoices.some((v) => v.value === selectedVoice);
+  const voices = isOpenAIVoice ? openaiVoices : kittenVoices;
 
   // Fetch and setup audio
   useEffect(() => {
@@ -116,18 +134,51 @@ function TTSAudioPlayer({
       setProgress(0);
     };
 
+    const handleCanPlayThrough = () => {
+      // Audio is ready to play
+      if (onReadyChange) {
+        onReadyChange(true);
+      }
+    };
+
     audio.addEventListener("timeupdate", updateProgress);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("canplaythrough", handleCanPlayThrough);
 
     return () => {
       audio.removeEventListener("timeupdate", updateProgress);
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("canplaythrough", handleCanPlayThrough);
     };
-  }, [audioUrl]);
+  }, [audioUrl, onReadyChange]);
+
+  // Cleanup: cancel any ongoing TTS generation on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Notify parent when playing state changes
+  useEffect(() => {
+    if (onPlayingChange) {
+      onPlayingChange(isPlaying);
+    }
+  }, [isPlaying, onPlayingChange]);
 
   const fetchAudio = async (voice = selectedVoice) => {
+    // Cancel any existing TTS generation
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+
     setIsLoading(true);
     setError(null);
 
@@ -137,6 +188,7 @@ function TTSAudioPlayer({
         {},
         {
           responseType: "blob",
+          signal: abortControllerRef.current.signal, // Add cancellation support
         }
       );
 
@@ -152,6 +204,12 @@ function TTSAudioPlayer({
         }, 100);
       }
     } catch (err) {
+      // Ignore abort errors (user cancelled)
+      if (err.name === "CanceledError" || err.code === "ERR_CANCELED") {
+        console.log("TTS generation cancelled by user");
+        return;
+      }
+
       console.error("Failed to fetch TTS audio:", err);
 
       // Check if it's a dependency error
@@ -167,6 +225,7 @@ function TTSAudioPlayer({
       }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -188,11 +247,20 @@ function TTSAudioPlayer({
   };
 
   const handleStop = () => {
-    if (!audioRef.current) return;
+    // Cancel any ongoing TTS generation
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
 
-    audioRef.current.pause();
-    audioRef.current.currentTime = 0;
+    // Stop audio playback
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
     setIsPlaying(false);
+    setIsLoading(false);
     setProgress(0);
   };
 
@@ -583,4 +651,5 @@ function TTSAudioPlayer({
   );
 }
 
-export default TTSAudioPlayer;
+// Memoize to prevent unnecessary re-renders
+export default React.memo(TTSAudioPlayer);

@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import os
 import sys
 try:
     # Preferred (when package is importable)
     from .database import engine, Base
-    from .routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns, checkpoints, adventures, openai_audio, user_settings
+    from .routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns, checkpoints, adventures, openai_audio, user_settings, journal
 except Exception:
     # Fallback to absolute imports so running `python backend/main.py` or
     # starting uvicorn from other working directories still works. Ensure the
@@ -14,7 +15,7 @@ except Exception:
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
     from backend.database import engine, Base
-    from backend.routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns, checkpoints, adventures, openai_audio, user_settings
+    from backend.routers import characters, stories, worlds, llm, generation, settings, locations, references, monsters, chat, game, combat, campaigns, checkpoints, adventures, openai_audio, user_settings, journal
 import logging
 
 # Set up logging
@@ -89,6 +90,13 @@ app.include_router(checkpoints.router, tags=["checkpoints"])  # /api/checkpoints
 app.include_router(adventures.router, tags=["adventures"])  # /api/adventures/ - Adventure templates for campaign creation
 app.include_router(openai_audio.router, tags=["audio"])  # /api/audio/ - OpenAI TTS and Whisper services
 app.include_router(user_settings.router, tags=["user-settings"])  # /api/settings/ - User preferences and settings
+app.include_router(journal.router, prefix="/api", tags=["journal"])  # /api/campaigns/{id}/journal/ - Campaign journal and NPC tracking
+
+# Mount static files for NPC portraits
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    logger.info(f"Mounted static files from: {static_dir}")
 
 
 @app.on_event("startup")

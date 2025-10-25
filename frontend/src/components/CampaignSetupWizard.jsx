@@ -37,6 +37,7 @@ import {
   Settings as SettingsIcon,
   Check as CheckIcon,
 } from "@mui/icons-material";
+import { API_URL } from "../config/api";
 
 /**
  * CampaignSetupWizard - 4-step wizard to create a D&D campaign
@@ -303,9 +304,7 @@ const CampaignSetupWizard = ({
   const loadPremadeCampaigns = async () => {
     setLoadingPremade(true);
     try {
-      const response = await fetch(
-        "http://localhost:8000/api/adventures/templates"
-      );
+      const response = await fetch(`${API_URL}/api/adventures/templates`);
       if (response.ok) {
         const data = await response.json();
 
@@ -333,7 +332,7 @@ const CampaignSetupWizard = ({
     setLoadingTemplates(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/api/adventures/templates?campaign_type=${campaignType}`
+        `${API_URL}/api/adventures/templates?campaign_type=${campaignType}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -351,7 +350,7 @@ const CampaignSetupWizard = ({
     setLoadingCharacters(true);
     try {
       const response = await fetch(
-        "http://localhost:8000/api/characters/?exclude_portraits=false"
+        `${API_URL}/api/characters/?exclude_portraits=false`
       );
       if (response.ok) {
         const data = await response.json();
@@ -464,22 +463,19 @@ const CampaignSetupWizard = ({
         : `[AI_DM_METADATA: ${JSON.stringify(templateMetadata)}]`;
 
       // Create campaign
-      const campaignResponse = await fetch(
-        "http://localhost:8000/api/campaigns/",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title,
-            description: enhancedDescription,
-            setting,
-            difficulty,
-            campaign_type: campaignType,
-            starting_level: startingLevel,
-            chat_session_id: chatSessionId,
-          }),
-        }
-      );
+      const campaignResponse = await fetch(`${API_URL}/api/campaigns/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          description: enhancedDescription,
+          setting,
+          difficulty,
+          campaign_type: campaignType,
+          starting_level: startingLevel,
+          chat_session_id: chatSessionId,
+        }),
+      });
 
       if (!campaignResponse.ok) {
         throw new Error("Failed to create campaign");
@@ -489,14 +485,11 @@ const CampaignSetupWizard = ({
 
       // Add characters to party
       for (const characterId of selectedCharacterIds) {
-        await fetch(
-          `http://localhost:8000/api/campaigns/${campaign.id}/party/add`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ character_id: characterId }),
-          }
-        );
+        await fetch(`${API_URL}/api/campaigns/${campaign.id}/party/add`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ character_id: characterId }),
+        });
       }
 
       // Success!

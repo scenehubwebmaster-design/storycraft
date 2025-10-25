@@ -123,6 +123,8 @@ class TTSService:
         """
         Generate complete speech audio from text.
         
+        For long texts, automatically chunks into segments and concatenates audio.
+        
         Returns complete WAV file as bytes.
         
         Args:
@@ -141,18 +143,49 @@ class TTSService:
             text = self._extract_flavor_text(text)
         
         # Clean and preprocess text for TTS
-        text = self._preprocess_text(text)
+        text = self._preprocess_text(text, chunk_for_length=False)
         
         # Map friendly voice name to Kitten TTS voice ID
         kitten_voice = self.VOICE_MAP.get(voice, self.VOICE_MAP["tara"])
         
-        print(f"Generating speech (voice={voice} -> {kitten_voice}, length={len(text)} chars)")
+        # Check if text needs chunking (KittenTTS safe limit: ~400 chars per chunk)
+        chunk_size = 400
+        if len(text) <= chunk_size:
+            # Single chunk - generate normally
+            return self._generate_single_chunk(text, kitten_voice)
+        
+        # Multiple chunks needed - split and concatenate
+        print(f"[TTS] Text length {len(text)} exceeds safe limit, chunking into segments")
+        chunks = self._split_into_chunks(text, chunk_size)
+        print(f"[TTS] Split into {len(chunks)} chunks")
+        
+        # Generate audio for each chunk
+        audio_arrays = []
+        for i, chunk in enumerate(chunks):
+            print(f"[TTS] Generating chunk {i+1}/{len(chunks)} (length={len(chunk)} chars)")
+            audio_array = self._generate_audio_array(chunk, kitten_voice)
+            audio_arrays.append(audio_array)
+        
+        # Concatenate all audio arrays
+        import numpy as np
+        combined_audio = np.concatenate(audio_arrays)
+        
+        # Convert to WAV format
+        wav_buffer = io.BytesIO()
+        sf.write(wav_buffer, combined_audio, 24000, format='WAV', subtype='PCM_16')
+        wav_buffer.seek(0)
+        wav_data = wav_buffer.read()
+        
+        print(f"[TTS] Generated complete audio from {len(chunks)} chunks, total size: {len(wav_data)} bytes")
+        return wav_data
+    
+    def _generate_single_chunk(self, text: str, kitten_voice: str) -> bytes:
+        """Generate audio for a single text chunk."""
+        print(f"Generating speech (voice={kitten_voice}, length={len(text)} chars)")
         start_time = time.monotonic()
         
         try:
-            # Generate audio using Kitten TTS
-            # Returns numpy array with sample rate 24000
-            audio_array = self.model.generate(text, voice=kitten_voice)
+            audio_array = self._generate_audio_array(text, kitten_voice)
             
             # Convert to WAV format using soundfile
             wav_buffer = io.BytesIO()
@@ -162,15 +195,74 @@ class TTSService:
             
             end_time = time.monotonic()
             generation_time = end_time - start_time
-            print(f"Speech generation completed in {generation_time:.2f}s")
+            print(f"Speech generation completed in {generation_time:.2f}s, audio size: {len(wav_data)} bytes")
             
             return wav_data
             
         except Exception as e:
-            print(f"Speech generation failed: {e}")
+            print(f"[ERROR] Speech generation failed for text (length={len(text)}): {e}")
+            # Safe logging for Windows console
+            safe_preview = text[:200].encode('ascii', errors='replace').decode('ascii')
+            print(f"[ERROR] Text content: {safe_preview}...")
+            import traceback
+            traceback.print_exc()
+            raise RuntimeError(f"TTS generation failed: {str(e)}. Text may be too long or contain invalid characters.")
+    
+    def _generate_audio_array(self, text: str, kitten_voice: str):
+        """Generate audio array from text using KittenTTS model."""
+        try:
+            # Safe logging for Windows console (cp1252 encoding)
+            safe_preview = text[:100].encode('ascii', errors='replace').decode('ascii')
+            print(f"[TTS] Calling KittenTTS model with text length: {len(text)} chars")
+            print(f"[TTS] Text preview: {safe_preview}...")
+            
+            audio_array = self.model.generate(text, voice=kitten_voice)
+            return audio_array
+            
+        except Exception as e:
+            print(f"[ERROR] KittenTTS model failed: {e}")
             raise
     
-    def _preprocess_text(self, text: str) -> str:
+    def _split_into_chunks(self, text: str, chunk_size: int) -> list:
+        """
+        Split text into chunks at sentence boundaries.
+        
+        Tries to keep chunks under chunk_size while breaking at sentence ends.
+        """
+        sentences = []
+        
+        # Split on sentence boundaries
+        import re
+        sentence_pattern = r'([.!?]+\s+)'
+        parts = re.split(sentence_pattern, text)
+        
+        # Recombine sentences with their punctuation
+        for i in range(0, len(parts)-1, 2):
+            sentence = parts[i] + (parts[i+1] if i+1 < len(parts) else '')
+            sentences.append(sentence)
+        
+        # Add any remaining text
+        if len(parts) % 2 == 1:
+            sentences.append(parts[-1])
+        
+        # Group sentences into chunks
+        chunks = []
+        current_chunk = ""
+        
+        for sentence in sentences:
+            if len(current_chunk) + len(sentence) <= chunk_size:
+                current_chunk += sentence
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                current_chunk = sentence
+        
+        if current_chunk:
+            chunks.append(current_chunk.strip())
+        
+        return chunks
+    
+    def _preprocess_text(self, text: str, chunk_for_length: bool = True) -> str:
         """
         Preprocess text for TTS generation.
         
@@ -178,10 +270,11 @@ class TTSService:
         - Remove extra whitespace
         - Remove special markdown/control characters
         - Ensure text isn't empty
-        - Limit length to avoid ONNX errors (Kitten TTS max: ~400 chars)
+        - Optionally limit length (when not using chunking)
         
         Args:
             text: Raw text input
+            chunk_for_length: If False, skip length truncation (caller will handle chunking)
             
         Returns:
             str: Cleaned text ready for TTS
@@ -199,10 +292,37 @@ class TTSService:
         # Remove code blocks
         text = text.replace('```', '').replace('`', '')
         
-        # Limit length for ONNX model stability
-        # Increased from 400 to 2000 characters to support full DM responses
-        # Kitten TTS can handle longer texts, but very long ones may cause issues
-        max_length = 2000  # characters
+        # Comprehensive unicode normalization for TTS/ONNX compatibility
+        # Replace all types of dashes with regular hyphen
+        text = text.replace('—', '-')  # Em dash \u2014
+        text = text.replace('–', '-')  # En dash \u2013
+        text = text.replace('\u2011', '-')  # Non-breaking hyphen
+        text = text.replace('\u2010', '-')  # Hyphen
+        
+        # Replace smart quotes with regular quotes
+        text = text.replace(''', "'").replace(''', "'")  # Single smart quotes \u2018 \u2019
+        text = text.replace('"', '"').replace('"', '"')  # Double smart quotes \u201c \u201d
+        text = text.replace('‚', ',')  # Single low quote \u201a
+        text = text.replace('„', '"')  # Double low quote \u201e
+        
+        # Replace ellipsis and other punctuation
+        text = text.replace('…', '...')  # Ellipsis \u2026
+        text = text.replace('•', '*')  # Bullet point \u2022
+        
+        # Remove or replace other problematic unicode characters
+        text = text.replace('\u00a0', ' ')  # Non-breaking space
+        text = text.replace('\u200b', '')  # Zero-width space
+        text = text.replace('\u200c', '')  # Zero-width non-joiner
+        text = text.replace('\u200d', '')  # Zero-width joiner
+        text = text.replace('\ufeff', '')  # Zero-width no-break space (BOM)
+        
+        # Only truncate if not using chunking strategy
+        if not chunk_for_length:
+            return text.strip()
+        
+        # Legacy truncation for backward compatibility
+        max_length = 500
+        
         if len(text) > max_length:
             # Try to break at sentence boundary
             truncated = text[:max_length]
@@ -211,15 +331,17 @@ class TTSService:
             last_exclaim = truncated.rfind('!')
             last_sentence = max(last_period, last_question, last_exclaim)
             
-            if last_sentence > max_length * 0.6:  # If we found a sentence break
+            if last_sentence > max_length * 0.5:
                 text = truncated[:last_sentence + 1]
             else:
                 # No good break point, truncate at word boundary
                 last_space = truncated.rfind(' ')
-                if last_space > max_length * 0.8:
+                if last_space > max_length * 0.7:
                     text = truncated[:last_space] + '...'
                 else:
                     text = truncated + '...'
+            
+            print(f"[TTS] Text truncated to {len(text)} chars (legacy mode)")
         
         return text.strip()
     

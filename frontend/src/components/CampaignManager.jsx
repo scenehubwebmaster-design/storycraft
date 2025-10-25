@@ -40,6 +40,7 @@ import {
   RecordVoiceOver as TTSIcon,
 } from "@mui/icons-material";
 import CheckpointManager from "./CheckpointManager";
+import { API_URL } from "../config/api";
 
 /**
  * CampaignManager - Display and manage active campaign
@@ -101,7 +102,7 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
 
   const loadUserSettings = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/settings/");
+      const response = await fetch(`${API_URL}/api/settings/`);
       if (response.ok) {
         const settings = await response.json();
         setTtsProvider(settings.tts_provider || "kitten");
@@ -121,9 +122,7 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
     if (!campaignId) return;
 
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/campaigns/${campaignId}`
-      );
+      const response = await fetch(`${API_URL}/api/campaigns/${campaignId}`);
       if (response.ok) {
         const data = await response.json();
         setCampaign(data);
@@ -172,17 +171,14 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
       }
 
       // Update campaign
-      const response = await fetch(
-        `http://localhost:8000/api/campaigns/${campaignId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            session_notes: updatedNotes,
-            current_level: newLevel,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/api/campaigns/${campaignId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_notes: updatedNotes,
+          current_level: newLevel,
+        }),
+      });
 
       if (response.ok) {
         const updated = await response.json();
@@ -291,7 +287,7 @@ const CampaignManager = ({ campaignId, onCampaignUpdate }) => {
   // Save TTS settings to database
   const saveTtsSettings = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/settings/", {
+      const response = await fetch(`${API_URL}/api/settings/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
