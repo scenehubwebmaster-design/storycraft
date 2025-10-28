@@ -288,8 +288,10 @@ async def generate_game_chat(
 
                 async def _generate_and_cache_image_game(msg_id: int, prompt_text: str, descriptors_text: str | None):
                     try:
+                        print(f"[Background Scene Image - game_chat] Starting generation for message {msg_id}")
                         from ..image_generation import generate_location_image
 
+                        print(f"[Background Scene Image - game_chat] Calling generate_location_image with prompt: {prompt_text[:100] if prompt_text else 'NO PROMPT'}...")
                         gen = await generate_location_image(
                             prompt=prompt_text or (descriptors_text or ""),
                             provider="stablediffusion",
@@ -299,12 +301,20 @@ async def generate_game_chat(
                             use_llm=False,
                         )
 
+                        print(f"[Background Scene Image - game_chat] Generation completed. Result keys: {list(gen.keys())}")
                         image_b64 = gen.get("image_base64") or gen.get("image")
+                        
+                        if not image_b64:
+                            print(f"[Background Scene Image - game_chat] ERROR: No image data in result. Full result: {gen}")
+                            return
+                        
+                        print(f"[Background Scene Image - game_chat] Image data extracted, length: {len(image_b64)} bytes")
 
                         db2 = SessionLocal()
                         try:
                             msg = db2.query(models.ChatMessage).filter(models.ChatMessage.id == msg_id).first()
                             if not msg:
+                                print(f"[Background Scene Image - game_chat] ERROR: Message {msg_id} not found in database")
                                 return
                             if not msg.meta:
                                 msg.meta = {}
@@ -321,29 +331,38 @@ async def generate_game_chat(
                             msg.meta["scene_image"] = si
                             db2.add(msg)
                             db2.commit()
+                            
+                            print("[Background Scene Image - game_chat] Database commit successful")
+                            
                             # Ensure the ORM object is refreshed so subsequent reads see the update
                             try:
                                 db2.refresh(msg)
-                            except Exception:
-                                pass
+                                print("[Background Scene Image - game_chat] Message refreshed from database")
+                            except Exception as refresh_error:
+                                print(f"[Background Scene Image - game_chat] WARNING: Refresh failed: {refresh_error}")
+                                
                             # Log debug information about the cached image
-                            try:
-                                img_len = len(image_b64) if image_b64 else 0
-                                print(f"[Background Scene Image - game_chat] Cached image for message {msg.id}, bytes={img_len}")
-                            except Exception:
-                                pass
+                            img_len = len(image_b64) if image_b64 else 0
+                            print(f"[Background Scene Image - game_chat] SUCCESS: Cached image for message {msg.id}, bytes={img_len}")
+                            
+                            # Publish SSE event
+                            print(f"[Background Scene Image - game_chat] Publishing SSE event for session {msg.session_id}, message {msg.id}")
                             try:
                                 publish_event(msg.session_id, {
                                     "type": "message_metadata_updated",
                                     "message_id": msg.id,
                                     "metadata": {"scene_image": si}
                                 })
-                            except Exception:
-                                pass
+                                print("[Background Scene Image - game_chat] SSE event published successfully")
+                            except Exception as sse_error:
+                                print(f"[Background Scene Image - game_chat] ERROR: Failed to publish SSE event: {sse_error}")
                         finally:
                             db2.close()
+                            print("[Background Scene Image - game_chat] Database connection closed")
                     except Exception as e:
-                        print(f"[Background Scene Image - game_chat] failed: {e}")
+                        import traceback
+                        print(f"[Background Scene Image - game_chat] FAILED: {e}")
+                        print(f"[Background Scene Image - game_chat] Traceback: {traceback.format_exc()}")
 
                 asyncio.create_task(_generate_and_cache_image_game(assistant_msg.id, scene_prompt or "", scene_descriptors))
             except Exception as e:
