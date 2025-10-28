@@ -769,6 +769,7 @@ class Campaign(Base):
             "quest_log": json.loads(self.quest_log) if self.quest_log else [],
             "npc_tracker": json.loads(self.npc_tracker) if self.npc_tracker else {},
             "session_notes": json.loads(self.session_notes) if self.session_notes else [],
+            "party": [cc.character_id for cc in self.campaign_characters] if hasattr(self, 'campaign_characters') else [],  # Array of character IDs in party
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -963,6 +964,9 @@ class UserSettings(Base):
     dice_sound_enabled = Column(Boolean, default=True)
     combat_alerts = Column(Boolean, default=True)
     
+    # DM Settings
+    dm_roll_for_players = Column(Boolean, default=False)  # When True, DM AI rolls for players during checks
+    
     # Metadata
     settings_version = Column(Integer, default=1)  # For future migrations
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -1000,6 +1004,8 @@ class UserSettings(Base):
             "sound_enabled": self.sound_enabled,
             "dice_sound_enabled": self.dice_sound_enabled,
             "combat_alerts": self.combat_alerts,
+            # DM Settings
+            "dm_roll_for_players": self.dm_roll_for_players,
             # Metadata
             "settings_version": self.settings_version,
             "created_at": self.created_at.isoformat() if self.created_at else None,

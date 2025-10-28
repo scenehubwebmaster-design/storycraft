@@ -310,6 +310,64 @@ async def crop_and_generate(request: CropAndGenerateRequest, db: Session = Depen
         logger.exception('Crop and generate failed')
         raise HTTPException(status_code=500, detail=f'Crop-and-generate error: {str(e)}')
 
+class SceneSummarizeRequest(BaseModel):
+    text: str
+    provider: str = "groq"
+    model: Optional[str] = None
+    max_descriptors: int = 8
+
+
+@router.post("/scene/summarize_for_image/")
+async def summarize_scene_for_image(request: SceneSummarizeRequest):
+    """Generate a short, comma-separated descriptor list and a concise SD-friendly prompt
+
+    Returns JSON: {"descriptors": "a,b,c", "prompt": "..."}
+    """
+    try:
+        import json
+
+        instr = (
+            "You are an expert prompt engineer.\n"
+            "Given the DM narration below, produce a JSON object with two keys:\n"
+            "- \"descriptors\": a single string containing up to {maxd} short, comma-separated descriptive phrases (no sentences) focused on visual elements, mood, subject, clothing, lighting, color, and focal objects.\n"
+            "- \"prompt\": a single concise Stable Diffusion-ready prompt (one line) that combines those descriptors into fluent prompt text.\n"
+            "Respond ONLY with valid JSON and nothing else. Do not include markdown or commentary.\n\n"
+        ).replace("{maxd}", str(request.max_descriptors))
+
+        instr = instr + "Text:\n" + request.text
+
+        text, meta = await call_llm(instr, request.provider, request.model)
+
+        # Try to parse JSON from model output
+        try:
+            parsed = json.loads(text)
+        except Exception:
+            # Fallback: attempt to locate a JSON object in the text
+            import re
+
+            m = re.search(r"\{[\s\S]*\}", text)
+            if m:
+                parsed = json.loads(m.group(0))
+            else:
+                # As a final fallback, create descriptors by splitting sentences
+                desc = ", ".join([d.strip() for d in (request.text or "").split('\n') if d][: request.max_descriptors])
+                parsed = {"descriptors": desc, "prompt": (request.text or "").strip()}
+
+        # Ensure fields exist
+        descriptors = parsed.get("descriptors") if isinstance(parsed, dict) else None
+        prompt_out = parsed.get("prompt") if isinstance(parsed, dict) else None
+        if not descriptors:
+            # Build simple descriptors fallback
+            descriptors = ", ".join([p.strip() for p in (request.text or "").split()[: request.max_descriptors * 2]])
+        if not prompt_out:
+            prompt_out = (request.text or "").strip()
+
+        return {"descriptors": descriptors, "prompt": prompt_out}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Scene summarization failed")
+        raise HTTPException(status_code=500, detail=f"Scene summarization failed: {str(e)}")
 
 async def call_llm(prompt: str, provider: str, model: str = None) -> tuple[str, Dict[str, Any]]:
     """
@@ -1901,6 +1959,7 @@ async def generate_world_landscape(
             provider=provider,
             model=model,
             aspect_ratio="16:9" if landscape_type == "overview" else "1:1",
+            style=style_preset,
         )
 
         return {
@@ -1939,6 +1998,7 @@ async def generate_location_image_endpoint(request: LocationImageRequest):
             provider=request.provider,
             model=request.model,
             aspect_ratio="16:9",
+            style=request.style_preset,
         )
 
         return {

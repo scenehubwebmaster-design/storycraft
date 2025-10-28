@@ -65,6 +65,7 @@ export default function CreateWorldPage() {
   const [worldImagePrompt, setWorldImagePrompt] = useState(null);
   const [worldMap, setWorldMap] = useState(null);
   const [worldMapPrompt, setWorldMapPrompt] = useState(null);
+  const [imageStyle, setImageStyle] = useState("fantasy-art");
 
   useEffect(() => {
     loadOptions();
@@ -445,6 +446,24 @@ export default function CreateWorldPage() {
               <Box
                 sx={{ display: "flex", gap: 2, mt: 3, alignItems: "center" }}
               >
+                <FormControl sx={{ minWidth: 180 }} size="small">
+                  <InputLabel id="createworld-image-style-label">
+                    Image Style
+                  </InputLabel>
+                  <Select
+                    labelId="createworld-image-style-label"
+                    value={imageStyle}
+                    label="Image Style"
+                    onChange={(e) => setImageStyle(e.target.value)}
+                  >
+                    <MenuItem value="fantasy-art">Fantasy Art</MenuItem>
+                    <MenuItem value="photorealistic">Photorealistic</MenuItem>
+                    <MenuItem value="cinematic">Cinematic</MenuItem>
+                    <MenuItem value="painterly">Painterly</MenuItem>
+                    <MenuItem value="retro">Retro</MenuItem>
+                    <MenuItem value="realistic">Realistic</MenuItem>
+                  </Select>
+                </FormControl>
                 <Button
                   variant="outlined"
                   onClick={async () => {
@@ -464,7 +483,7 @@ export default function CreateWorldPage() {
                               : ""),
                           landscape_type: "overview",
                           provider: "stablediffusion",
-                          style_preset: "fantasy-art",
+                          style_preset: imageStyle,
                         }
                       );
                       setWorldImage(resp.data.image_base64 || null);
@@ -501,7 +520,7 @@ export default function CreateWorldPage() {
                               : ""),
                           landscape_type: "map",
                           provider: "stablediffusion",
-                          style_preset: "realistic",
+                          style_preset: imageStyle,
                         }
                       );
                       setWorldMap(resp.data.image_base64 || null);
@@ -525,6 +544,24 @@ export default function CreateWorldPage() {
                       alt="landscape"
                       style={{ maxHeight: 120 }}
                     />
+                    {worldImagePrompt && (
+                      <Box
+                        sx={{
+                          mt: 1,
+                          bgcolor: "grey.50",
+                          p: 1,
+                          borderRadius: 1,
+                        }}
+                      >
+                        <Typography variant="caption">Prompt used:</Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {worldImagePrompt}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 )}
                 {worldMap && (
@@ -534,6 +571,24 @@ export default function CreateWorldPage() {
                       alt="map"
                       style={{ maxHeight: 120 }}
                     />
+                    {worldMapPrompt && (
+                      <Box
+                        sx={{
+                          mt: 1,
+                          bgcolor: "grey.50",
+                          p: 1,
+                          borderRadius: 1,
+                        }}
+                      >
+                        <Typography variant="caption">Prompt used:</Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {worldMapPrompt}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 )}
               </Box>

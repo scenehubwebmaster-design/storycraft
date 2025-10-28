@@ -21,8 +21,8 @@ Run this script to migrate the database:
 import sqlite3
 from pathlib import Path
 
-# Database path
-DB_PATH = Path(__file__).parent / "storycraft.db"
+# Database path - use root storycraft.db
+DB_PATH = Path(__file__).parent.parent / "storycraft.db"
 
 def migrate_database():
     """Add D&D 5E fields to the characters table."""

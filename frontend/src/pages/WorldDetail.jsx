@@ -84,6 +84,7 @@ export default function WorldDetailPage() {
   const [poiDialog, setPoiDialog] = useState({ open: false, poi: null });
   const [isGenerating, setIsGenerating] = useState(false);
   const [tileProvider, setTileProvider] = useState("osm");
+  const [imageStyle, setImageStyle] = useState("fantasy-art");
   const [seeding, setSeeding] = useState(false);
   const [seedProgress, setSeedProgress] = useState({ done: 0, total: 0 });
   const [autoPortraits, setAutoPortraits] = useState(false);
@@ -134,6 +135,7 @@ export default function WorldDetailPage() {
         {
           name: world.name,
           description: world.description || "",
+          style_preset: imageStyle,
         }
       );
       const { image_base64, prompt } = resp.data || {};
@@ -697,6 +699,22 @@ export default function WorldDetailPage() {
                 <MenuItem value="stamen_terrain">Stamen Terrain</MenuItem>
                 <MenuItem value="stamen_watercolor">Stamen Watercolor</MenuItem>
                 <MenuItem value="carto_dark">Carto Dark</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 180 }} size="small">
+              <InputLabel id="image-style-label">Image Style</InputLabel>
+              <Select
+                labelId="image-style-label"
+                value={imageStyle}
+                label="Image Style"
+                onChange={(e) => setImageStyle(e.target.value)}
+              >
+                <MenuItem value="fantasy-art">Fantasy Art</MenuItem>
+                <MenuItem value="photorealistic">Photorealistic</MenuItem>
+                <MenuItem value="cinematic">Cinematic</MenuItem>
+                <MenuItem value="painterly">Painterly</MenuItem>
+                <MenuItem value="retro">Retro</MenuItem>
+                <MenuItem value="realistic">Realistic</MenuItem>
               </Select>
             </FormControl>
           </Box>

@@ -38,6 +38,8 @@ function CinematicMessageCard({
   ttsPlaying = false, // Whether TTS is currently playing
   ttsAutoPlay = false, // Whether TTS auto-play is enabled
   onTypingProgress, // Callback fired periodically during typing for auto-scroll
+  onTypingComplete, // Callback fired when typing animation completes for this message
+  onActionClick, // Callback for clickable actions in tables
 }) {
   const [textExpanded, setTextExpanded] = useState(true); // Always expanded for better UX
   const [displayedText, setDisplayedText] = useState("");
@@ -56,6 +58,36 @@ function CinematicMessageCard({
     return preview.length > 120 ? preview.substring(0, 120) + "..." : preview;
   };
 
+  // Remove markdown tables and suggested-action blocks from the visible message
+  // so the typing animation and main message body don't show raw tables.
+  const sanitizeForDisplay = (text) => {
+    if (!text) return "";
+    let out = String(text);
+
+    // Remove explicit Suggested Actions / Quick Reference blocks (until a blank line)
+    out = out.replace(
+      /(?:^|\n)\s*(?:SUGGESTED_ACTIONS|Suggested Actions|Quick Reference Actions)[:\s\-]*[\s\S]*?(?=(\n\s*\n)|$)/gi,
+      "\n"
+    );
+
+    // Remove contiguous markdown table blocks (lines containing pipes)
+    // Match groups of lines where at least one line contains a pipe character
+    out = out
+      .split("\n")
+      .reduce((acc, line, idx, arr) => {
+        const isTableLine = /\|/.test(line);
+        // If current line is a table line, skip it (effectively removing table blocks)
+        if (isTableLine) return acc;
+        acc.push(line);
+        return acc;
+      }, [])
+      .join("\n");
+
+    // Trim extra whitespace introduced by removals
+    out = out.replace(/\n{3,}/g, "\n\n").trim();
+    return out;
+  };
+
   // Simplified: Show text immediately with typing animation (no TTS sync complexity)
   useEffect(() => {
     if (!isUser && message.content && !message._optimistic) {
@@ -65,9 +97,19 @@ function CinematicMessageCard({
 
       if (isExistingMessage) {
         // Skip animation for existing messages (on page reload/revisit)
-        setDisplayedText(message.content);
+        // Show a sanitized version so tables / action blocks don't flash in the UI
+        setDisplayedText(sanitizeForDisplay(message.content));
         setIsTyping(false);
         hasAnimatedRef.current = true;
+        // Notify parent that typing/animation is effectively complete for this message
+        try {
+          if (onTypingComplete && message.id) {
+            onTypingComplete(message.id);
+          }
+        } catch (e) {
+          // Defensive: swallow callback errors
+          console.debug("onTypingComplete callback error:", e);
+        }
         return;
       }
 
@@ -79,7 +121,8 @@ function CinematicMessageCard({
       setDisplayedText("");
       charCountRef.current = 0;
 
-      const text = message.content;
+      // Use sanitized text for typing animation so raw tables are not revealed
+      const text = sanitizeForDisplay(message.content);
       let currentIndex = 0;
 
       // Typing speed: faster for normal text, slower for punctuation
@@ -112,6 +155,14 @@ function CinematicMessageCard({
           // Final scroll at end of typing
           if (onTypingProgress) {
             onTypingProgress();
+          }
+          // Notify parent that typing finished so UI (chips/buttons) can reveal
+          try {
+            if (onTypingComplete && message.id) {
+              onTypingComplete(message.id);
+            }
+          } catch (e) {
+            console.debug("onTypingComplete callback error:", e);
           }
         }
       };
@@ -488,10 +539,39 @@ function CinematicMessageCard({
                     borderBottom: "1px solid rgba(185, 167, 0, 0.3)",
                     pb: 0.5,
                   },
-                  "& strong": { color: "primary.light", fontWeight: 700 },
-                  "& em": { color: "text.secondary" },
-                  "& ul, & ol": { pl: 2.5, my: 0.75 },
-                  "& li": { mb: 0.25 },
+                  "& strong": {
+                    color: "primary.light",
+                    fontWeight: 700,
+                  },
+                  "& ul, & ol": {
+                    pl: 2.5,
+                    my: 0.75,
+                    position: "relative",
+                    "&::after": {
+                      content: '"💡 Click any option to use it"',
+                      position: "absolute",
+                      bottom: "-20px",
+                      left: "0",
+                      fontSize: "0.7em",
+                      color: "rgba(185, 167, 0, 0.5)",
+                      fontStyle: "italic",
+                    },
+                  },
+                  "& li": {
+                    mb: 0.25,
+                    position: "relative",
+                    paddingLeft: "8px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    borderRadius: "4px",
+                    "&:hover": {
+                      bgcolor: "rgba(185, 167, 0, 0.12)",
+                      paddingLeft: "12px",
+                      "& strong": {
+                        color: "primary.main",
+                      },
+                    },
+                  },
                   "& code": {
                     bgcolor: "rgba(0,0,0,0.5)",
                     color: "primary.light",
@@ -517,11 +597,72 @@ function CinematicMessageCard({
                     fontStyle: "italic",
                     bgcolor: "rgba(185, 167, 0, 0.05)",
                   },
+                  "& table": {
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    my: 2,
+                    border: "1px solid rgba(185, 167, 0, 0.3)",
+                    bgcolor: "rgba(0, 0, 0, 0.3)",
+                    position: "relative",
+                    "&::after": {
+                      content: '"💡 Click any row to use that action"',
+                      position: "absolute",
+                      bottom: "-24px",
+                      left: "0",
+                      fontSize: "0.75em",
+                      color: "rgba(185, 167, 0, 0.6)",
+                      fontStyle: "italic",
+                    },
+                  },
+                  "& thead": {
+                    bgcolor: "rgba(185, 167, 0, 0.2)",
+                  },
+                  "& th": {
+                    textAlign: "left",
+                    p: 1,
+                    borderBottom: "2px solid rgba(185, 167, 0, 0.5)",
+                    color: "primary.light",
+                    fontWeight: 700,
+                    fontSize: "0.85em",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  },
+                  "& td": {
+                    p: 1,
+                    borderBottom: "1px solid rgba(185, 167, 0, 0.2)",
+                  },
+                  "& tbody tr": {
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: "rgba(185, 167, 0, 0.15)",
+                      transform: "translateX(4px)",
+                    },
+                  },
                 }}
               >
-                <ReactMarkdown>
-                  {isTyping ? displayedText : message.content}
-                </ReactMarkdown>
+                {(() => {
+                  const renderContent = isTyping
+                    ? displayedText
+                    : sanitizeForDisplay(message.content);
+
+                  return (
+                    <ReactMarkdown
+                      components={{
+                        table: ({ node, ...props }) => (
+                          <table
+                            {...props}
+                            style={{ marginTop: "16px", marginBottom: "16px" }}
+                          />
+                        ),
+                        // Removed clickable tbody and li handlers - use structured actions instead
+                        // Tables and lists in narrative are now purely decorative
+                      }}
+                    >
+                      {renderContent}
+                    </ReactMarkdown>
+                  );
+                })()}
                 {/* Typing cursor */}
                 {isTyping && (
                   <Box

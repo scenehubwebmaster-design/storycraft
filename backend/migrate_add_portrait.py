@@ -8,7 +8,8 @@ import sqlite3
 import os
 
 def migrate():
-    db_path = os.path.join(os.path.dirname(__file__), 'storycraft.db')
+    # Database path - use root storycraft.db
+    db_path = os.path.join(os.path.dirname(__file__), '..', 'storycraft.db')
     
     if not os.path.exists(db_path):
         print(f"Database not found at {db_path}")

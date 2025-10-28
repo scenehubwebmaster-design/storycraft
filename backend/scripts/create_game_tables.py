@@ -3,8 +3,11 @@ Manually create game system tables.
 Run this instead of the problematic alembic migration.
 """
 import sqlite3
+import os
 
-conn = sqlite3.connect('storycraft.db')
+# Database path - use root storycraft.db
+db_path = os.path.join(os.path.dirname(__file__), '..', '..', 'storycraft.db')
+conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 # Drop any partial tables if they exist

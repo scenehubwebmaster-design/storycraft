@@ -17,6 +17,7 @@ import {
   EmojiPeople as PerformanceIcon,
   Gavel as IntimidationIcon,
   SentimentVerySatisfied as DeceptionIcon,
+  AutoStories as MenuBookIcon,
 } from "@mui/icons-material";
 
 /**
@@ -64,12 +65,49 @@ const parseBoldActions = (content) => {
   const actions = [];
   const seenActions = new Set(); // Prevent duplicates
 
+  // Common D&D action verbs that indicate actionable content
+  const actionVerbs = [
+    "investigate",
+    "search",
+    "examine",
+    "check",
+    "attempt",
+    "try",
+    "persuade",
+    "intimidate",
+    "deceive",
+    "perform",
+    "cast",
+    "attack",
+    "roll",
+    "make",
+    "use",
+    "open",
+    "close",
+    "move",
+    "climb",
+    "jump",
+    "hide",
+    "sneak",
+    "look",
+    "listen",
+    "ask",
+    "talk",
+    "speak",
+    "pray",
+    "meditate",
+    "rest",
+    "heal",
+    "help",
+    "explore",
+  ];
+
   matches.forEach((match) => {
     const action = match[1].trim();
     const description = match[2].trim();
 
     // Skip if it's just a heading or title (all caps, or very short)
-    if (action.length < 5 || action === action.toUpperCase()) {
+    if (action.length < 8 || action === action.toUpperCase()) {
       return;
     }
 
@@ -85,9 +123,27 @@ const parseBoldActions = (content) => {
       /^Table /i,
       /^Chapter /i,
       /^\d+\./, // Numbered items
+      /^(Combat Stats|Ability Scores|Skills|Equipment|Spellcasting|Conditions):/i,
+      /^(Type|Setting|Difficulty|Starting Level|Adventure Template|Opening Scene|Campaign Tone):/i,
+      /^The Adventuring Party$/i,
+      /^Dungeon Master Instructions$/i,
     ];
 
     if (skipPatterns.some((pattern) => pattern.test(action))) {
+      return;
+    }
+
+    // Only include if it contains an action verb or is a question
+    const hasActionVerb = actionVerbs.some((verb) =>
+      action.toLowerCase().includes(verb)
+    );
+    const isQuestion = action.includes("?");
+    const hasSkillName =
+      /perception|insight|persuasion|deception|investigation|stealth|athletics|acrobatics|sleight of hand|arcana|history|nature|religion|animal handling|medicine|performance|intimidation|survival/i.test(
+        action
+      );
+
+    if (!hasActionVerb && !isQuestion && !hasSkillName) {
       return;
     }
 
@@ -115,7 +171,6 @@ const parseActionTable = (content) => {
 
   matches.forEach((match) => {
     const rows = match[1].trim().split("\n");
-
     rows.forEach((row) => {
       // Parse table row: | Action | Suggested Roll | DC |
       const cells = row
@@ -130,19 +185,53 @@ const parseActionTable = (content) => {
 
         // Skip empty or separator rows
         if (
-          action &&
-          !action.match(/^[-:\s]+$/) &&
-          action.toLowerCase() !== "action"
+          !action ||
+          action.match(/^[-:\s]+$/) ||
+          action.toLowerCase() === "action"
         ) {
-          actions.push({
-            action,
-            roll,
-            dc,
-            label:
-              action.length > 40 ? action.substring(0, 40) + "..." : action,
-            type: "table",
-          });
+          return;
         }
+
+        // Heuristics: avoid parsing stat tables or narrative rows as actions.
+        const rollNorm = (roll || "").toLowerCase();
+        const dcNorm = (dc || "").toLowerCase();
+
+        // If the roll column is just a plain integer (e.g., "13") and the action
+        // looks like an ability or short stat name (Perception, Strength, AC), skip it.
+        const rollNumberOnly = /^\s*\d+\s*$/.test(roll);
+        const statLikeAction =
+          /^(ac|hp|speed|initiative|strength|dexterity|constitution|intelligence|wisdom|charisma|perception|insight|athletics|acrobatics|sleight of hand|sleight|stealth|history|arcana|religion|medicine|nature|animal handling|survival)$/i.test(
+            action.trim()
+          );
+        if (rollNumberOnly && statLikeAction) {
+          return;
+        }
+
+        // Require some sign that this is an actionable suggested roll: dice expression (d20, d\d+),
+        // a plus sign (+), the word 'check', 'roll', 'attack', or an explicit 'DC' in the row.
+        const looksLikeRoll =
+          /d\d+|d20|\+|check|roll|attack|save|damage|to hit|to \w+/.test(
+            rollNorm + " " + dcNorm
+          );
+
+        // If it doesn't look like a roll and the action cell is very short or reads like a narrative/title,
+        // skip it to avoid recycling story headings into actions.
+        const shortAction = action.trim().length < 12;
+        const probableNarrative =
+          /scene|opening|chapter|campaign|setting|title/i.test(action);
+
+        if (!looksLikeRoll && (shortAction || probableNarrative)) {
+          return;
+        }
+
+        // Passed heuristics — treat as action
+        actions.push({
+          action,
+          roll,
+          dc,
+          label: action.length > 40 ? action.substring(0, 40) + "..." : action,
+          type: "table",
+        });
       }
     });
   });
@@ -289,3 +378,13 @@ export default function ActionChipsParser({ content, onActionClick }) {
     </Box>
   );
 }
+
+// Export a lightweight parser utility so other parts of the app can
+// synchronously extract actionable items from AI responses and react
+// when typing/scrolling completes.
+export const parseActions = (content) => {
+  const tableActions = parseActionTable(content) || [];
+  const boldActions = parseBoldActions(content) || [];
+  // Prefer table actions first (more structured)
+  return [...tableActions, ...boldActions];
+};

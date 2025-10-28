@@ -5,8 +5,8 @@ Run this script once to update the database schema.
 import sqlite3
 from pathlib import Path
 
-# Get database path
-db_path = Path(__file__).parent / "storycraft.db"
+# Get database path - use root storycraft.db
+db_path = Path(__file__).parent.parent / "storycraft.db"
 
 if not db_path.exists():
     print(f"❌ Database not found at: {db_path}")

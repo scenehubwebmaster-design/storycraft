@@ -74,6 +74,7 @@ export default function CreateLocationPage() {
   const [success, setSuccess] = useState(null);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [generatedImagePrompt, setGeneratedImagePrompt] = useState(null);
+  const [imageStyle, setImageStyle] = useState("realistic");
 
   useEffect(() => {
     loadOptions();
@@ -371,6 +372,24 @@ export default function CreateLocationPage() {
             entity="Location"
           />
           <Box sx={{ mt: 2, display: "flex", gap: 2, alignItems: "center" }}>
+            <FormControl sx={{ minWidth: 180 }} size="small">
+              <InputLabel id="location-image-style-label">
+                Image Style
+              </InputLabel>
+              <Select
+                labelId="location-image-style-label"
+                value={imageStyle}
+                label="Image Style"
+                onChange={(e) => setImageStyle(e.target.value)}
+              >
+                <MenuItem value="realistic">Realistic</MenuItem>
+                <MenuItem value="fantasy-art">Fantasy Art</MenuItem>
+                <MenuItem value="photorealistic">Photorealistic</MenuItem>
+                <MenuItem value="cinematic">Cinematic</MenuItem>
+                <MenuItem value="painterly">Painterly</MenuItem>
+              </Select>
+            </FormControl>
+
             <Button
               variant="outlined"
               onClick={async () => {
@@ -384,10 +403,11 @@ export default function CreateLocationPage() {
                       location_type: locationType || "",
                       description: generatedContent || customDetails || "",
                       provider: "stablediffusion",
-                      style_preset: "realistic",
+                      style_preset: imageStyle,
                     }
                   );
                   setGeneratedImage(response.data.image_base64 || null);
+                  setGeneratedImagePrompt(response.data.prompt || null);
                 } catch (err) {
                   setError(
                     err.response?.data?.detail || "Failed to generate image"
@@ -407,6 +427,16 @@ export default function CreateLocationPage() {
                   alt="location"
                   style={{ maxHeight: 160 }}
                 />
+                {generatedImagePrompt && (
+                  <Box
+                    sx={{ mt: 1, bgcolor: "grey.50", p: 1, borderRadius: 1 }}
+                  >
+                    <Typography variant="caption">Prompt used:</Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                      {generatedImagePrompt}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             )}
           </Box>

@@ -32,6 +32,8 @@ const SceneImageDisplay = ({
   compact = false,
   autoGenerate = false,
   messageMetadata = null, // Pass message.metadata to check for cached images
+  locationHint = null, // optional short descriptor string to pass to generation endpoint
+  typingReady = false, // whether the parent marked this message as finished typing
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -41,35 +43,83 @@ const SceneImageDisplay = ({
   const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
   const [isCached, setIsCached] = useState(false);
 
-  // Check for cached scene image on mount
+  // Check for cached scene image - runs whenever messageMetadata changes (SSE updates)
   React.useEffect(() => {
-    if (messageMetadata && messageMetadata.scene_image) {
-      console.log(
-        `[Scene Image] Loading cached image for message ${messageId}`
-      );
-      const cached = messageMetadata.scene_image;
-      setImage(cached.image);
-      setPrompt(cached.prompt);
-      setIsCached(true);
-      setHasAttemptedGeneration(true); // Don't auto-generate if we have cached data
-      return;
-    }
+    console.log(`[Scene Image] useEffect triggered for message ${messageId}:`, {
+      hasMetadata: !!messageMetadata,
+      hasSceneImage: !!(messageMetadata && messageMetadata.scene_image),
+      metadataKeys: messageMetadata ? Object.keys(messageMetadata) : [],
+      sceneImageKeys: messageMetadata?.scene_image
+        ? Object.keys(messageMetadata.scene_image)
+        : [],
+      hasImageData: !!messageMetadata?.scene_image?.image,
+      imageLength: messageMetadata?.scene_image?.image?.length || 0,
+    });
 
-    // Auto-generate on mount if enabled (only once per component lifecycle)
-    if (autoGenerate && !hasAttemptedGeneration && !image) {
-      setHasAttemptedGeneration(true);
-      generateImage(false);
+    if (messageMetadata && messageMetadata.scene_image) {
+      const cached = messageMetadata.scene_image;
+
+      // If an image blob/base64 is already present, use it immediately
+      if (cached.image) {
+        console.log(
+          `[Scene Image] ✅ Setting image state for message ${messageId} (${cached.image.length} bytes)`
+        );
+        setImage(cached.image);
+        setPrompt(cached.prompt);
+        setIsCached(true);
+        setHasAttemptedGeneration(true);
+        setLoading(false); // Stop any loading indicators
+        return;
+      }
+
+      // If we have scene_image metadata but no image yet (just prompt/descriptors),
+      // the backend is probably generating it now. The image will arrive via SSE
+      // and this useEffect will re-run with the updated metadata.
+      console.log(
+        `[Scene Image] ⏳ Waiting for image generation for message ${messageId} (have prompt, no image yet)`,
+        "Full scene_image object:",
+        cached
+      );
+      setPrompt(cached.prompt);
+      setIsCached(false);
+
+      // Mark that we know about this image generation attempt
+      if (!hasAttemptedGeneration) {
+        setHasAttemptedGeneration(true);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount - empty dependency array
+  }, [messageMetadata]); // Only depend on messageMetadata to avoid dependency array size changes
+
+  // When the parent indicates typing completed, attempt to generate if we
+  // have a prompt (messageMetadata.scene_image.prompt) but no image yet.
+  React.useEffect(() => {
+    if (!typingReady) return;
+    if (!autoGenerate) return;
+    if (!messageMetadata || !messageMetadata.scene_image) return;
+    const si = messageMetadata.scene_image;
+    if (si.image) return; // already have image
+    if (hasAttemptedGeneration) return; // already triggered
+
+    // Force generate now so the image is ready by the time the DM finishes
+    setHasAttemptedGeneration(true);
+    generateImage(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typingReady]);
 
   const generateImage = async (forceGenerate = false) => {
     setLoading(true);
     setError(null);
 
     try {
+      // If caller provided a locationHint, attach it as a query param so the
+      // backend can use it as the primary prompt for image generation.
+      const hintQuery = locationHint
+        ? `?location_hint=${encodeURIComponent(locationHint)}`
+        : "";
+
       const response = await fetch(
-        `/api/chat/sessions/${sessionId}/messages/${messageId}/scene-image`,
+        `/api/chat/sessions/${sessionId}/messages/${messageId}/scene-image${hintQuery}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -122,6 +172,39 @@ const SceneImageDisplay = ({
   const downloadImage = () => {
     if (!image) return;
 
+    // If image is an http(s) URL, fetch it as a blob then download.
+    if (/^https?:\/\//i.test(image)) {
+      fetch(image)
+        .then((res) => {
+          if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`);
+          return res.blob();
+        })
+        .then((blob) => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `scene_${messageId}_${Date.now()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        })
+        .catch((e) => console.error("Download failed:", e));
+      return;
+    }
+
+    // If it already looks like a data URL (starts with data:) use it directly
+    if (/^data:/i.test(image)) {
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `scene_${messageId}_${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    // Otherwise assume raw base64 string and wrap it in a data URL
     const link = document.createElement("a");
     link.href = `data:image/png;base64,${image}`;
     link.download = `scene_${messageId}_${Date.now()}.png`;
@@ -131,28 +214,9 @@ const SceneImageDisplay = ({
   };
 
   if (!image && !loading && !error) {
-    // Initial state - show generate button
-    return (
-      <Box sx={{ mt: 1.5 }}>
-        <Button
-          size="small"
-          startIcon={loading ? <CircularProgress size={16} /> : <ImageIcon />}
-          onClick={() => generateImage(false)}
-          disabled={loading}
-          sx={{
-            color: "inherit",
-            borderColor: "rgba(255,255,255,0.3)",
-            "&:hover": {
-              borderColor: "rgba(255,255,255,0.5)",
-              bgcolor: "rgba(255,255,255,0.1)",
-            },
-          }}
-          variant="outlined"
-        >
-          Generate Scene Image
-        </Button>
-      </Box>
-    );
+    // Initial state - automatically generating or waiting for cached image
+    // Do not show a button; generation happens automatically via autoGenerate prop
+    return null;
   }
 
   return (
@@ -190,16 +254,30 @@ const SceneImageDisplay = ({
         <Card sx={{ bgcolor: "rgba(0,0,0,0.2)", maxWidth: 600 }}>
           <CardMedia
             component="img"
-            image={`data:image/png;base64,${image}`}
+            image={
+              // If image is an http(s) URL, use it directly. If it already
+              // is a data: URL (server returned full data URL), use it as-is.
+              // Otherwise assume it's a raw base64 string and prefix it.
+              /^https?:\/\//i.test(image)
+                ? image
+                : /^data:/i.test(image)
+                ? image
+                : `data:image/png;base64,${image}`
+            }
             alt="Scene visualization"
             sx={{
               objectFit: "contain",
               maxHeight: 400,
               cursor: "pointer",
             }}
-            onClick={() =>
-              window.open(`data:image/png;base64,${image}`, "_blank")
-            }
+            onClick={() => {
+              const href = /^https?:\/\//i.test(image)
+                ? image
+                : /^data:/i.test(image)
+                ? image
+                : `data:image/png;base64,${image}`;
+              window.open(href, "_blank");
+            }}
           />
 
           <CardActions sx={{ justifyContent: "space-between", px: 2, py: 1 }}>

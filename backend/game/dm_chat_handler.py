@@ -64,6 +64,12 @@ class DMResponse:
     combat_started: bool
     combat_ended: bool
     events: List[Dict[str, Any]]  # Game events that occurred
+    suggested_actions: List[Dict[str, Any]] = None  # Structured action suggestions
+    
+    def __post_init__(self):
+        """Initialize suggested_actions as empty list if None"""
+        if self.suggested_actions is None:
+            self.suggested_actions = []
 
 
 class DMChatHandler:
@@ -83,7 +89,8 @@ class DMChatHandler:
         self,
         db: Session,
         provider: str = "http://100.120.44.114:1234/v1",
-        model: str = "local-model"
+        model: str = "local-model",
+        dm_roll_for_players: bool = False
     ):
         """
         Initialize DM chat handler with all game system dependencies.
@@ -92,10 +99,12 @@ class DMChatHandler:
             db: Database session for state persistence
             provider: LLM provider (named provider or URL for LM Studio)
             model: Model identifier for the provider
+            dm_roll_for_players: If True, DM AI rolls for players during checks
         """
         self.db = db
         self.provider = provider
         self.model = model
+        self.dm_roll_for_players = dm_roll_for_players
         
         # Initialize game system components
         self.dice_roller = DiceRoller()
@@ -552,6 +561,7 @@ Return JSON format:
             message = scene.description
             events = []
             combat_started = False
+            suggested_actions = scene.suggested_actions if hasattr(scene, 'suggested_actions') else []
             
             # Check for combat trigger
             if scene.detected_events:
@@ -561,7 +571,7 @@ Return JSON format:
                         message += "\n\n⚔️ **Combat Started!**"
                         events.append(event)
             
-            # Add available choices
+            # Add available choices (keep for backward compatibility)
             if scene.choices:
                 message += "\n\n**What do you do?**"
                 for i, c in enumerate(scene.choices, 1):
@@ -571,6 +581,7 @@ Return JSON format:
             message = f"Error processing exploration: {e}"
             combat_started = False
             events = []
+            suggested_actions = []
         
         return DMResponse(
             message=message,
@@ -578,7 +589,8 @@ Return JSON format:
             scene_changed=True,
             combat_started=combat_started,
             combat_ended=False,
-            events=events
+            events=events,
+            suggested_actions=suggested_actions
         )
     
     async def _handle_unknown(self, game_session: GameSession, user_message: str) -> DMResponse:
@@ -586,8 +598,30 @@ Return JSON format:
         # Generate contextual response using LLM
         game_context = self._build_game_context(game_session)
         
+        # Build system prompt with conditional DM roll instructions
         system_prompt = """You are a D&D Dungeon Master. Generate a helpful response to the player's message.
-Keep it concise (2-3 sentences). Stay in character as the DM. Guide the player on what they can do."""
+Keep it concise (2-3 sentences). Stay in character as the DM. Guide the player on what they can do.
+
+If appropriate, provide 2-3 suggested actions in JSON format at the end:
+
+SUGGESTED_ACTIONS:
+[
+  {"action": "...", "roll": "Skill (d20 + X)", "dc": "15", "type": "skill_check"},
+  {"action": "...", "roll": null, "dc": null, "type": "dialogue"}
+]
+
+Use this format only if the player needs guidance on what to do next."""
+
+        # Add DM roll instructions if enabled
+        if self.dm_roll_for_players:
+            system_prompt += """
+
+**IMPORTANT - YOU ROLL FOR PLAYERS:** The DM Roll setting is ENABLED. This means:
+- When a character attempts a skill check, ability check, or saving throw, YOU should roll for them.
+- Format roll results clearly: "**[Character Name]'s [Skill] Check**: Rolled d20+X = [RESULT]"
+- Always roll for attack rolls and saving throws.
+- Narrate the outcome dramatically after the roll.
+- Don't ask the player to roll - you handle it immediately."""
         
         try:
             # Build prompt for unified LLM interface
@@ -600,8 +634,21 @@ Keep it concise (2-3 sentences). Stay in character as the DM. Guide the player o
                 model=self.model
             )
             
+            # Try to extract suggested actions from response
+            suggested_actions = []
+            if "SUGGESTED_ACTIONS:" in message:
+                parts = message.split("SUGGESTED_ACTIONS:")
+                message = parts[0].strip()
+                try:
+                    import json
+                    actions_json = parts[1].strip()
+                    suggested_actions = json.loads(actions_json)
+                except Exception:
+                    pass  # Failed to parse, continue without actions
+            
         except Exception:
             message = "I'm not sure what you mean. Try /help for available commands, or describe what you'd like to do in more detail."
+            suggested_actions = []
         
         return DMResponse(
             message=message,
@@ -609,7 +656,8 @@ Keep it concise (2-3 sentences). Stay in character as the DM. Guide the player o
             scene_changed=False,
             combat_started=False,
             combat_ended=False,
-            events=[]
+            events=[],
+            suggested_actions=suggested_actions
         )
     
     def _build_game_context(self, game_session: GameSession) -> str:

@@ -9,9 +9,13 @@ from .. import models
 from .monsters import search_monsters
 from .references import do_reference_search
 from .generation import call_llm
+from ..events import event_stream, publish_event
 from ..query_analyzer import analyze_query, get_search_summary
 from ..game.dm_chat_handler import DMChatHandler
 from ..journal_auto_logger import extract_journal_entries_from_message
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -166,10 +170,20 @@ async def generate_game_chat(
     lm_studio_url = chat_session.provider if chat_session.provider and 'http' in chat_session.provider else "http://100.120.44.114:1234/v1"
     model = chat_session.model or "local-model"
     
+    # Load DM roll setting from user settings
+    dm_roll_for_players = False
+    try:
+        settings = db.query(models.UserSettings).first()
+        if settings:
+            dm_roll_for_players = settings.dm_roll_for_players or False
+    except Exception as e:
+        print(f"[Game Chat] Could not load dm_roll_for_players setting: {e}")
+    
     dm_handler = DMChatHandler(
         db=db,
         lm_studio_url=lm_studio_url,
-        model=model
+        model=model,
+        dm_roll_for_players=dm_roll_for_players
     )
     
     # Process game message through DM handler
@@ -231,6 +245,111 @@ async def generate_game_chat(
         except Exception as e:
             # Log error but don't fail the request
             print(f"[Auto-Journal] Failed to extract entries: {e}")
+
+    # --- Scene summarization and asynchronous image generation ---
+    # Run the same scene summarizer used by the session generation flow so
+    # the assistant message gets a Stable Diffusion-friendly prompt and
+    # descriptor list persisted. Then schedule background SD generation.
+    try:
+        scene_descriptors = None
+        scene_prompt = None
+        try:
+            from .generation import SceneSummarizeRequest, summarize_scene_for_image
+
+            print("[Game Chat] Invoking scene summarizer for assistant message")
+            summ_req = SceneSummarizeRequest(text=assistant_msg.content or "", provider="groq", model="llama-3.3-70b-versatile")
+            summ_res = await summarize_scene_for_image(summ_req)
+            scene_descriptors = summ_res.get("descriptors")
+            scene_prompt = summ_res.get("prompt")
+            print("[Game Chat] Scene summarizer returned prompt/descriptors")
+        except Exception as se:
+            print(f"[Game Chat] Scene summarizer failed: {se}")
+            scene_descriptors = None
+            scene_prompt = None
+
+        # Persist summarizer output into the assistant message meta and schedule background image generation
+        if scene_prompt or scene_descriptors:
+            if assistant_msg.meta is None:
+                assistant_msg.meta = {}
+            assistant_msg.meta.setdefault('scene_image', {})
+            assistant_msg.meta['scene_image'].update({
+                'prompt': scene_prompt,
+                'descriptors': scene_descriptors,
+                'generated_at': datetime.utcnow().isoformat()
+            })
+            db.add(assistant_msg)
+            db.commit()
+            db.refresh(assistant_msg)
+
+            # Schedule background SD generation (non-blocking)
+            try:
+                import asyncio
+                from ..database import SessionLocal
+
+                async def _generate_and_cache_image_game(msg_id: int, prompt_text: str, descriptors_text: str | None):
+                    try:
+                        from ..image_generation import generate_location_image
+
+                        gen = await generate_location_image(
+                            prompt=prompt_text or (descriptors_text or ""),
+                            provider="stablediffusion",
+                            model=None,
+                            aspect_ratio="16:9",
+                            style="fantasy",
+                            use_llm=False,
+                        )
+
+                        image_b64 = gen.get("image_base64") or gen.get("image")
+
+                        db2 = SessionLocal()
+                        try:
+                            msg = db2.query(models.ChatMessage).filter(models.ChatMessage.id == msg_id).first()
+                            if not msg:
+                                return
+                            if not msg.meta:
+                                msg.meta = {}
+                            si = msg.meta.get("scene_image", {})
+                            si.update({
+                                "image": image_b64,
+                                "cached": True,
+                                "generated_at": datetime.utcnow().isoformat(),
+                                "prompt": prompt_text,
+                                "descriptors": descriptors_text,
+                                "provider": gen.get("provider"),
+                                "model": gen.get("model"),
+                            })
+                            msg.meta["scene_image"] = si
+                            db2.add(msg)
+                            db2.commit()
+                            # Ensure the ORM object is refreshed so subsequent reads see the update
+                            try:
+                                db2.refresh(msg)
+                            except Exception:
+                                pass
+                            # Log debug information about the cached image
+                            try:
+                                img_len = len(image_b64) if image_b64 else 0
+                                print(f"[Background Scene Image - game_chat] Cached image for message {msg.id}, bytes={img_len}")
+                            except Exception:
+                                pass
+                            try:
+                                publish_event(msg.session_id, {
+                                    "type": "message_metadata_updated",
+                                    "message_id": msg.id,
+                                    "metadata": {"scene_image": si}
+                                })
+                            except Exception:
+                                pass
+                        finally:
+                            db2.close()
+                    except Exception as e:
+                        print(f"[Background Scene Image - game_chat] failed: {e}")
+
+                asyncio.create_task(_generate_and_cache_image_game(assistant_msg.id, scene_prompt or "", scene_descriptors))
+            except Exception as e:
+                print(f"[Game Chat] Failed to schedule background image generation: {e}")
+    except Exception as e:
+        print(f"[Game Chat] Scene summarization flow error: {e}")
     
     return {
         "assistant_message": assistant_msg.to_dict(),
@@ -447,32 +566,201 @@ These will automatically become clickable buttons for the player.
 
 """
 
-    prompt = f"{system_prompt}{campaign_context}{character_context}Use the following documents as context:\n\n{context}\n\nConversation:\n{conversation}\n\nAssistant:"
+    # Check if DM should roll for players during skill checks, saves, and combat
+    # This setting influences whether the DM AI will proactively make rolls or ask players to roll
+    dm_roll_instructions = ""
+    try:
+        settings = db.query(models.UserSettings).first()
+        if settings and settings.dm_roll_for_players:
+            dm_roll_instructions = """
+**IMPORTANT - DM ROLLS FOR PLAYERS:** The table has enabled "DM Rolls for Players" mode. This means:
+- When a character attempts a skill check, ability check, or saving throw, YOU should roll for them.
+- Format the roll result in a clear, easy-to-read way: "**[Character Name]'s [Skill] Check**: Rolled 1d20+X = [RESULT] vs DC Y"
+- Always roll for attack rolls in combat, ability checks, and saving throws.
+- Still narrate the outcome naturally and dramatically.
+- If they ask you to roll, do so. Don't ask them to roll - you handle it.
+
+This enables faster, more streamlined gameplay where the DM takes action economy.
+"""
+    except Exception as e:
+        print(f"[DM Settings] Could not load dm_roll_for_players setting: {e}")
+
+    prompt = f"{system_prompt}{dm_roll_instructions}{campaign_context}{character_context}Use the following documents as context:\n\n{context}\n\nConversation:\n{conversation}\n\nAssistant:"
 
     # Call the centralized LLM helper
     try:
-        content, metadata = await call_llm(prompt, s.provider or 'groq', s.model or None)
+        # Use the heavy creative model by default for story generation (Groq endpoint model alias)
+        default_story_model = s.model or "openai/gpt-oss-120b"
+        content, metadata = await call_llm(prompt, s.provider or 'groq', default_story_model)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"LLM call failed: {e}")
 
-    # persist assistant message and include retrieval provenance in message meta
+    # Server-side: run a second sub-prompt to summarize the DM narration into
+    # a concise Stable Diffusion-friendly prompt and a comma-separated
+    # descriptor list. Attach these to the message metadata so the UI and
+    # scene-image endpoint can use them without an extra client round-trip.
+    scene_descriptors = None
+    scene_prompt = None
+    try:
+        import json
+        import re
+
+        # Use the centralized summarization endpoint helper to produce descriptors and prompt
+        try:
+            from .generation import SceneSummarizeRequest, summarize_scene_for_image
+
+            logger.info("[Scene Summarizer] invoking summarize_scene_for_image helper")
+            print("[Scene Summarizer] invoking summarize_scene_for_image helper")
+            summ_req = SceneSummarizeRequest(text=content or "", provider="groq", model="llama-3.3-70b-versatile")
+            summ_res = await summarize_scene_for_image(summ_req)
+            scene_descriptors = summ_res.get("descriptors")
+            scene_prompt = summ_res.get("prompt")
+            logger.info("[Scene Summarizer] helper returned descriptors/prompt")
+            print("[Scene Summarizer] helper returned descriptors/prompt")
+        except Exception as se:
+            logger.exception(f"[Scene Summarizer] helper failed: {se}")
+            print(f"[Scene Summarizer] helper failed: {se}")
+            scene_descriptors = None
+            scene_prompt = None
+    except Exception as e:
+        # Don't fail the whole generation if summarization fails; log and continue
+        print(f"[Scene Summarizer] failed: {e}")
+
+    # persist assistant message and include retrieval provenance and any
+    # scene summarizer output in message meta
     last_index = db.query(models.ChatMessage).filter(models.ChatMessage.session_id == session_id).order_by(models.ChatMessage.message_index.desc()).first()
     next_index = (last_index.message_index + 1) if last_index else 0
+
+    meta_dict = None
+    if retrievals_for_meta:
+        meta_dict = {
+            'retrievals': retrievals_for_meta,
+            'retrieval_query': retrieval_query,
+        }
+
+    # Attach scene summarizer output if available
+    if scene_prompt or scene_descriptors:
+        if meta_dict is None:
+            meta_dict = {}
+        meta_dict['scene_image'] = {
+            'prompt': scene_prompt,
+            'descriptors': scene_descriptors,
+            'generated_at': datetime.utcnow().isoformat()
+        }
+
     m = models.ChatMessage(
         session_id=session_id,
         role='assistant',
         content=content,
         message_index=next_index,
-        meta={
-            'retrievals': retrievals_for_meta,
-            'retrieval_query': retrieval_query,
-        } if retrievals_for_meta else None,
+        meta=meta_dict,
     )
     db.add(m)
     db.commit()
     db.refresh(m)
 
+    # After persisting the assistant message, dispatch an async background
+    # task to send the summarizer prompt to Stable Diffusion and cache the
+    # generated image into the message metadata. We create the task after
+    # commit so the background worker can open its own DB session and update
+    # the persisted message safely.
+    try:
+        import asyncio
+        from ..database import SessionLocal
+
+        async def _generate_and_cache_image(msg_id: int, prompt_text: str, descriptors_text: str | None):
+            try:
+                print(f"[Background Scene Image] Starting generation for message {msg_id}")
+                # Use the image generation helper which is async
+                from ..image_generation import generate_location_image
+
+                # Call SD with the concise prompt we obtained from the summarizer.
+                # We prefer location image helper for scene prompts.
+                print(f"[Background Scene Image] Calling generate_location_image with prompt: {prompt_text[:100]}...")
+                gen = await generate_location_image(
+                    prompt=prompt_text or (descriptors_text or ""),
+                    provider="stablediffusion",
+                    model=None,
+                    aspect_ratio="16:9",
+                    style="fantasy",
+                    use_llm=False,
+                )
+
+                print(f"[Background Scene Image] Generation completed. Result keys: {list(gen.keys())}")
+                print("[Background Scene Image] Generation completed, extracting image data...")
+                image_b64 = gen.get("image_base64") or gen.get("image")
+                
+                if not image_b64:
+                    print(f"[Background Scene Image] ERROR: No image data in generation result. Full result: {gen}")
+                    return
+
+                print(f"[Background Scene Image] Image data extracted, length: {len(image_b64)} bytes")
+
+                # Open a fresh DB session to update the message meta
+                db2 = SessionLocal()
+                try:
+                    msg = db2.query(models.ChatMessage).filter(models.ChatMessage.id == msg_id).first()
+                    if not msg:
+                        return
+                    if not msg.meta:
+                        msg.meta = {}
+                    si = msg.meta.get("scene_image", {})
+                    si.update({
+                        "image": image_b64,
+                        "cached": True,
+                        "generated_at": datetime.utcnow().isoformat(),
+                        "prompt": prompt_text,
+                        "descriptors": descriptors_text,
+                        "provider": gen.get("provider"),
+                        "model": gen.get("model"),
+                    })
+                    msg.meta["scene_image"] = si
+                    db2.add(msg)
+                    db2.commit()
+                    
+                    # Log the update
+                    img_len = len(image_b64) if image_b64 else 0
+                    print(f"[Background Scene Image] SUCCESS: Cached image in message {msg_id} metadata, bytes={img_len}")
+                    
+                    # Publish an event so connected clients can pick up updated metadata
+                    try:
+                        print(f"[Background Scene Image] Publishing SSE event for session {msg.session_id}, message {msg.id}")
+                        publish_event(msg.session_id, {
+                            "type": "message_metadata_updated",
+                            "message_id": msg.id,
+                            "metadata": {"scene_image": si}
+                        })
+                        print("[Background Scene Image] SSE event published successfully")
+                    except Exception as e:
+                        # Non-fatal if publish fails
+                        print(f"[Background Scene Image] ERROR: Failed to publish SSE event: {e}")
+                        pass
+                finally:
+                    db2.close()
+            except Exception as e:
+                import traceback
+                print(f"[Background Scene Image] FAILED: {e}")
+                print(f"[Background Scene Image] Traceback: {traceback.format_exc()}")
+
+        # Only schedule background generation if we have a prompt
+        if scene_prompt or scene_descriptors:
+            # schedule but don't await
+            asyncio.create_task(_generate_and_cache_image(m.id, scene_prompt or "", scene_descriptors))
+    except Exception as e:
+        print(f"[Scene Image Dispatch] failed to schedule background task: {e}")
+
     return {"assistant_message": m.to_dict(), "generation": metadata}
+
+
+@router.get("/sessions/{session_id}/events")
+async def session_events(session_id: int):
+    """Server-Sent Events endpoint for session-scoped updates.
+
+    Clients can connect with EventSource to receive JSON events when
+    message metadata (like scene_image) is updated.
+    """
+    # Use the async generator from backend.events
+    return StreamingResponse(event_stream(session_id), media_type="text/event-stream")
 
 
 @router.post("/sessions/{session_id}/messages/{message_id}/tts")
@@ -745,7 +1033,7 @@ async def generate_scene_image_for_message(
         # Cache the scene image in message metadata for persistence
         if message.meta is None:
             message.meta = {}
-        
+
         message.meta['scene_image'] = {
             "image": image_data,
             "prompt": base_prompt,
@@ -754,8 +1042,27 @@ async def generate_scene_image_for_message(
             "force_generate": force_generate,
             "location_hint": location_hint
         }
+        db.add(message)
         db.commit()
-        print(f"[Scene Image] Cached image in message {message_id} metadata")
+        # Refresh the ORM object so callers see the updated meta immediately
+        try:
+            db.refresh(message)
+        except Exception:
+            pass
+        # Debug logging
+        try:
+            img_len = len(image_data) if image_data else 0
+            print(f"[Scene Image] Cached image in message {message_id} metadata, bytes={img_len}")
+        except Exception:
+            pass
+        try:
+            publish_event(message.session_id, {
+                "type": "message_metadata_updated",
+                "message_id": message.id,
+                "metadata": {"scene_image": message.meta['scene_image']}
+            })
+        except Exception:
+            pass
         
         return {
             "image": image_data,
