@@ -16,6 +16,7 @@ The DM AI wasn't aware of player character abilities, spells, equipment, and sta
 **File**: `backend/routers/chat.py`
 
 **What Changed**:
+
 - Added comprehensive D&D stats to character context building
 - Now includes:
   - ✅ Full ability scores and modifiers (STR, DEX, CON, INT, WIS, CHA)
@@ -27,6 +28,7 @@ The DM AI wasn't aware of player character abilities, spells, equipment, and sta
   - ✅ Saving throw proficiencies
 
 **Before** (only basic info):
+
 ```
 Caspian Blackwood (Level 1 Rogue Half-Elf)
   Personality: Resourceful, curious
@@ -36,6 +38,7 @@ Caspian Blackwood (Level 1 Rogue Half-Elf)
 ```
 
 **After** (comprehensive D&D data):
+
 ```
 ## Caspian Blackwood (Level 1 Rogue Half-Elf, Charlatan background)
   AC: 15, HP: 9/9, Speed: 30 ft, Initiative: +3
@@ -56,6 +59,7 @@ Caspian Blackwood (Level 1 Rogue Half-Elf)
 ```
 
 **DM Instructions Added**:
+
 ```
 **DM INSTRUCTIONS FOR CHARACTER INTEGRATION:**
 - Reference character abilities and spells when suggesting actions
@@ -74,6 +78,7 @@ Caspian Blackwood (Level 1 Rogue Half-Elf)
 **Purpose**: Provides a Model Context Protocol (MCP) interface for on-demand character data queries.
 
 **Available Tools**:
+
 1. `get_character_sheet(character_id)` - Get full character sheet
 2. `get_character_abilities(character_id)` - Get ability scores and modifiers
 3. `get_character_spells(character_id)` - Get spell list and casting info
@@ -82,6 +87,7 @@ Caspian Blackwood (Level 1 Rogue Half-Elf)
 6. `search_characters(name)` - Search for characters by name
 
 **Testing the MCP**:
+
 ```bash
 cd e:\storycraft
 python -m backend.mcp_character_sheets
@@ -97,6 +103,7 @@ python -m backend.mcp_character_sheets
 ```
 
 **Future Integration**:
+
 - Wire MCP server to DM AI as a callable tool
 - DM can query character data on-demand instead of loading everything upfront
 - Reduces context window usage
@@ -116,7 +123,7 @@ When a campaign starts, the DM receives character context like this:
   Abilities: STR 10 (+0), DEX 17 (+3), CON 12 (+1), INT 14 (+2), WIS 13 (+1), CHA 16 (+3)
   Skills: Deception, Insight, Investigation, Perception, Sleight of Hand, Stealth
   [... full character details ...]
-  
+
 **DM INSTRUCTIONS FOR CHARACTER INTEGRATION:**
 - Reference character abilities and spells when suggesting actions
 - Mention their skills when relevant challenges arise
@@ -126,6 +133,7 @@ When a campaign starts, the DM receives character context like this:
 ### Example DM Responses (Before vs After)
 
 **BEFORE** (character-agnostic):
+
 ```
 The tavern door creaks open. You enter and see a hooded figure in the corner.
 
@@ -136,8 +144,9 @@ Suggested Actions:
 ```
 
 **AFTER** (character-aware):
+
 ```
-The tavern door creaks open. Your rapier gleams at your side as you step inside, 
+The tavern door creaks open. Your rapier gleams at your side as you step inside,
 eyes scanning the dimly lit room. A hooded figure sits in the corner, nursing a drink.
 
 Suggested Actions:
@@ -152,12 +161,14 @@ Suggested Actions:
 ### Immediate Tests ✅
 
 1. **Start a new campaign with Caspian Blackwood**
+
    - DM should reference "your rapier" in descriptions
    - DM should suggest using Stealth, Deception, or Sleight of Hand
    - DM should mention Thieves' Cant when appropriate
    - DM should track HP (9/9) and AC (15)
 
 2. **Character intro prompt**
+
    ```
    Before we begin
    To help weave your character into the story, please tell me:
@@ -169,10 +180,11 @@ Suggested Actions:
    ```
 
    **User response**: "I'm using Caspian Blackwood from my character sheet."
-   
+
    **Expected DM response**: Should reference Caspian's stats, equipment, and abilities without needing to be told again.
 
 3. **Spell usage** (for spellcasters):
+
    - DM should know what spells the character has
    - DM should suggest using appropriate spells for situations
    - DM should track spell slots
@@ -185,6 +197,7 @@ Suggested Actions:
 ### Future Tests (MCP Integration) 📋
 
 1. **Test MCP server**:
+
    ```bash
    python -m backend.mcp_character_sheets
    > sheet 1
@@ -198,6 +211,7 @@ Suggested Actions:
 ## Benefits
 
 ### Immediate (Context Enhancement)
+
 - ✅ DM knows character abilities and can suggest using them
 - ✅ DM references equipment in descriptions
 - ✅ DM is aware of skills and proficiencies
@@ -205,6 +219,7 @@ Suggested Actions:
 - ✅ DM incorporates personality traits into roleplay
 
 ### Long-term (MCP Server)
+
 - 📋 Reduced context window usage
 - 📋 Scalable for large parties
 - 📋 On-demand character data queries
@@ -220,11 +235,13 @@ No configuration needed! The character context enhancement is automatic when cha
 ### "DM still doesn't know my spells"
 
 **Check**:
+
 1. Is your character linked to the campaign? (Check party members in Campaign tab)
 2. Does your character have `dnd_spellcasting` data populated?
 3. Restart backend server to pick up latest changes
 
 **Fix**:
+
 ```bash
 cd e:\storycraft\backend
 python
@@ -238,10 +255,12 @@ python
 ### "DM doesn't mention my equipment"
 
 **Check**:
+
 1. Does your character have `dnd_equipment` data populated?
 2. Check backend logs for character context output
 
 **Fix**:
+
 ```python
 >>> print(char.dnd_equipment)  # Should show weapons/armor/gear
 ```
@@ -256,9 +275,11 @@ If the character context makes the prompt too long:
 ## Files Changed
 
 ### Enhanced
+
 1. ✅ `backend/routers/chat.py` - Added comprehensive character context building
 
 ### Created
+
 2. ✅ `backend/mcp_character_sheets.py` - MCP server for character data queries
 3. ✅ `CHARACTER_INTEGRATION_SOLUTION.md` - This documentation
 

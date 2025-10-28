@@ -162,6 +162,10 @@ class DMChatHandler:
         if user_message.strip().startswith('/'):
             return await self._handle_command(game_session, user_message)
         
+        # Check for campaign initialization message
+        if "Campaign Initialized:" in user_message and "Please begin the adventure" in user_message:
+            return await self._handle_campaign_initialization(game_session, user_message)
+        
         # Detect spell casting (auto-lookup if MCP available)
         if self.mcp_client:
             spell_detected, spell_name = await self._detect_spell_cast(user_message)
@@ -590,6 +594,87 @@ Return JSON format:
             combat_started=combat_started,
             combat_ended=False,
             events=events,
+            suggested_actions=suggested_actions
+        )
+    
+    async def _handle_campaign_initialization(self, game_session: GameSession, init_message: str) -> DMResponse:
+        """
+        Handle campaign initialization message with full DM instructions.
+        
+        This method processes the detailed initialization message sent when a campaign starts,
+        which includes party stats, campaign settings, adventure template, and DM instructions.
+        """
+        print("[DM Handler] Processing campaign initialization...")
+        
+        # The initialization message already contains all the context the DM needs
+        # We just need to ask the LLM to begin the adventure following the instructions
+        
+        system_prompt = """You are a D&D 5th Edition Dungeon Master starting a new campaign.
+You have been provided with complete campaign initialization details including:
+- Campaign setting, difficulty, and tone
+- Adventure template to follow
+- Opening scene to narrate
+- Complete party character stats
+- Detailed formatting instructions
+
+Your task is to BEGIN THE ADVENTURE by narrating the opening scene as instructed.
+
+CRITICAL RULES:
+1. Follow the opening scene specified in the initialization message
+2. Use the campaign tone (heroic fantasy, dark fantasy, etc.) throughout
+3. Write vivid, engaging narrative prose - NO markdown tables or bullet lists in the narrative
+4. After the narrative, provide 3-4 suggested actions using ONLY this format:
+
+**Suggested Actions:**
+- Action 1: [Description] (Skill check: [Skill] DC [Number])
+- Action 2: [Description]
+- Action 3: [Description]
+
+Do NOT use markdown tables. Use bullet lists for suggested actions only.
+Do NOT reference "the initialization message" - jump straight into the story."""
+        
+        try:
+            # Call LLM with the full initialization context
+            message, metadata = await call_llm(
+                prompt=f"{system_prompt}\n\n{init_message}",
+                provider=self.provider,
+                model=self.model
+            )
+            
+            print(f"[DM Handler] Generated opening scene ({len(message)} chars)")
+            
+            # Try to extract suggested actions
+            suggested_actions = []
+            if "**Suggested Actions:**" in message:
+                parts = message.split("**Suggested Actions:**")
+                narrative = parts[0].strip()
+                actions_text = parts[1].strip()
+                
+                # Parse bullet list actions
+                import re
+                action_lines = re.findall(r'^-\s+(.+)$', actions_text, re.MULTILINE)
+                for action_line in action_lines:
+                    suggested_actions.append({
+                        "action": action_line.strip(),
+                        "type": "exploration"
+                    })
+                
+                message = narrative
+            
+        except Exception as e:
+            print(f"[DM Handler] Error generating opening scene: {e}")
+            import traceback
+            traceback.print_exc()
+            message = "The adventure is about to begin... (Error generating opening scene. Please try sending another message.)"
+            suggested_actions = []
+        
+        return DMResponse(
+            message=message,
+            game_state_changed=True,
+            scene_changed=True,
+            combat_started=False,
+            combat_ended=False,
+            events=[{"type": "campaign_start"}],
             suggested_actions=suggested_actions
         )
     

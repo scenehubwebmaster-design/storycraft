@@ -70,9 +70,9 @@ async def extract_journal_entries_from_message(
 {message.content}
 
 **Current Campaign Context:**
-- Campaign: {campaign.name}
-- Scene Type: {campaign.scene_type or 'unknown'}
-- Party Level: {campaign.party_level}
+- Campaign: {campaign.title}
+- Scene Type: {campaign.current_scene_type or 'unknown'}
+- Current Level: {campaign.current_level}
 
 **Extract the following types of events:**
 1. **NPCs Met**: New characters introduced (name, description, role)

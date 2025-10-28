@@ -98,7 +98,10 @@ app.get("/api/health", async (req, res) => {
       });
     }
 
-    const result = await mcpClient.callTool("check_api_health", {});
+    const result = await mcpClient.callTool({
+      name: "check_api_health",
+      arguments: {},
+    });
     res.json(result);
   } catch (error) {
     console.error("Error checking API health:", error);
@@ -128,7 +131,10 @@ app.post("/api/search", async (req, res) => {
 
     console.log(`🔍 Searching for: "${query}"`);
 
-    const result = await mcpClient.callTool("search_all_categories", { query });
+    const result = await mcpClient.callTool({
+      name: "search_all_categories",
+      arguments: { query },
+    });
 
     console.log(
       `✅ Found ${result.content?.[0]?.text ? "results" : "no results"}`
@@ -159,8 +165,9 @@ app.get("/api/spell/:name", async (req, res) => {
     console.log(`🔮 Looking up spell: "${name}"`);
 
     // Search for the spell
-    const result = await mcpClient.callTool("search_all_categories", {
-      query: name,
+    const result = await mcpClient.callTool({
+      name: "search_all_categories",
+      arguments: { query: name },
     });
 
     res.json(result);
@@ -187,8 +194,9 @@ app.get("/api/monster/:name", async (req, res) => {
 
     console.log(`👹 Looking up monster: "${name}"`);
 
-    const result = await mcpClient.callTool("search_all_categories", {
-      query: name,
+    const result = await mcpClient.callTool({
+      name: "search_all_categories",
+      arguments: { query: name },
     });
 
     res.json(result);
@@ -219,10 +227,13 @@ app.get("/api/spells", async (req, res) => {
       }`
     );
 
-    const result = await mcpClient.callTool("filter_spells_by_level", {
-      min_level: parseInt(min_level),
-      max_level: parseInt(max_level),
-      school: school || undefined,
+    const result = await mcpClient.callTool({
+      name: "filter_spells_by_level",
+      arguments: {
+        min_level: parseInt(min_level),
+        max_level: parseInt(max_level),
+        school: school || undefined,
+      },
     });
 
     res.json(result);
@@ -249,13 +260,13 @@ app.get("/api/monsters", async (req, res) => {
 
     console.log(`🐉 Finding monsters: CR ${min_cr}-${max_cr}`);
 
-    const result = await mcpClient.callTool(
-      "find_monsters_by_challenge_rating",
-      {
+    const result = await mcpClient.callTool({
+      name: "find_monsters_by_challenge_rating",
+      arguments: {
         min_cr: parseFloat(min_cr),
         max_cr: parseFloat(max_cr),
-      }
-    );
+      },
+    });
 
     res.json(result);
   } catch (error) {
@@ -281,9 +292,12 @@ app.get("/api/equipment", async (req, res) => {
 
     console.log(`⚔️ Finding equipment: max ${max_cost} ${cost_unit}`);
 
-    const result = await mcpClient.callTool("search_equipment_by_cost", {
-      max_cost: parseFloat(max_cost),
-      cost_unit,
+    const result = await mcpClient.callTool({
+      name: "search_equipment_by_cost",
+      arguments: {
+        max_cost: parseFloat(max_cost),
+        cost_unit,
+      },
     });
 
     res.json(result);
@@ -315,9 +329,12 @@ app.post("/api/verify", async (req, res) => {
 
     console.log(`✓ Verifying: "${statement}"`);
 
-    const result = await mcpClient.callTool("verify_with_api", {
-      statement,
-      category: category || undefined,
+    const result = await mcpClient.callTool({
+      name: "verify_with_api",
+      arguments: {
+        statement,
+        category: category || undefined,
+      },
     });
 
     res.json(result);

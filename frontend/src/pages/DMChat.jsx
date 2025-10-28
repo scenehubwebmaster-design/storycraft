@@ -798,7 +798,9 @@ Do NOT use markdown tables for actions. Use the bullet list format shown above.
       );
 
       if (!initMessageResp.ok) {
-        throw new Error(`Failed to send init message: ${initMessageResp.status}`);
+        throw new Error(
+          `Failed to send init message: ${initMessageResp.status}`
+        );
       }
 
       const initUserMsg = await initMessageResp.json();
