@@ -269,31 +269,39 @@ async def add_character_to_campaign(
     db.refresh(campaign_char)
     
     # Also add to GameSession party_members if campaign has a game session
-    game_session = db.query(GameSession).filter(
-        GameSession.chat_session_id == campaign.chat_session_id
-    ).filter(
-        GameSession.game_state['campaign_id'].astext == str(campaign_id)
-    ).first()
-    
-    if game_session:
-        # Check if already in game session party
-        existing_party_member = db.query(PartyMember).filter(
-            PartyMember.game_session_id == game_session.id,
-            PartyMember.character_id == request.character_id
-        ).first()
+    # Find the game session by chat_session_id and checking game_state for campaign_id
+    if campaign.chat_session_id:
+        # Get all game sessions for this chat session
+        game_sessions = db.query(GameSession).filter(
+            GameSession.chat_session_id == campaign.chat_session_id
+        ).all()
         
-        if not existing_party_member:
-            party_member = PartyMember(
-                game_session_id=game_session.id,
-                character_id=request.character_id,
-                current_hp=character.dnd_hit_points_current or character.dnd_hit_points_max or 10,
-                max_hp=character.dnd_hit_points_max or 10,
-                temp_hp=0,
-                conditions=[],
-                is_active=True
-            )
-            db.add(party_member)
-            db.commit()
+        # Find the one with matching campaign_id in game_state
+        game_session = None
+        for gs in game_sessions:
+            if gs.game_state and gs.game_state.get('campaign_id') == campaign_id:
+                game_session = gs
+                break
+        
+        if game_session:
+            # Check if already in game session party
+            existing_party_member = db.query(PartyMember).filter(
+                PartyMember.game_session_id == game_session.id,
+                PartyMember.character_id == request.character_id
+            ).first()
+            
+            if not existing_party_member:
+                party_member = PartyMember(
+                    game_session_id=game_session.id,
+                    character_id=request.character_id,
+                    current_hp=character.dnd_hit_points_current or character.dnd_hit_points_max or 10,
+                    max_hp=character.dnd_hit_points_max or 10,
+                    temp_hp=0,
+                    conditions=[],
+                    is_active=True
+                )
+                db.add(party_member)
+                db.commit()
     
     return {
         "message": f"{character.name} added to campaign",
