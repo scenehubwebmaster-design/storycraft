@@ -231,7 +231,9 @@ async def generate_game_chat(
     db.refresh(game_session)
     
     # Auto-log journal entries from DM response (non-blocking)
-    if game_session.campaign_id:
+    # Check if this game session is linked to a campaign
+    campaign_id = game_session.game_state.get('campaign_id') if game_session.game_state else None
+    if campaign_id:
         try:
             import asyncio
             # Run auto-logging in background (don't await to avoid blocking response)
@@ -239,7 +241,7 @@ async def generate_game_chat(
                 extract_journal_entries_from_message(
                     db=db,
                     message=assistant_msg,
-                    campaign_id=game_session.campaign_id
+                    campaign_id=campaign_id
                 )
             )
         except Exception as e:
