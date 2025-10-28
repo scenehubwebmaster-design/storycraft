@@ -287,6 +287,7 @@ async def generate_game_chat(
                 from ..database import SessionLocal
 
                 async def _generate_and_cache_image_game(msg_id: int, prompt_text: str, descriptors_text: str | None):
+                    print(f"[Background Scene Image - game_chat] ========== TASK STARTED for message {msg_id} ==========")
                     try:
                         print(f"[Background Scene Image - game_chat] Starting generation for message {msg_id}")
                         from ..image_generation import generate_location_image
@@ -364,7 +365,9 @@ async def generate_game_chat(
                         print(f"[Background Scene Image - game_chat] FAILED: {e}")
                         print(f"[Background Scene Image - game_chat] Traceback: {traceback.format_exc()}")
 
+                print(f"[Game Chat] *** CREATING BACKGROUND TASK for message {assistant_msg.id} with prompt: {(scene_prompt or '')[:50]}...")
                 asyncio.create_task(_generate_and_cache_image_game(assistant_msg.id, scene_prompt or "", scene_descriptors))
+                print("[Game Chat] *** Background task created successfully")
             except Exception as e:
                 print(f"[Game Chat] Failed to schedule background image generation: {e}")
     except Exception as e:

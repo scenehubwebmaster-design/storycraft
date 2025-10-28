@@ -563,13 +563,19 @@ export default function DMChatPage() {
       setMessages((m) => [...m, placeholder]);
       setLoadingGen(true);
 
-      // Ask server to generate an assistant reply for this session (server will handle RAG)
-      const genResp = await fetch(
-        `/api/chat/sessions/${selectedSession.id}/generate`,
-        {
-          method: "POST",
-        }
+      // Determine which endpoint to use based on whether we have an active campaign
+      const endpoint = activeCampaign
+        ? `/api/chat/sessions/${selectedSession.id}/game-chat?game_session_id=${activeCampaign.game_session_id}`
+        : `/api/chat/sessions/${selectedSession.id}/generate`;
+
+      console.log(
+        `[DMChat] Using endpoint: ${endpoint} (campaign=${
+          activeCampaign ? "yes" : "no"
+        })`
       );
+
+      // Ask server to generate an assistant reply for this session
+      const genResp = await fetch(endpoint, { method: "POST" });
       if (!genResp.ok) {
         const txt = await genResp.text();
         throw new Error(`Generate failed: ${genResp.status} ${txt}`);
