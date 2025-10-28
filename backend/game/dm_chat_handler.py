@@ -735,6 +735,11 @@ Use this format only if the player needs guidance on what to do next."""
         if session_id not in self.conversation_history:
             return True  # First message - include stats
         
+        # Always include stats for first 4 exchanges (8 messages) to help DM learn about party
+        if len(self.conversation_history[session_id]) <= 8:
+            print(f"[DM Context] Including stats - early game (message {len(self.conversation_history[session_id])}/8)")
+            return True
+        
         recent_messages = self.conversation_history[session_id][-6:]  # Last 3 user+assistant pairs
         
         # Keywords that indicate mechanical gameplay
@@ -763,7 +768,14 @@ Use this format only if the player needs guidance on what to do next."""
             'charmed', 'deafened', 'frightened', 'grappled', 'incapacitated',
             # Items and equipment (be specific)
             'equip weapon', 'equip armor', 'drink potion', 'use potion',
-            'attune', 'unequip'
+            'attune', 'unequip',
+            # Exploration and skill-based actions (NEW - helps DM use character abilities)
+            ' search ', ' investigate', 'perception', ' listen', ' look for',
+            ' stealth', ' hide ', ' sneak', 'acrobatics', 'athletics',
+            'arcana', 'history', 'nature', 'religion', 'insight',
+            'persuasion', 'deception', 'intimidation', 'performance',
+            'survival', 'medicine', 'animal handling', ' climb', ' jump',
+            'i try to', 'i attempt', 'i want to', 'can i'
         ]
         
         # Check last few messages for keywords
