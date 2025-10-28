@@ -45,10 +45,19 @@ async def extract_journal_entries_from_message(
     
     # Get campaign context
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
-    if not campaign or not campaign.game_session_id:
+    if not campaign:
         return []
     
-    game_session = db.query(GameSession).filter(GameSession.id == campaign.game_session_id).first()
+    # Find the game session for this campaign
+    game_session = db.query(GameSession).filter(
+        GameSession.chat_session_id == campaign.chat_session_id
+    ).first()
+    
+    # Check if game_state has campaign_id matching our campaign
+    if game_session and game_session.game_state:
+        if game_session.game_state.get('campaign_id') != campaign_id:
+            game_session = None
+    
     if not game_session:
         return []
     
