@@ -603,6 +603,9 @@ Return JSON format:
         
         This method processes the detailed initialization message sent when a campaign starts,
         which includes party stats, campaign settings, adventure template, and DM instructions.
+        
+        Uses Groq's fast model for reliable initialization, then returns control to chat.py
+        which will handle scene summarization and SD image generation.
         """
         print("[DM Handler] Processing campaign initialization...")
         
@@ -634,11 +637,13 @@ Do NOT use markdown tables. Use bullet lists for suggested actions only.
 Do NOT reference "the initialization message" - jump straight into the story."""
         
         try:
-            # Call LLM with the full initialization context
+            # Use Groq for fast, reliable initialization (not LM Studio which may timeout)
+            # The 70B model is fast enough for initialization and produces good narrative
+            print("[DM Handler] Calling Groq llama-3.3-70b-versatile for campaign initialization...")
             message, metadata = await call_llm(
                 prompt=f"{system_prompt}\n\n{init_message}",
-                provider=self.provider,
-                model=self.model
+                provider="groq",
+                model="llama-3.3-70b-versatile"
             )
             
             print(f"[DM Handler] Generated opening scene ({len(message)} chars)")
@@ -665,8 +670,22 @@ Do NOT reference "the initialization message" - jump straight into the story."""
             print(f"[DM Handler] Error generating opening scene: {e}")
             import traceback
             traceback.print_exc()
-            message = "The adventure is about to begin... (Error generating opening scene. Please try sending another message.)"
-            suggested_actions = []
+            
+            # Provide a fallback opening scene so the campaign can still start
+            message = """**The Adventure Begins**
+
+Your party gathers as the adventure begins. The path ahead is uncertain, filled with promise and peril. What will you do?
+
+**Suggested Actions:**
+- Look around and assess your surroundings
+- Speak with your companions
+- Proceed forward cautiously"""
+            
+            suggested_actions = [
+                {"action": "Look around and assess your surroundings", "type": "exploration"},
+                {"action": "Speak with your companions", "type": "dialogue"},
+                {"action": "Proceed forward cautiously", "type": "exploration"}
+            ]
         
         return DMResponse(
             message=message,

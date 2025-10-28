@@ -220,9 +220,10 @@ async def generate_game_chat(
     # Log events to game session
     for event in dm_response.events:
         game_event = models.GameEvent(
-            session_id=game_session_id,
+            game_session_id=game_session_id,
             event_type=event.get('type', 'unknown'),
-            event_data=event
+            description=event.get('description', str(event)),
+            game_state_snapshot=event
         )
         db.add(game_event)
     
