@@ -11,7 +11,7 @@ from datetime import datetime
 import json
 
 from ..database import get_db
-from ..models import Campaign, CampaignCharacter, Character, ChatSession
+from ..models import Campaign, CampaignCharacter, Character, ChatSession, GameSession, PartyMember
 
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
 
@@ -80,7 +80,7 @@ class HealRequest(BaseModel):
 
 @router.post("/", response_model=dict)
 async def create_campaign(campaign: CampaignCreate, db: Session = Depends(get_db)):
-    """Create a new D&D campaign"""
+    """Create a new D&D campaign with associated GameSession"""
     
     # Validate chat_session_id if provided
     if campaign.chat_session_id:
@@ -106,7 +106,32 @@ async def create_campaign(campaign: CampaignCreate, db: Session = Depends(get_db
     db.commit()
     db.refresh(new_campaign)
     
-    return new_campaign.to_dict()
+    # Create associated GameSession for DM game-chat endpoint
+    game_session = None
+    if campaign.chat_session_id:
+        game_session = GameSession(
+            chat_session_id=campaign.chat_session_id,
+            campaign_name=campaign.title,
+            current_location=None,
+            current_scene=None,
+            game_state={
+                "campaign_id": new_campaign.id,
+                "current_scene_type": "roleplay",
+                "session_start": datetime.utcnow().isoformat()
+            },
+            party_level=campaign.starting_level,
+            session_notes=None
+        )
+        db.add(game_session)
+        db.commit()
+        db.refresh(game_session)
+    
+    # Return campaign with game_session_id
+    result = new_campaign.to_dict()
+    if game_session:
+        result["game_session_id"] = game_session.id
+    
+    return result
 
 
 @router.get("/", response_model=List[dict])
@@ -242,6 +267,33 @@ async def add_character_to_campaign(
     db.add(campaign_char)
     db.commit()
     db.refresh(campaign_char)
+    
+    # Also add to GameSession party_members if campaign has a game session
+    game_session = db.query(GameSession).filter(
+        GameSession.chat_session_id == campaign.chat_session_id
+    ).filter(
+        GameSession.game_state['campaign_id'].astext == str(campaign_id)
+    ).first()
+    
+    if game_session:
+        # Check if already in game session party
+        existing_party_member = db.query(PartyMember).filter(
+            PartyMember.game_session_id == game_session.id,
+            PartyMember.character_id == request.character_id
+        ).first()
+        
+        if not existing_party_member:
+            party_member = PartyMember(
+                game_session_id=game_session.id,
+                character_id=request.character_id,
+                current_hp=character.dnd_hit_points_current or character.dnd_hit_points_max or 10,
+                max_hp=character.dnd_hit_points_max or 10,
+                temp_hp=0,
+                conditions=[],
+                is_active=True
+            )
+            db.add(party_member)
+            db.commit()
     
     return {
         "message": f"{character.name} added to campaign",
