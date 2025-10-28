@@ -781,12 +781,30 @@ Do NOT use markdown tables for actions. Use the bullet list format shown above.
 
 **Please begin the adventure with the opening scene narration!**`;
 
-      // Don't send initialization prompt as user message - it's internal context
-      // The backend will handle party context and campaign details directly
+      // Send initialization prompt as user message to trigger campaign flow
       setSending(true);
 
-      // Generate AI DM's opening narration using two-stage narrative pipeline
-      // The backend loads party details and campaign metadata automatically
+      // First, send the initialization prompt as a user message
+      const initMessageResp = await fetch(
+        `/api/chat/sessions/${selectedSession.id}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            role: "user",
+            content: initPrompt,
+          }),
+        }
+      );
+
+      if (!initMessageResp.ok) {
+        throw new Error(`Failed to send init message: ${initMessageResp.status}`);
+      }
+
+      const initUserMsg = await initMessageResp.json();
+      setMessages([initUserMsg]); // Start fresh with init message
+
+      // Generate AI DM's opening narration using game-chat endpoint with campaign context
       const placeholderId = `pending-${Date.now()}`;
       const placeholder = {
         id: placeholderId,
@@ -803,13 +821,11 @@ Do NOT use markdown tables for actions. Use the bullet list format shown above.
       setMessages((m) => [...m, placeholder]);
       setLoadingGen(true);
 
-      // Use the standard generate endpoint which now includes campaign context
-      const genResp = await fetch(
-        `/api/chat/sessions/${selectedSession.id}/generate`,
-        {
-          method: "POST",
-        }
-      );
+      // Use game-chat endpoint for campaign initialization (DM handler with character stats)
+      const endpoint = `/api/chat/sessions/${selectedSession.id}/game-chat?game_session_id=${campaign.game_session_id}`;
+      console.log(`[DMChat] Initializing campaign with endpoint: ${endpoint}`);
+
+      const genResp = await fetch(endpoint, { method: "POST" });
 
       if (!genResp.ok) {
         throw new Error(`Generate failed: ${genResp.status}`);
