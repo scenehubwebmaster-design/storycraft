@@ -511,14 +511,91 @@ You are the Dungeon Master for this campaign. Maintain consistency with the camp
             if characters:
                 character_context = "\n**ACTIVE PLAYER CHARACTERS:**\n"
                 for char in characters:
-                    character_context += f"\n{char.name}"
+                    character_context += f"\n## {char.name}"
                     if char.dnd_class:
                         character_context += f" (Level {char.dnd_level or 1} {char.dnd_class}"
                         if char.dnd_species:
                             character_context += f" {char.dnd_species}"
+                        if char.dnd_background:
+                            character_context += f", {char.dnd_background} background"
                         character_context += ")"
                     
-                    # Add personality and background details from structured_data
+                    # Core Stats
+                    if char.dnd_armor_class:
+                        character_context += f"\n  AC: {char.dnd_armor_class}"
+                    if char.dnd_hit_points_max or char.dnd_hit_points:
+                        hp_max = char.dnd_hit_points_max or char.dnd_hit_points
+                        hp_current = char.dnd_hit_points_current if char.dnd_hit_points_current is not None else hp_max
+                        character_context += f", HP: {hp_current}/{hp_max}"
+                    if char.dnd_speed:
+                        character_context += f", Speed: {char.dnd_speed} ft"
+                    if char.dnd_initiative:
+                        character_context += f", Initiative: {char.dnd_initiative}"
+                    
+                    # Ability Scores and Modifiers
+                    if char.dnd_ability_scores:
+                        character_context += "\n  Abilities: "
+                        ability_parts = []
+                        for ability in ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"]:
+                            score = char.dnd_ability_scores.get(ability)
+                            if score:
+                                modifier = char.dnd_ability_modifiers.get(ability, 0) if char.dnd_ability_modifiers else (score - 10) // 2
+                                mod_str = f"+{modifier}" if modifier >= 0 else str(modifier)
+                                ability_parts.append(f"{ability[:3].upper()} {score} ({mod_str})")
+                        character_context += ", ".join(ability_parts)
+                    
+                    # Skills and Proficiencies
+                    if char.dnd_skills:
+                        character_context += f"\n  Skills: {', '.join(char.dnd_skills)}"
+                    
+                    if char.dnd_proficiencies:
+                        prof = char.dnd_proficiencies
+                        if prof.get('saves'):
+                            character_context += f"\n  Saving Throws: {', '.join(prof['saves'])}"
+                        if prof.get('weapons'):
+                            character_context += f"\n  Weapon Proficiencies: {', '.join(prof['weapons'])}"
+                        if prof.get('armor'):
+                            character_context += f"\n  Armor Proficiencies: {', '.join(prof['armor'])}"
+                    
+                    # Equipment
+                    if char.dnd_equipment:
+                        eq = char.dnd_equipment
+                        if eq.get('weapons'):
+                            character_context += f"\n  Weapons: {', '.join([w.get('name', w) if isinstance(w, dict) else str(w) for w in eq['weapons']])}"
+                        if eq.get('armor'):
+                            armor_items = eq['armor'] if isinstance(eq['armor'], list) else [eq['armor']]
+                            character_context += f"\n  Armor: {', '.join([a.get('name', a) if isinstance(a, dict) else str(a) for a in armor_items])}"
+                    
+                    # Spellcasting
+                    if char.dnd_spellcasting:
+                        sc = char.dnd_spellcasting
+                        if sc.get('ability'):
+                            character_context += f"\n  Spellcasting: {sc['ability']}-based"
+                        if sc.get('dc'):
+                            character_context += f", Spell Save DC {sc['dc']}"
+                        if sc.get('attack'):
+                            attack_bonus = sc['attack']
+                            character_context += f", Spell Attack {'+' if attack_bonus >= 0 else ''}{attack_bonus}"
+                        if sc.get('spells_known'):
+                            character_context += f"\n  Spells Known: {', '.join(sc['spells_known'][:10])}"  # Show first 10 spells
+                            if len(sc['spells_known']) > 10:
+                                character_context += f" (+{len(sc['spells_known']) - 10} more)"
+                    
+                    # Features and Abilities
+                    if char.dnd_features:
+                        features = char.dnd_features
+                        if features.get('class'):
+                            class_features = features['class'][:5] if isinstance(features['class'], list) else [features['class']]
+                            character_context += f"\n  Class Features: {', '.join([f.get('name', f) if isinstance(f, dict) else str(f) for f in class_features])}"
+                        if features.get('racial'):
+                            racial_features = features['racial'][:3] if isinstance(features['racial'], list) else [features['racial']]
+                            character_context += f"\n  Racial Traits: {', '.join([f.get('name', f) if isinstance(f, dict) else str(f) for f in racial_features])}"
+                    
+                    # Languages
+                    if char.dnd_languages:
+                        character_context += f"\n  Languages: {', '.join(char.dnd_languages)}"
+                    
+                    # Personality and background details from structured_data
                     if char.structured_data:
                         sd = char.structured_data
                         if sd.get('personality_traits'):
@@ -538,7 +615,14 @@ You are the Dungeon Master for this campaign. Maintain consistency with the camp
                     
                     character_context += "\n"
                 
-                character_context += "\nAs DM, you should reference these character details when appropriate to create a more immersive, personalized experience. Mention their ideals when moral choices arise, their bonds when relationships are relevant, and their flaws to create interesting roleplay moments.\n"
+                character_context += "\n**DM INSTRUCTIONS FOR CHARACTER INTEGRATION:**\n"
+                character_context += "- Reference character abilities and spells when suggesting actions\n"
+                character_context += "- Mention their skills when relevant challenges arise\n"
+                character_context += "- Use their equipment in descriptions (e.g., 'Your longsword gleams...')\n"
+                character_context += "- Incorporate their personality traits, ideals, bonds, and flaws into roleplay moments\n"
+                character_context += "- Suggest using class features when appropriate for the situation\n"
+                character_context += "- Remember their languages when NPCs speak\n"
+                character_context += "- Track their HP, conditions, and resources during combat\n"
     except Exception as e:
         print(f"[DEBUG] Could not load character context: {e}")
 
