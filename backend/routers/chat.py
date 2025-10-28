@@ -181,7 +181,7 @@ async def generate_game_chat(
     
     dm_handler = DMChatHandler(
         db=db,
-        lm_studio_url=lm_studio_url,
+        provider=lm_studio_url,
         model=model,
         dm_roll_for_players=dm_roll_for_players
     )
